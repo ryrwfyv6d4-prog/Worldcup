@@ -1,38 +1,48 @@
-// FIFA World Cup 2026 – 48 teams across 12 groups
-// Groups based on the December 2024 draw (fallback if API unavailable)
+// FIFA World Cup 2026 – actual group draw (source: openfootball/worldcup.json)
 export const GROUPS = {
-  A: ['USA', 'Panama', 'Uruguay', 'Algeria'],
-  B: ['Mexico', 'Jamaica', 'Ecuador', 'Belgium'],
-  C: ['Canada', 'Honduras', 'Morocco', 'Croatia'],
-  D: ['Brazil', 'Japan', 'Costa Rica', 'Hungary'],
-  E: ['Spain', 'Switzerland', 'Egypt', 'Serbia'],
-  F: ['Germany', 'Cameroon', 'Australia', 'Turkey'],
-  G: ['France', 'Argentina', 'South Africa', 'Denmark'],
-  H: ['Portugal', 'Colombia', 'South Korea', 'Romania'],
-  I: ['Netherlands', 'Senegal', 'Iran', 'Venezuela'],
-  J: ['England', 'Nigeria', 'Saudi Arabia', 'DR Congo'],
-  K: ['Poland', 'Tunisia', 'Ivory Coast', 'Uzbekistan'],
-  L: ['Austria', 'Jordan', 'Paraguay', 'New Zealand'],
+  A: ['Mexico', 'South Africa', 'South Korea', 'Czech Republic'],
+  B: ['Canada', 'Bosnia & Herzegovina', 'Qatar', 'Switzerland'],
+  C: ['Brazil', 'Morocco', 'Scotland', 'Haiti'],
+  D: ['USA', 'Australia', 'Paraguay', 'Turkey'],
+  E: ['Germany', 'Ecuador', 'Ivory Coast', 'Curaçao'],
+  F: ['Netherlands', 'Japan', 'Sweden', 'Tunisia'],
+  G: ['Belgium', 'Egypt', 'Iran', 'New Zealand'],
+  H: ['Spain', 'Uruguay', 'Saudi Arabia', 'Cape Verde'],
+  I: ['France', 'Senegal', 'Norway', 'Iraq'],
+  J: ['Argentina', 'Algeria', 'Austria', 'Jordan'],
+  K: ['Portugal', 'Colombia', 'DR Congo', 'Uzbekistan'],
+  L: ['England', 'Croatia', 'Panama', 'Ghana'],
 };
 
 export const ALL_TEAMS = Object.values(GROUPS).flat();
 
 export const GROUP_NAMES = Object.keys(GROUPS).map((k) => `Group ${k}`);
 
-// Flag emoji map (unicode regional indicators)
 const flagMap = {
-  USA: '🇺🇸', Panama: '🇵🇦', Uruguay: '🇺🇾', Algeria: '🇩🇿',
-  Mexico: '🇲🇽', Jamaica: '🇯🇲', Ecuador: '🇪🇨', Belgium: '🇧🇪',
-  Canada: '🇨🇦', Honduras: '🇭🇳', Morocco: '🇲🇦', Croatia: '🇭🇷',
-  Brazil: '🇧🇷', Japan: '🇯🇵', 'Costa Rica': '🇨🇷', Hungary: '🇭🇺',
-  Spain: '🇪🇸', Switzerland: '🇨🇭', Egypt: '🇪🇬', Serbia: '🇷🇸',
-  Germany: '🇩🇪', Cameroon: '🇨🇲', Australia: '🇦🇺', Turkey: '🇹🇷',
-  France: '🇫🇷', Argentina: '🇦🇷', 'South Africa': '🇿🇦', Denmark: '🇩🇰',
-  Portugal: '🇵🇹', Colombia: '🇨🇴', 'South Korea': '🇰🇷', Romania: '🇷🇴',
-  Netherlands: '🇳🇱', Senegal: '🇸🇳', Iran: '🇮🇷', Venezuela: '🇻🇪',
-  England: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', Nigeria: '🇳🇬', 'Saudi Arabia': '🇸🇦', 'DR Congo': '🇨🇩',
-  Poland: '🇵🇱', Tunisia: '🇹🇳', 'Ivory Coast': '🇨🇮', Uzbekistan: '🇺🇿',
-  Austria: '🇦🇹', Jordan: '🇯🇴', Paraguay: '🇵🇾', 'New Zealand': '🇳🇿',
+  // Group A
+  Mexico: '🇲🇽', 'South Africa': '🇿🇦', 'South Korea': '🇰🇷', 'Czech Republic': '🇨🇿',
+  // Group B
+  Canada: '🇨🇦', 'Bosnia & Herzegovina': '🇧🇦', Qatar: '🇶🇦', Switzerland: '🇨🇭',
+  // Group C
+  Brazil: '🇧🇷', Morocco: '🇲🇦', Scotland: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', Haiti: '🇭🇹',
+  // Group D
+  USA: '🇺🇸', Australia: '🇦🇺', Paraguay: '🇵🇾', Turkey: '🇹🇷',
+  // Group E
+  Germany: '🇩🇪', Ecuador: '🇪🇨', 'Ivory Coast': '🇨🇮', 'Curaçao': '🇨🇼',
+  // Group F
+  Netherlands: '🇳🇱', Japan: '🇯🇵', Sweden: '🇸🇪', Tunisia: '🇹🇳',
+  // Group G
+  Belgium: '🇧🇪', Egypt: '🇪🇬', Iran: '🇮🇷', 'New Zealand': '🇳🇿',
+  // Group H
+  Spain: '🇪🇸', Uruguay: '🇺🇾', 'Saudi Arabia': '🇸🇦', 'Cape Verde': '🇨🇻',
+  // Group I
+  France: '🇫🇷', Senegal: '🇸🇳', Norway: '🇳🇴', Iraq: '🇮🇶',
+  // Group J
+  Argentina: '🇦🇷', Algeria: '🇩🇿', Austria: '🇦🇹', Jordan: '🇯🇴',
+  // Group K
+  Portugal: '🇵🇹', Colombia: '🇨🇴', 'DR Congo': '🇨🇩', Uzbekistan: '🇺🇿',
+  // Group L
+  England: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', Croatia: '🇭🇷', Panama: '🇵🇦', Ghana: '🇬🇭',
 };
 
 export function getFlag(teamName) {
@@ -46,16 +56,16 @@ export function getGroupForTeam(teamName) {
   return null;
 }
 
-// Scoring system (points per event)
+// Scoring system
 export const SCORING = {
   GROUP_WIN: 3,
   GROUP_DRAW: 1,
-  R32_WIN: 5,       // Round of 32
-  R16_WIN: 8,       // Round of 16
-  QF_WIN: 12,       // Quarterfinal
-  SF_WIN: 16,       // Semifinal
-  FINAL_WIN: 25,    // Champion
-  RUNNER_UP: 10,    // Runner-up bonus
+  R32_WIN: 5,
+  R16_WIN: 8,
+  QF_WIN: 12,
+  SF_WIN: 16,
+  FINAL_WIN: 25,
+  RUNNER_UP: 10,
 };
 
 export const SCORING_LABELS = {

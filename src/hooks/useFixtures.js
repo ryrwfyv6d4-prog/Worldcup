@@ -1,45 +1,37 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const BASE = 'https://www.thesportsdb.com/api/v1/json';
-const FREE_KEY = '123';
-const LEAGUE_ID = 4429; // FIFA World Cup
-const CACHE_KEY = 'wc_fixtures_cache_v3';
+const DATA_URL =
+  'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
+const CACHE_KEY = 'wc_fixtures_cache_v4';
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
-const STATUS_MAP = {
-  '': 'SCHEDULED',
-  'Not Started': 'SCHEDULED',
-  'Match Finished': 'FINISHED',
-  'After Extra Time': 'FINISHED',
-  'After Penalties': 'FINISHED',
-  'AOT': 'FINISHED',
-  'Penalties': 'FINISHED',
-  'In Progress': 'IN_PLAY',
-  'Half Time': 'PAUSED',
-  'Postponed': 'POSTPONED',
-  'Canceled': 'CANCELLED',
-  'Cancelled': 'CANCELLED',
-};
-
-function roundToStage(strRound, intRound) {
-  if (strRound) {
-    const r = strRound.toLowerCase();
-    if (r.includes('group')) return 'GROUP_STAGE';
-    if (r.includes('round of 32') || r.includes('1/16')) return 'LAST_32';
-    if (r.includes('round of 16') || r.includes('1/8')) return 'LAST_16';
-    if (r.includes('quarter')) return 'QUARTER_FINALS';
-    if (r.includes('semi')) return 'SEMI_FINALS';
-    if (r === 'final' || r.endsWith('- final') || r === 'world cup final') return 'FINAL';
-  }
-  // Fallback by round number (WC 2026: group=1-3, R32=4, R16=5, QF=6, SF=7, F=8)
-  const n = parseInt(intRound) || 0;
-  if (n <= 3) return 'GROUP_STAGE';
-  if (n === 4) return 'LAST_32';
-  if (n === 5) return 'LAST_16';
-  if (n === 6) return 'QUARTER_FINALS';
-  if (n === 7) return 'SEMI_FINALS';
-  if (n >= 8) return 'FINAL';
+// Map openfootball round names → internal stage codes
+function roundToStage(round) {
+  if (!round) return 'GROUP_STAGE';
+  const r = round.toLowerCase();
+  if (r.startsWith('matchday')) return 'GROUP_STAGE';
+  if (r.includes('round of 32')) return 'LAST_32';
+  if (r.includes('round of 16')) return 'LAST_16';
+  if (r.includes('quarter')) return 'QUARTER_FINALS';
+  if (r.includes('semi')) return 'SEMI_FINALS';
+  if (r === 'final') return 'FINAL';
   return 'GROUP_STAGE';
+}
+
+// Parse "HH:MM UTC±N" → ISO UTC datetime string
+function toUtcDate(dateStr, timeStr) {
+  if (!dateStr) return null;
+  if (!timeStr) return `${dateStr}T00:00:00Z`;
+
+  // e.g. "20:00 UTC-6"
+  const m = timeStr.match(/^(\d{2}):(\d{2})\s+UTC([+-]\d+)/);
+  if (!m) return `${dateStr}T00:00:00Z`;
+
+  const [, hh, mm, offset] = m;
+  const offsetMins = parseInt(offset) * 60;
+  const d = new Date(`${dateStr}T${hh}:${mm}:00Z`);
+  d.setMinutes(d.getMinutes() - offsetMins); // subtract offset to get UTC
+  return d.toISOString();
 }
 
 function readCache() {
@@ -58,7 +50,7 @@ function writeCache(data) {
   } catch { /* ignore */ }
 }
 
-export function useFixtures(apiKey) {
+export function useFixtures(apiKey) { // apiKey kept for API compat but unused
   const [fixtures, setFixtures] = useState([]);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -79,88 +71,60 @@ export function useFixtures(apiKey) {
     setLoading(true);
     setError(null);
 
-    const key = apiKey && apiKey.trim() ? apiKey.trim() : FREE_KEY;
-
     try {
-      // Fetch all season events; fall back to next+past if season returns empty
-      const seasonRes = await fetch(
-        `${BASE}/${key}/eventsseason.php?id=${LEAGUE_ID}&s=2026`
-      );
+      const res = await fetch(DATA_URL);
+      if (!res.ok) throw new Error(`Failed to load fixture data (${res.status})`);
 
-      if (!seasonRes.ok) {
-        throw new Error(`TheSportsDB error: ${seasonRes.status}`);
-      }
+      const json = await res.json();
+      const matches = json.matches || [];
 
-      const seasonJson = await seasonRes.json();
-      let events = seasonJson.events || [];
+      const normalised = matches
+        .filter((m) => {
+          // Skip placeholder knockout matches (team1/team2 are codes like "2A")
+          const isPlaceholder = /^\d+[A-L]/.test(m.team1) || m.team1.includes('/');
+          return !isPlaceholder;
+        })
+        .map((m, i) => {
+          const stage = roundToStage(m.round);
+          const utcDate = toUtcDate(m.date, m.time);
 
-      // If season endpoint returned nothing, combine next + past league events
-      if (events.length === 0) {
-        const [nextRes, pastRes] = await Promise.all([
-          fetch(`${BASE}/${key}/eventsnextleague.php?id=${LEAGUE_ID}`),
-          fetch(`${BASE}/${key}/eventspastleague.php?id=${LEAGUE_ID}`),
-        ]);
-        const [nextJson, pastJson] = await Promise.all([
-          nextRes.json(),
-          pastRes.json(),
-        ]);
-        events = [...(pastJson.events || []), ...(nextJson.events || [])];
-      }
+          const homeScore = m.score1 !== undefined && m.score1 !== null ? Number(m.score1) : null;
+          const awayScore = m.score2 !== undefined && m.score2 !== null ? Number(m.score2) : null;
+          const finished = homeScore !== null && awayScore !== null;
 
-      const normalised = events.map((m) => {
-        const statusStr = m.strStatus || '';
-        const status = STATUS_MAP[statusStr] ?? 'SCHEDULED';
-        const stage = roundToStage(m.strRound, m.intRound);
+          let winner = null;
+          if (finished) {
+            if (homeScore > awayScore) winner = 'HOME_TEAM';
+            else if (awayScore > homeScore) winner = 'AWAY_TEAM';
+            else winner = 'DRAW';
+          }
 
-        const homeScore =
-          m.intHomeScore !== null && m.intHomeScore !== ''
-            ? parseInt(m.intHomeScore)
-            : null;
-        const awayScore =
-          m.intAwayScore !== null && m.intAwayScore !== ''
-            ? parseInt(m.intAwayScore)
-            : null;
+          // Status: openfootball only marks finished by presence of score
+          const now = Date.now();
+          const matchTime = utcDate ? new Date(utcDate).getTime() : 0;
+          let status = 'SCHEDULED';
+          if (finished) status = 'FINISHED';
+          else if (matchTime > 0 && now > matchTime && now < matchTime + 2 * 60 * 60 * 1000) {
+            status = 'IN_PLAY'; // rough heuristic: within 2h of kick-off
+          }
 
-        let winner = null;
-        if (status === 'FINISHED' && homeScore !== null && awayScore !== null) {
-          if (homeScore > awayScore) winner = 'HOME_TEAM';
-          else if (awayScore > homeScore) winner = 'AWAY_TEAM';
-          else winner = 'DRAW';
-        }
+          // Group letter from "Group A" → "A"
+          const groupMatch = (m.group || '').match(/Group\s+([A-L])/i);
+          const group = groupMatch ? groupMatch[1] : null;
 
-        // Extract group letter from strRound e.g. "Group A" → "A"
-        const groupMatch = (m.strRound || '').match(/Group\s+([A-L])/i);
-        const group = groupMatch ? groupMatch[1] : null;
-
-        const utcDate =
-          m.strTimestamp ||
-          (m.dateEvent && m.strTime
-            ? `${m.dateEvent}T${m.strTime}+00:00`
-            : m.dateEvent || null);
-
-        return {
-          id: m.idEvent,
-          stage,
-          group,
-          utcDate,
-          status,
-          homeTeam: {
-            name: m.strHomeTeam,
-            crest: m.strHomeTeamBadge || null,
-            tla: '',
-          },
-          awayTeam: {
-            name: m.strAwayTeam,
-            crest: m.strAwayTeamBadge || null,
-            tla: '',
-          },
-          score: { home: homeScore, away: awayScore, winner },
-          matchday: m.strRound || `Round ${m.intRound}`,
-        };
-      });
-
-      // Sort chronologically
-      normalised.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+          return {
+            id: m.num || i,
+            stage,
+            group,
+            utcDate,
+            status,
+            homeTeam: { name: m.team1, crest: null, tla: '' },
+            awayTeam: { name: m.team2, crest: null, tla: '' },
+            score: { home: homeScore, away: awayScore, winner },
+            matchday: m.round,
+            venue: m.ground || null,
+          };
+        });
 
       const uniqueTeams = [];
       const seen = new Set();
@@ -168,7 +132,7 @@ export function useFixtures(apiKey) {
         for (const side of [m.homeTeam, m.awayTeam]) {
           if (side.name && !seen.has(side.name)) {
             seen.add(side.name);
-            uniqueTeams.push({ name: side.name, crest: side.crest });
+            uniqueTeams.push({ name: side.name, crest: null });
           }
         }
       }
@@ -180,13 +144,13 @@ export function useFixtures(apiKey) {
     } catch (err) {
       setError(
         err.message === 'Failed to fetch'
-          ? 'Network error – check your connection and try refreshing.'
+          ? 'Network error – check your connection and try again.'
           : err.message
       );
     } finally {
       setLoading(false);
     }
-  }, [apiKey]);
+  }, []);
 
   useEffect(() => {
     fetchData();
