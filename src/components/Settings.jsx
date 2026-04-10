@@ -32,10 +32,10 @@ export default function Settings({ apiKey, setApiKey, onResetDraw, onClearCache 
         <h3 className="section-title">API Key</h3>
         <p className="hint">
           Get a free key at{' '}
-          <a href="https://www.football-data.org/client/register" target="_blank" rel="noreferrer">
-            football-data.org
+          <a href="https://dashboard.api-football.com/register" target="_blank" rel="noreferrer">
+            api-football.com
           </a>
-          . The free tier includes World Cup fixtures.
+          . Free tier: 100 requests/day, includes World Cup fixtures.
         </p>
         <div className="input-row">
           <input
@@ -91,7 +91,7 @@ export default function Settings({ apiKey, setApiKey, onResetDraw, onClearCache 
       <div className="card">
         <h3 className="section-title">About</h3>
         <p className="hint">
-          World Cup Sweep 2026 · Open source · Data from football-data.org
+          World Cup Sweep 2026 · Open source · Data from api-football.com
         </p>
         <p className="hint">
           Install this app: tap the Share button in Safari then "Add to Home Screen".

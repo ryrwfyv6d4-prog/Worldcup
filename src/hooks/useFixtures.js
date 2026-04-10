@@ -1,15 +1,38 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const BASE = 'https://api.football-data.org/v4';
-const CACHE_KEY = 'wc_fixtures_cache';
+const BASE = 'https://v3.football.api-sports.io';
+const LEAGUE_ID = 1; // FIFA World Cup
+const SEASON = 2026;
+const CACHE_KEY = 'wc_fixtures_cache_v2';
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+// API-Football status short codes → our internal status
+const STATUS_MAP = {
+  NS: 'SCHEDULED', TBD: 'SCHEDULED',
+  '1H': 'IN_PLAY', '2H': 'IN_PLAY', ET: 'IN_PLAY', P: 'IN_PLAY', BT: 'IN_PLAY',
+  HT: 'PAUSED',
+  FT: 'FINISHED', AET: 'FINISHED', PEN: 'FINISHED',
+  PST: 'POSTPONED', CANC: 'CANCELLED', SUSP: 'CANCELLED',
+};
+
+function roundToStage(round) {
+  if (!round) return 'GROUP_STAGE';
+  const r = round.toLowerCase();
+  if (r.includes('group')) return 'GROUP_STAGE';
+  if (r.includes('round of 32') || r.includes('1/16')) return 'LAST_32';
+  if (r.includes('round of 16') || r.includes('1/8')) return 'LAST_16';
+  if (r.includes('quarter')) return 'QUARTER_FINALS';
+  if (r.includes('semi')) return 'SEMI_FINALS';
+  if (r === 'final' || r.includes('- final')) return 'FINAL';
+  return 'GROUP_STAGE';
+}
 
 function readCache() {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const { ts, data } = JSON.parse(raw);
-    if (Date.now() - ts < CACHE_TTL) return data;
+    if (Date.now() - ts < CACHE_TTL) return { ...data, ts };
   } catch { /* ignore */ }
   return null;
 }
@@ -46,59 +69,92 @@ export function useFixtures(apiKey) {
     setLoading(true);
     setError(null);
 
-    const headers = { 'X-Auth-Token': apiKey };
+    const headers = { 'x-apisports-key': apiKey };
 
     try {
-      const [matchRes, teamRes] = await Promise.all([
-        fetch(`${BASE}/competitions/WC/matches?season=2026`, { headers }),
-        fetch(`${BASE}/competitions/WC/teams?season=2026`, { headers }),
-      ]);
+      const res = await fetch(
+        `${BASE}/fixtures?league=${LEAGUE_ID}&season=${SEASON}`,
+        { headers }
+      );
 
-      if (!matchRes.ok) {
-        const msg = matchRes.status === 403
-          ? 'API key invalid or plan does not include World Cup data.'
-          : matchRes.status === 429
-          ? 'Rate limited – please wait a minute and try again.'
-          : `API error: ${matchRes.status}`;
+      if (!res.ok) {
+        const msg =
+          res.status === 401 || res.status === 403
+            ? 'Invalid API key. Check your key at dashboard.api-football.com.'
+            : res.status === 429
+            ? 'Rate limited – please wait a minute and try again.'
+            : `API error: ${res.status}`;
         throw new Error(msg);
       }
 
-      const matchData = await matchRes.json();
-      const teamData = teamRes.ok ? await teamRes.json() : { teams: [] };
+      const json = await res.json();
 
-      const normalised = (matchData.matches || []).map((m) => ({
-        id: m.id,
-        stage: m.stage,
-        group: m.group,
-        utcDate: m.utcDate,
-        status: m.status,
-        homeTeam: { name: m.homeTeam.name, crest: m.homeTeam.crest, tla: m.homeTeam.tla },
-        awayTeam: { name: m.awayTeam.name, crest: m.awayTeam.crest, tla: m.awayTeam.tla },
-        score: {
-          home: m.score?.fullTime?.home ?? null,
-          away: m.score?.fullTime?.away ?? null,
-          winner: m.score?.winner ?? null,
-        },
-        matchday: m.matchday,
-      }));
+      // API-Football wraps errors in the response body even on 200
+      if (json.errors && Object.keys(json.errors).length > 0) {
+        const errMsg = Object.values(json.errors)[0];
+        throw new Error(`API error: ${errMsg}`);
+      }
 
-      const normalTeams = (teamData.teams || []).map((t) => ({
-        id: t.id,
-        name: t.name,
-        shortName: t.shortName,
-        tla: t.tla,
-        crest: t.crest,
-        group: t.group,
-      }));
+      const normalised = (json.response || []).map((m) => {
+        const statusShort = m.fixture.status.short;
+        const status = STATUS_MAP[statusShort] || 'SCHEDULED';
+        const stage = roundToStage(m.league.round);
+        const homeGoals = m.goals.home;
+        const awayGoals = m.goals.away;
 
-      writeCache({ fixtures: normalised, teams: normalTeams, ts: Date.now() });
+        let winner = null;
+        if (status === 'FINISHED' && homeGoals !== null && awayGoals !== null) {
+          if (homeGoals > awayGoals) winner = 'HOME_TEAM';
+          else if (awayGoals > homeGoals) winner = 'AWAY_TEAM';
+          else winner = 'DRAW';
+        }
+
+        // Extract group letter from round name e.g. "Group A" → "A"
+        const groupMatch = m.league.round.match(/Group\s+([A-L])/i);
+        const group = groupMatch ? groupMatch[1] : null;
+
+        return {
+          id: m.fixture.id,
+          stage,
+          group,
+          utcDate: m.fixture.date,
+          status,
+          elapsed: m.fixture.status.elapsed,
+          homeTeam: {
+            name: m.teams.home.name,
+            crest: m.teams.home.logo,
+            tla: '',
+          },
+          awayTeam: {
+            name: m.teams.away.name,
+            crest: m.teams.away.logo,
+            tla: '',
+          },
+          score: { home: homeGoals, away: awayGoals, winner },
+          matchday: m.league.round,
+        };
+      });
+
+      const uniqueTeams = [];
+      const seen = new Set();
+      for (const m of normalised) {
+        for (const side of [m.homeTeam, m.awayTeam]) {
+          if (!seen.has(side.name)) {
+            seen.add(side.name);
+            uniqueTeams.push({ name: side.name, crest: side.crest });
+          }
+        }
+      }
+
+      writeCache({ fixtures: normalised, teams: uniqueTeams });
       setFixtures(normalised);
-      setTeams(normalTeams);
+      setTeams(uniqueTeams);
       setLastFetched(Date.now());
     } catch (err) {
-      const msg = err.message === 'Failed to fetch'
-        ? 'CORS error: add this site\'s domain to your Allowed Origins at football-data.org/client/profile, then refresh.'
-        : err.message;
+      const msg =
+        err.message === 'Failed to fetch'
+          ? 'Network error – check your API key is correct and try again. (CORS: make sure requests from this domain are allowed in your api-football.com account.)'
+          : err.message;
       setError(msg);
     } finally {
       setLoading(false);
