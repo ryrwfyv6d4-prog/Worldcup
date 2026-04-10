@@ -17,7 +17,7 @@ function formatCountdown(ms) {
   return `${mins}m`;
 }
 
-function NextMatch({ fixtures }) {
+function NextMatch({ fixtures, onSelectTeam }) {
   const [, tick] = useState(0);
 
   const next = useMemo(() => {
@@ -41,23 +41,20 @@ function NextMatch({ fixtures }) {
   const away = normaliseTeamName(next.awayTeam.name);
   const ms = next.ts - Date.now();
   const kickoff = new Date(next.ts);
-  const dateStr = kickoff.toLocaleDateString(undefined, {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  });
-  const timeStr = kickoff.toLocaleTimeString(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const dateStr = kickoff.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+  const timeStr = kickoff.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
   return (
     <div className="next-match">
       <div className="next-match-label">Next up</div>
       <div className="next-match-teams">
-        <span>{getFlag(home)} {home}</span>
+        <button className="team-btn" style={{ color: 'var(--text-on-dark)', fontWeight: 700, fontSize: '0.95rem' }} onClick={() => onSelectTeam(home)}>
+          {getFlag(home)} {home}
+        </button>
         <span className="next-match-vs">vs</span>
-        <span>{getFlag(away)} {away}</span>
+        <button className="team-btn" style={{ color: 'var(--text-on-dark)', fontWeight: 700, fontSize: '0.95rem' }} onClick={() => onSelectTeam(away)}>
+          {getFlag(away)} {away}
+        </button>
       </div>
       <div className="next-match-meta">{dateStr} · {timeStr}</div>
       <div className="next-match-countdown">{formatCountdown(ms)}</div>
@@ -65,7 +62,7 @@ function NextMatch({ fixtures }) {
   );
 }
 
-export default function Leaderboard({ assignments, drawType, fixtures, apiError, lastFetched }) {
+export default function Leaderboard({ assignments, drawType, fixtures, apiError, lastFetched, onSelectTeam }) {
   const [expanded, setExpanded] = useState(null);
 
   const board = useMemo(
@@ -79,10 +76,8 @@ export default function Leaderboard({ assignments, drawType, fixtures, apiError,
   if (!hasAssignments) {
     return (
       <div className="page">
-        <div className="page-header">
-          <h2>Standings</h2>
-        </div>
-        <NextMatch fixtures={fixtures} />
+        <div className="page-header"><h2>Standings</h2></div>
+        <NextMatch fixtures={fixtures} onSelectTeam={onSelectTeam} />
         <div className="empty-state">
           <div className="empty-icon">🏆</div>
           <p>No draw yet — head to the Draw tab to set up your sweep.</p>
@@ -97,9 +92,7 @@ export default function Leaderboard({ assignments, drawType, fixtures, apiError,
         <h2>Standings</h2>
         {!hasResults && (
           <p className="subtitle">
-            {apiError
-              ? 'Points will update once match results are loaded.'
-              : 'Waiting for first results…'}
+            {apiError ? 'Points will update once results load.' : 'Waiting for first results…'}
           </p>
         )}
         {lastFetched && (
@@ -109,7 +102,7 @@ export default function Leaderboard({ assignments, drawType, fixtures, apiError,
         )}
       </div>
 
-      <NextMatch fixtures={fixtures} />
+      <NextMatch fixtures={fixtures} onSelectTeam={onSelectTeam} />
 
       <div className="leaderboard">
         {board.map((entry, i) => (
@@ -126,9 +119,13 @@ export default function Leaderboard({ assignments, drawType, fixtures, apiError,
                 <span className="lb-name">{entry.name}</span>
                 <span className="lb-teams">
                   {entry.teams.slice(0, 2).map((t) => (
-                    <span key={t} className="team-chip">
+                    <button
+                      key={t}
+                      className="team-chip team-btn"
+                      onClick={(e) => { e.stopPropagation(); onSelectTeam(t); }}
+                    >
                       {getFlag(t)} {t}
-                    </span>
+                    </button>
                   ))}
                   {entry.teams.length > 2 && (
                     <span className="lb-more">+{entry.teams.length - 2} more</span>
@@ -142,20 +139,17 @@ export default function Leaderboard({ assignments, drawType, fixtures, apiError,
               <div className="lb-breakdown">
                 <table className="breakdown-table">
                   <thead>
-                    <tr>
-                      <th>Team</th>
-                      <th>Match</th>
-                      <th>Result</th>
-                      <th>+pts</th>
-                    </tr>
+                    <tr><th>Team</th><th>Match</th><th>Result</th><th>+pts</th></tr>
                   </thead>
                   <tbody>
                     {entry.breakdown.map((b, j) => (
                       <tr key={j}>
-                        <td>{getFlag(b.team)} {b.team}</td>
-                        <td className="small-text">
-                          {b.match.homeTeam.name} v {b.match.awayTeam.name}
+                        <td>
+                          <button className="team-btn" onClick={(e) => { e.stopPropagation(); onSelectTeam(b.team); }}>
+                            {getFlag(b.team)} {b.team}
+                          </button>
                         </td>
+                        <td className="small-text">{b.match.homeTeam.name} v {b.match.awayTeam.name}</td>
                         <td className="small-text">{b.reason}</td>
                         <td className="pts-cell">+{b.pts}</td>
                       </tr>
@@ -173,14 +167,16 @@ export default function Leaderboard({ assignments, drawType, fixtures, apiError,
 
             {expanded === entry.name && entry.teams.length > 2 && (
               <div className="lb-breakdown">
-                <strong className="small-text" style={{ display: 'block', marginBottom: 6 }}>
-                  All teams
-                </strong>
+                <strong className="small-text" style={{ display: 'block', marginBottom: 6 }}>All teams</strong>
                 <div className="team-list">
                   {entry.teams.map((t) => (
-                    <span key={t} className="badge sm">
+                    <button
+                      key={t}
+                      className="badge sm team-btn"
+                      onClick={(e) => { e.stopPropagation(); onSelectTeam(t); }}
+                    >
                       {getFlag(t)} {t}
-                    </span>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -189,7 +185,12 @@ export default function Leaderboard({ assignments, drawType, fixtures, apiError,
         ))}
       </div>
 
-      <ActivityFeed fixtures={fixtures} assignments={assignments} drawType={drawType} />
+      <ActivityFeed
+        fixtures={fixtures}
+        assignments={assignments}
+        drawType={drawType}
+        onSelectTeam={onSelectTeam}
+      />
 
       <div className="card mt">
         <h3 className="section-title">Scoring System</h3>

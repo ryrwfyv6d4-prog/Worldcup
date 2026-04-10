@@ -2,19 +2,11 @@ import { useState, useMemo, useEffect } from 'react';
 import { getFlag } from '../data/worldcup2026.js';
 import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
 
-const STAGE_ORDER = [
-  'GROUP_STAGE', 'LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL',
-];
-
+const STAGE_ORDER = ['GROUP_STAGE', 'LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL'];
 const STAGE_LABELS = {
-  GROUP_STAGE: 'Group Stage',
-  LAST_32: 'R32',
-  LAST_16: 'R16',
-  QUARTER_FINALS: 'QF',
-  SEMI_FINALS: 'SF',
-  FINAL: 'Final',
+  GROUP_STAGE: 'Group Stage', LAST_32: 'R32', LAST_16: 'R16',
+  QUARTER_FINALS: 'QF', SEMI_FINALS: 'SF', FINAL: 'Final',
 };
-
 const STATUS_BADGE = {
   FINISHED: { label: 'FT', cls: 'badge-done' },
   IN_PLAY: { label: 'LIVE', cls: 'badge-live' },
@@ -23,26 +15,21 @@ const STATUS_BADGE = {
   TIMED: { label: 'vs', cls: 'badge-upcoming' },
   POSTPONED: { label: 'PPD', cls: 'badge-ppd' },
 };
-
 const PAGE_SIZE = 15;
 
 function formatDate(utcDate) {
   if (!utcDate) return '';
-  const d = new Date(utcDate);
-  return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+  return new Date(utcDate).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 }
-
 function formatTime(utcDate) {
   if (!utcDate) return '';
-  const d = new Date(utcDate);
-  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  return new Date(utcDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
-function MatchCard({ match, ownerMap }) {
+function MatchCard({ match, ownerMap, onSelectTeam }) {
   const home = normaliseTeamName(match.homeTeam.name);
   const away = normaliseTeamName(match.awayTeam.name);
   const { label, cls } = STATUS_BADGE[match.status] || { label: match.status, cls: 'badge-upcoming' };
-
   const homeOwner = ownerMap[home];
   const awayOwner = ownerMap[away];
   const isLive = match.status === 'IN_PLAY' || match.status === 'PAUSED';
@@ -57,11 +44,13 @@ function MatchCard({ match, ownerMap }) {
       </div>
       <div className="match-row">
         <div className={`team-side ${homeOwner ? 'owned' : ''}`}>
-          <span className="flag">{getFlag(home)}</span>
-          <div className="team-col">
-            <span className="team-name">{home || match.homeTeam.name}</span>
-            {homeOwner && <span className="owner-tag">({homeOwner})</span>}
-          </div>
+          <button className="team-btn" onClick={() => onSelectTeam(home)} style={{ gap: 6 }}>
+            <span className="flag">{getFlag(home)}</span>
+            <div className="team-col">
+              <span className="team-name">{home || match.homeTeam.name}</span>
+              {homeOwner && <span className="owner-tag">({homeOwner})</span>}
+            </div>
+          </button>
         </div>
 
         <div className="score-center">
@@ -75,28 +64,26 @@ function MatchCard({ match, ownerMap }) {
         </div>
 
         <div className={`team-side right ${awayOwner ? 'owned' : ''}`}>
-          <span className="flag">{getFlag(away)}</span>
-          <div className="team-col">
-            <span className="team-name">{away || match.awayTeam.name}</span>
-            {awayOwner && <span className="owner-tag">({awayOwner})</span>}
-          </div>
+          <button className="team-btn" onClick={() => onSelectTeam(away)} style={{ gap: 6, flexDirection: 'row-reverse' }}>
+            <span className="flag">{getFlag(away)}</span>
+            <div className="team-col" style={{ alignItems: 'flex-end' }}>
+              <span className="team-name">{away || match.awayTeam.name}</span>
+              {awayOwner && <span className="owner-tag">({awayOwner})</span>}
+            </div>
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType }) {
+export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType, onSelectTeam }) {
   const [stageFilter, setStageFilter] = useState('ALL');
   const [showFinished, setShowFinished] = useState(true);
   const [limit, setLimit] = useState(PAGE_SIZE);
 
-  // Reset pagination when filter changes
-  useEffect(() => {
-    setLimit(PAGE_SIZE);
-  }, [stageFilter, showFinished]);
+  useEffect(() => { setLimit(PAGE_SIZE); }, [stageFilter, showFinished]);
 
-  // Map team → participant name for owner tags
   const ownerMap = useMemo(() => {
     const map = {};
     for (const name of Object.keys(assignments)) {
@@ -118,7 +105,6 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
     return [...list].sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
   }, [fixtures, stageFilter, showFinished]);
 
-  // Paginate — only render up to `limit` to avoid 10s freeze on 104 cards
   const visible = useMemo(() => filtered.slice(0, limit), [filtered, limit]);
 
   const grouped = useMemo(() => {
@@ -153,28 +139,15 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
       {fixtures.length > 0 && (
         <div className="filter-bar">
           <div className="stage-filters">
-            <button
-              className={`filter-btn ${stageFilter === 'ALL' ? 'active' : ''}`}
-              onClick={() => setStageFilter('ALL')}
-            >
-              All
-            </button>
+            <button className={`filter-btn ${stageFilter === 'ALL' ? 'active' : ''}`} onClick={() => setStageFilter('ALL')}>All</button>
             {stages.map((s) => (
-              <button
-                key={s}
-                className={`filter-btn ${stageFilter === s ? 'active' : ''}`}
-                onClick={() => setStageFilter(s)}
-              >
+              <button key={s} className={`filter-btn ${stageFilter === s ? 'active' : ''}`} onClick={() => setStageFilter(s)}>
                 {STAGE_LABELS[s] || s}
               </button>
             ))}
           </div>
           <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={showFinished}
-              onChange={(e) => setShowFinished(e.target.checked)}
-            />
+            <input type="checkbox" checked={showFinished} onChange={(e) => setShowFinished(e.target.checked)} />
             <span>Show finished</span>
           </label>
         </div>
@@ -183,11 +156,7 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
       {fixtures.length === 0 && !loading && (
         <div className="empty-state">
           <div className="empty-icon">📅</div>
-          {error ? (
-            <p>{error}</p>
-          ) : (
-            <p>No fixtures found. Pull to refresh or check your connection.</p>
-          )}
+          <p>{error || 'No fixtures found. Pull to refresh or check your connection.'}</p>
         </div>
       )}
 
@@ -202,7 +171,7 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         <div key={day} className="day-group">
           <div className="day-header">{day}</div>
           {matches.map((m) => (
-            <MatchCard key={m.id} match={m} ownerMap={ownerMap} />
+            <MatchCard key={m.id} match={m} ownerMap={ownerMap} onSelectTeam={onSelectTeam} />
           ))}
         </div>
       ))}

@@ -40,6 +40,7 @@ export default function Draw({
   setDrawType,
   drawLocked,
   setDrawLocked,
+  onSelectTeam,
 }) {
   const [nameInput, setNameInput] = useState(participants.join('\n'));
   const [animating, setAnimating] = useState(false);
@@ -176,9 +177,17 @@ export default function Draw({
               </div>
               <div className="result-items">
                 {items.map((item) => (
-                  <span key={item} className="badge">
-                    {drawType === 'teams' ? getFlag(item) : '🗂️'} {item}
-                  </span>
+                  drawType === 'teams' ? (
+                    <button
+                      key={item}
+                      className="badge team-btn"
+                      onClick={(e) => { e.stopPropagation(); onSelectTeam(item); }}
+                    >
+                      {getFlag(item)} {item}
+                    </button>
+                  ) : (
+                    <span key={item} className="badge">🗂️ {item}</span>
+                  )
                 ))}
               </div>
               {drawType === 'groups' && expandedCard === name && (
@@ -190,9 +199,13 @@ export default function Draw({
                         <strong>{g}</strong>
                         <div className="team-list">
                           {(GROUPS[letter] || []).map((t) => (
-                            <span key={t} className="badge sm">
+                            <button
+                              key={t}
+                              className="badge sm team-btn"
+                              onClick={(e) => { e.stopPropagation(); onSelectTeam(t); }}
+                            >
                               {getFlag(t)} {t}
-                            </span>
+                            </button>
                           ))}
                         </div>
                       </div>
