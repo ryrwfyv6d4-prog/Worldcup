@@ -96,7 +96,10 @@ export function useFixtures(apiKey) {
       setTeams(normalTeams);
       setLastFetched(Date.now());
     } catch (err) {
-      setError(err.message);
+      const msg = err.message === 'Failed to fetch'
+        ? 'CORS error: add this site\'s domain to your Allowed Origins at football-data.org/client/profile, then refresh.'
+        : err.message;
+      setError(msg);
     } finally {
       setLoading(false);
     }
