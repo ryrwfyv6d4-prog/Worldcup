@@ -11,6 +11,13 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>World Cup Sweep 2026</title>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(r) { if (!r.scope.includes('/Worldcup/')) r.unregister(); });
+      });
+    }
+  </script>
   </head>
   <body>
     <div id="root"></div>
