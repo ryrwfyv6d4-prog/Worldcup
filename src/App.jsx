@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Navigation from './components/Navigation.jsx';
 import Draw from './components/Draw.jsx';
 import Leaderboard from './components/Leaderboard.jsx';
@@ -22,10 +22,10 @@ export default function App() {
   const { fixtures, loading, error, lastFetched, refresh } = useFixtures();
 
   // Cloud state sync — load draw on mount, push on every change
-  const cloudLoaded = useRef(false);
+  const [cloudLoaded, setCloudLoaded] = useState(false);
 
   useEffect(() => {
-    if (!WORKER_URL) { cloudLoaded.current = true; return; }
+    if (!WORKER_URL) { setCloudLoaded(true); return; }
     fetch(`${WORKER_URL}/state`)
       .then(r => r.ok ? r.json() : null)
       .then(s => {
@@ -37,17 +37,17 @@ export default function App() {
         }
       })
       .catch(() => {})
-      .finally(() => { cloudLoaded.current = true; });
+      .finally(() => { setCloudLoaded(true); });
   }, []);
 
   useEffect(() => {
-    if (!cloudLoaded.current || !WORKER_URL) return;
+    if (!cloudLoaded || !WORKER_URL) return;
     fetch(`${WORKER_URL}/state`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ participants, assignments, drawType, drawLocked }),
     }).catch(() => {});
-  }, [participants, assignments, drawType, drawLocked]);
+  }, [cloudLoaded, participants, assignments, drawType, drawLocked]);
 
   const handleResetDraw = () => {
     setParticipants([]);

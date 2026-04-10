@@ -14,7 +14,7 @@ function json(data, status = 200) {
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: CORS_HEADERS });
+      return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
 
     try {
@@ -40,8 +40,9 @@ export default {
       // GET /photos — list all photos, newest first
       if (request.method === 'GET' && path === '/photos') {
         const list = await env.WALL.list({ prefix: 'photos/' });
+        const jsonObjects = list.objects.filter((obj) => obj.key.endsWith('.json'));
         const photos = await Promise.all(
-          list.objects.map(async (obj) => {
+          jsonObjects.map(async (obj) => {
             const item = await env.WALL.get(obj.key);
             return item ? JSON.parse(await item.text()) : null;
           })
@@ -49,27 +50,54 @@ export default {
         return json(photos.filter(Boolean).sort((a, b) => b.ts - a.ts));
       }
 
-      // POST /photos — store a new photo
+      // POST /photos — binary image body, metadata as query params
+      // Avoids large JSON bodies that can fail on iOS Safari
       if (request.method === 'POST' && path === '/photos') {
-        const body = await request.json();
+        const caption = url.searchParams.get('caption') || '';
+        const person = url.searchParams.get('person') || '';
         const id = Date.now();
-        const photo = { id, ts: id, ...body };
+        const contentType = request.headers.get('Content-Type') || 'image/jpeg';
+        const imageData = await request.arrayBuffer();
+
+        await env.WALL.put(`photos/${id}.img`, imageData, {
+          httpMetadata: { contentType },
+        });
+
+        const photo = { id, ts: id, caption, person };
         await env.WALL.put(`photos/${id}.json`, JSON.stringify(photo), {
           httpMetadata: { contentType: 'application/json' },
         });
+
         return json(photo, 201);
+      }
+
+      // GET /photos/:id/image — serve raw image from R2
+      const imageMatch = path.match(/^\/photos\/(\d+)\/image$/);
+      if (request.method === 'GET' && imageMatch) {
+        const item = await env.WALL.get(`photos/${imageMatch[1]}.img`);
+        if (!item) return json({ error: 'Not found' }, 404);
+        return new Response(item.body, {
+          headers: {
+            ...CORS_HEADERS,
+            'Content-Type': item.httpMetadata?.contentType || 'image/jpeg',
+            'Cache-Control': 'public, max-age=31536000, immutable',
+          },
+        });
       }
 
       // DELETE /photos/:id
       const deleteMatch = path.match(/^\/photos\/(\d+)$/);
       if (request.method === 'DELETE' && deleteMatch) {
-        await env.WALL.delete(`photos/${deleteMatch[1]}.json`);
+        const id = deleteMatch[1];
+        await Promise.all([
+          env.WALL.delete(`photos/${id}.json`),
+          env.WALL.delete(`photos/${id}.img`),
+        ]);
         return json({ ok: true });
       }
 
       return json({ error: 'Not found' }, 404);
     } catch (e) {
-      // Always return CORS headers so the browser sees the error, not a CORS failure
       return json({ error: e.message }, 500);
     }
   },

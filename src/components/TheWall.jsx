@@ -10,11 +10,12 @@ async function apiGet(path) {
   if (!res.ok) throw new Error(`${res.status}`);
   return res.json();
 }
-async function apiPost(path, body) {
-  const res = await fetch(`${WORKER_URL}${path}`, {
+async function apiUploadPhoto(caption, person, blob) {
+  const params = new URLSearchParams({ caption, person });
+  const res = await fetch(`${WORKER_URL}/photos?${params}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: { 'Content-Type': blob.type || 'image/jpeg' },
+    body: blob,
   });
   if (!res.ok) throw new Error(`${res.status}`);
   return res.json();
@@ -24,27 +25,28 @@ async function apiDelete(path) {
   if (!res.ok) throw new Error(`${res.status}`);
 }
 
-// Resize image via canvas to keep payload size sane (~100KB per photo)
-function resizeImage(file, maxPx = 720, quality = 0.72) {
+// Resize image via canvas and return a Blob (avoids large base64 JSON bodies on iOS Safari)
+function resizeImageToBlob(file, maxPx = 720, quality = 0.72) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onerror = reject;
-      img.onload = () => {
-        const ratio = Math.min(maxPx / img.width, maxPx / img.height, 1);
-        const w = Math.round(img.width * ratio);
-        const h = Math.round(img.height * ratio);
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.src = e.target.result;
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Image load failed')); };
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const ratio = Math.min(maxPx / img.width, maxPx / img.height, 1);
+      const w = Math.round(img.width * ratio);
+      const h = Math.round(img.height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('toBlob failed'))),
+        'image/jpeg',
+        quality
+      );
     };
-    reader.readAsDataURL(file);
+    img.src = objectUrl;
   });
 }
 
@@ -64,7 +66,7 @@ function PhotoCard({ photo, onDelete }) {
   return (
     <div className="polaroid" style={tiltStyle(photo.id)}>
       <div className="polaroid-img-wrap">
-        <img src={photo.dataUrl} alt={photo.caption} className="polaroid-img" />
+        <img src={photo.dataUrl || photo.imageUrl} alt={photo.caption} className="polaroid-img" />
       </div>
       <div className="polaroid-body">
         {photo.caption && <p className="polaroid-caption">{photo.caption}</p>}
@@ -98,7 +100,7 @@ function AddBitForm({ participants, onAdd, onCancel }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleFile = async (e) => {
+  const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
@@ -111,12 +113,12 @@ function AddBitForm({ participants, onAdd, onCancel }) {
   };
 
   const handleSubmit = async () => {
-    if (!rawFile && !preview) { setError('Pick a photo first.'); return; }
+    if (!rawFile) { setError('Pick a photo first.'); return; }
     setSaving(true);
     setError(null);
     try {
-      const dataUrl = await resizeImage(rawFile);
-      await onAdd({ caption: caption.trim(), person: person.trim(), dataUrl });
+      const blob = await resizeImageToBlob(rawFile);
+      await onAdd({ caption: caption.trim(), person: person.trim(), rawBlob: blob });
     } catch {
       setError('Could not process image. Try a smaller photo.');
     } finally {
@@ -218,23 +220,32 @@ export default function TheWall({ participants }) {
     if (!useCloud) return;
     setCloudLoading(true);
     apiGet('/photos')
-      .then((data) => { setCloudPhotos(data); setCloudLoading(false); })
+      .then((data) => {
+        setCloudPhotos(data.map((p) => ({ ...p, imageUrl: `${WORKER_URL}/photos/${p.id}/image` })));
+        setCloudLoading(false);
+      })
       .catch((e) => { setCloudError(`Could not load photos: ${e.message}`); setCloudLoading(false); });
   }, [useCloud]);
 
   const photos = useCloud ? (cloudPhotos ?? []) : localPhotos;
 
-  const handleAdd = async (bit) => {
+  const handleAdd = async ({ caption, person, rawBlob }) => {
     if (useCloud) {
       try {
-        const photo = await apiPost('/photos', bit);
-        setCloudPhotos((prev) => [photo, ...(prev ?? [])]);
+        const photo = await apiUploadPhoto(caption, person, rawBlob);
+        const imageUrl = `${WORKER_URL}/photos/${photo.id}/image`;
+        setCloudPhotos((prev) => [{ ...photo, imageUrl }, ...(prev ?? [])]);
       } catch (e) {
         setCloudError(`Upload failed: ${e.message}`);
       }
     } else {
-      const newPhoto = { id: Date.now(), ts: Date.now(), ...bit };
-      setLocalPhotos((prev) => [newPhoto, ...prev]);
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(rawBlob);
+      });
+      setLocalPhotos((prev) => [{ id: Date.now(), ts: Date.now(), caption, person, dataUrl }, ...prev]);
     }
     setAdding(false);
   };
