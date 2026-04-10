@@ -21,26 +21,31 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
-      # Deploy the Cloudflare Worker + R2 bucket if the token is available.
-      # Add CLOUDFLARE_API_TOKEN as a repository secret to enable cloud photo storage.
+      # Deploy the Cloudflare Worker + R2 bucket
       - name: Deploy Cloudflare Worker
         id: worker
         working-directory: worker
         run: |
           npx wrangler r2 bucket create dans-shed-wall 2>/dev/null || true
-          OUTPUT=$(npx wrangler deploy 2>&1)
-          echo "$OUTPUT"
-          URL=$(echo "$OUTPUT" | grep -oE 'https://[^[:space:]]+\.workers\.dev' | head -1)
-          if [ -n "$URL" ]; then
+          npx wrangler deploy 2>&1
+
+          # Get workers.dev subdomain from Cloudflare API (more reliable than parsing wrangler output)
+          SUBDOMAIN=$(curl -sf \
+            "https://api.cloudflare.com/client/v4/accounts/1f0d20dfb82aac0372345af33233ed89/workers/subdomain" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            | jq -r '.result.subdomain // empty')
+
+          if [ -n "$SUBDOMAIN" ]; then
+            URL="https://dans-shed-wall.${SUBDOMAIN}.workers.dev"
             echo "url=$URL" >> "$GITHUB_OUTPUT"
-            echo "Worker deployed at: $URL"
+            echo "Worker URL: $URL"
+          else
+            echo "Could not determine workers subdomain"
           fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         continue-on-error: true
 
-      # Build the React app. VITE_WALL_API_URL bakes the Worker URL into the bundle.
-      # If the Worker isn't deployed yet, falls back to localStorage automatically.
       - name: Build React app
         run: npm run build
         env:
