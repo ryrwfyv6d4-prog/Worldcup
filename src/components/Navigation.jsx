@@ -1,8 +1,8 @@
 export default function Navigation({ tab, setTab }) {
   const tabs = [
-    { id: 'draw', label: 'Draw', icon: '🎲' },
     { id: 'leaderboard', label: 'Standings', icon: '🏆' },
     { id: 'fixtures', label: 'Fixtures', icon: '📅' },
+    { id: 'draw', label: 'Draw', icon: '🎲' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
   ];
 

@@ -8,10 +8,11 @@ import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { useFixtures } from './hooks/useFixtures.js';
 
 export default function App() {
-  const [tab, setTab] = useState('draw');
+  const [tab, setTab] = useState('leaderboard');
   const [participants, setParticipants] = useLocalStorage('sweep_participants', []);
   const [assignments, setAssignments] = useLocalStorage('sweep_assignments', {});
   const [drawType, setDrawType] = useLocalStorage('sweep_draw_type', 'teams');
+  const [drawLocked, setDrawLocked] = useLocalStorage('sweep_draw_locked', false);
   const [apiKey, setApiKey] = useLocalStorage('sweep_api_key', '');
 
   const { fixtures, loading, error, lastFetched, refresh } = useFixtures(apiKey);
@@ -19,9 +20,11 @@ export default function App() {
   const handleResetDraw = () => {
     setParticipants([]);
     setAssignments({});
+    setDrawLocked(false);
   };
 
   const handleClearCache = () => {
+    localStorage.removeItem('wc_fixtures_cache_v4');
     localStorage.removeItem('wc_fixtures_cache');
     refresh();
   };
@@ -29,14 +32,25 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <span className="header-icon">⚽</span>
-        <div>
-          <h1 className="app-title">World Cup Sweep</h1>
-          <p className="app-year">FIFA 2026</p>
+        <span className="header-icon">🏟️</span>
+        <div className="header-text">
+          <h1 className="app-title">
+            DAN'S <span className="gold">SHED</span>
+          </h1>
+          <p className="app-year">World Cup Sweep '26</p>
         </div>
       </header>
 
       <main className="main">
+        {tab === 'leaderboard' && (
+          <Leaderboard
+            assignments={assignments}
+            drawType={drawType}
+            fixtures={fixtures}
+            apiError={error}
+            lastFetched={lastFetched}
+          />
+        )}
         {tab === 'draw' && (
           <Draw
             participants={participants}
@@ -45,14 +59,8 @@ export default function App() {
             setAssignments={setAssignments}
             drawType={drawType}
             setDrawType={setDrawType}
-          />
-        )}
-        {tab === 'leaderboard' && (
-          <Leaderboard
-            assignments={assignments}
-            drawType={drawType}
-            fixtures={fixtures}
-            apiError={error}
+            drawLocked={drawLocked}
+            setDrawLocked={setDrawLocked}
           />
         )}
         {tab === 'fixtures' && (

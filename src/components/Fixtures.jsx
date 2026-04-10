@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { getFlag } from '../data/worldcup2026.js';
-import { normaliseTeamName } from '../utils/scoring.js';
+import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
 
 const STAGE_ORDER = [
   'GROUP_STAGE', 'LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL',
@@ -8,10 +8,10 @@ const STAGE_ORDER = [
 
 const STAGE_LABELS = {
   GROUP_STAGE: 'Group Stage',
-  LAST_32: 'Round of 32',
-  LAST_16: 'Round of 16',
-  QUARTER_FINALS: 'Quarter-finals',
-  SEMI_FINALS: 'Semi-finals',
+  LAST_32: 'R32',
+  LAST_16: 'R16',
+  QUARTER_FINALS: 'QF',
+  SEMI_FINALS: 'SF',
   FINAL: 'Final',
 };
 
@@ -23,6 +23,8 @@ const STATUS_BADGE = {
   TIMED: { label: 'vs', cls: 'badge-upcoming' },
   POSTPONED: { label: 'PPD', cls: 'badge-ppd' },
 };
+
+const PAGE_SIZE = 15;
 
 function formatDate(utcDate) {
   if (!utcDate) return '';
@@ -36,32 +38,34 @@ function formatTime(utcDate) {
   return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
-function MatchCard({ match, assignments, drawType }) {
+function MatchCard({ match, ownerMap }) {
   const home = normaliseTeamName(match.homeTeam.name);
   const away = normaliseTeamName(match.awayTeam.name);
   const { label, cls } = STATUS_BADGE[match.status] || { label: match.status, cls: 'badge-upcoming' };
 
-  // Highlight teams owned by any participant
-  const ownedTeams = Object.values(assignments).flat();
-  const homeOwned = ownedTeams.includes(home);
-  const awayOwned = ownedTeams.includes(away);
+  const homeOwner = ownerMap[home];
+  const awayOwner = ownerMap[away];
+  const isLive = match.status === 'IN_PLAY' || match.status === 'PAUSED';
+  const showScore = match.status === 'FINISHED' || isLive;
+  const hasOwner = !!(homeOwner || awayOwner);
 
   return (
-    <div className={`match-card ${match.status === 'IN_PLAY' || match.status === 'PAUSED' ? 'live' : ''}`}>
+    <div className={`match-card ${isLive ? 'live' : ''} ${hasOwner && !isLive ? 'has-owner' : ''}`}>
       <div className="match-date">
-        {formatDate(match.utcDate)} · {formatTime(match.utcDate)}
+        {formatTime(match.utcDate)}
         {match.group && <span className="match-group">{match.group.replace('GROUP_', 'Group ')}</span>}
       </div>
       <div className="match-row">
-        <div className={`team-side ${homeOwned ? 'owned' : ''}`}>
-          {match.homeTeam.crest
-            ? <img src={match.homeTeam.crest} alt="" className="crest" loading="lazy" />
-            : <span className="flag">{getFlag(home)}</span>}
-          <span className="team-name">{home || match.homeTeam.name}</span>
+        <div className={`team-side ${homeOwner ? 'owned' : ''}`}>
+          <span className="flag">{getFlag(home)}</span>
+          <div className="team-col">
+            <span className="team-name">{home || match.homeTeam.name}</span>
+            {homeOwner && <span className="owner-tag">({homeOwner})</span>}
+          </div>
         </div>
 
         <div className="score-center">
-          {match.status === 'FINISHED' || match.status === 'IN_PLAY' || match.status === 'PAUSED' ? (
+          {showScore ? (
             <span className="score">
               {match.score.home ?? '–'} <span className={`status-badge ${cls}`}>{label}</span> {match.score.away ?? '–'}
             </span>
@@ -70,11 +74,12 @@ function MatchCard({ match, assignments, drawType }) {
           )}
         </div>
 
-        <div className={`team-side right ${awayOwned ? 'owned' : ''}`}>
-          <span className="team-name">{away || match.awayTeam.name}</span>
-          {match.awayTeam.crest
-            ? <img src={match.awayTeam.crest} alt="" className="crest" loading="lazy" />
-            : <span className="flag">{getFlag(away)}</span>}
+        <div className={`team-side right ${awayOwner ? 'owned' : ''}`}>
+          <span className="flag">{getFlag(away)}</span>
+          <div className="team-col">
+            <span className="team-name">{away || match.awayTeam.name}</span>
+            {awayOwner && <span className="owner-tag">({awayOwner})</span>}
+          </div>
         </div>
       </div>
     </div>
@@ -84,6 +89,22 @@ function MatchCard({ match, assignments, drawType }) {
 export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType }) {
   const [stageFilter, setStageFilter] = useState('ALL');
   const [showFinished, setShowFinished] = useState(true);
+  const [limit, setLimit] = useState(PAGE_SIZE);
+
+  // Reset pagination when filter changes
+  useEffect(() => {
+    setLimit(PAGE_SIZE);
+  }, [stageFilter, showFinished]);
+
+  // Map team → participant name for owner tags
+  const ownerMap = useMemo(() => {
+    const map = {};
+    for (const name of Object.keys(assignments)) {
+      const teams = getTeamsForParticipant(name, assignments, drawType);
+      for (const t of teams) map[t] = name;
+    }
+    return map;
+  }, [assignments, drawType]);
 
   const stages = useMemo(() => {
     const set = new Set(fixtures.map((f) => f.stage));
@@ -94,19 +115,23 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
     let list = fixtures;
     if (stageFilter !== 'ALL') list = list.filter((f) => f.stage === stageFilter);
     if (!showFinished) list = list.filter((f) => f.status !== 'FINISHED');
-    return list.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+    return [...list].sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
   }, [fixtures, stageFilter, showFinished]);
 
-  // Group by date
+  // Paginate — only render up to `limit` to avoid 10s freeze on 104 cards
+  const visible = useMemo(() => filtered.slice(0, limit), [filtered, limit]);
+
   const grouped = useMemo(() => {
     const map = new Map();
-    for (const m of filtered) {
+    for (const m of visible) {
       const day = formatDate(m.utcDate) || 'TBD';
       if (!map.has(day)) map.set(day, []);
       map.get(day).push(m);
     }
     return map;
-  }, [filtered]);
+  }, [visible]);
+
+  const hasMore = limit < filtered.length;
 
   return (
     <div className="page">
@@ -118,7 +143,7 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
           </button>
         </div>
         {lastFetched && (
-          <p className="hint">
+          <p className="subtitle">
             Updated {new Date(lastFetched).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
           </p>
         )}
@@ -159,9 +184,9 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         <div className="empty-state">
           <div className="empty-icon">📅</div>
           {error ? (
-            <p>Add your API key in Settings to load live fixtures from football-data.org</p>
+            <p>{error}</p>
           ) : (
-            <p>No fixtures found. Try refreshing or check your API key in Settings.</p>
+            <p>No fixtures found. Pull to refresh or check your connection.</p>
           )}
         </div>
       )}
@@ -177,10 +202,16 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         <div key={day} className="day-group">
           <div className="day-header">{day}</div>
           {matches.map((m) => (
-            <MatchCard key={m.id} match={m} assignments={assignments} drawType={drawType} />
+            <MatchCard key={m.id} match={m} ownerMap={ownerMap} />
           ))}
         </div>
       ))}
+
+      {hasMore && (
+        <button className="show-more-btn" onClick={() => setLimit((l) => l + PAGE_SIZE)}>
+          Show more · {filtered.length - limit} remaining
+        </button>
+      )}
     </div>
   );
 }

@@ -29,20 +29,22 @@ export default function Settings({ apiKey, setApiKey, onResetDraw, onClearCache 
       </div>
 
       <div className="card">
-        <h3 className="section-title">API Key</h3>
+        <h3 className="section-title">Data Source</h3>
         <p className="hint">
           Fixtures are loaded from{' '}
-          <a href="https://www.thesportsdb.com" target="_blank" rel="noreferrer">
-            TheSportsDB
+          <a href="https://github.com/openfootball/worldcup.json" target="_blank" rel="noreferrer">
+            openfootball/worldcup.json
           </a>{' '}
-          — <strong>no API key required</strong> for the free tier. Optionally
-          enter a paid key below for higher rate limits.
+          — a free, open JSON feed. <strong>No API key required.</strong>
+        </p>
+        <p className="hint">
+          The optional key below is kept for future API integrations and is currently unused.
         </p>
         <div className="input-row">
           <input
             type="text"
             className="input"
-            placeholder="Optional paid API key (leave blank for free tier)"
+            placeholder="Optional API key"
             value={keyInput}
             onChange={(e) => setKeyInput(e.target.value)}
           />
@@ -50,9 +52,6 @@ export default function Settings({ apiKey, setApiKey, onResetDraw, onClearCache 
             {saved ? '✓ Saved' : 'Save'}
           </button>
         </div>
-        {apiKey && (
-          <p className="hint success">Custom key active: {apiKey.slice(0, 8)}…</p>
-        )}
       </div>
 
       <div className="card">
@@ -66,7 +65,7 @@ export default function Settings({ apiKey, setApiKey, onResetDraw, onClearCache 
           ))}
         </div>
         <p className="hint mt">
-          Group stage: 3pts per win, 1pt per draw. Knockout rounds earn progressively higher points.
+          Group stage: 3pts per win, 1pt per draw. Knockout rounds earn progressively more.
           Runner-up gets +10pts bonus.
         </p>
       </div>
@@ -81,21 +80,25 @@ export default function Settings({ apiKey, setApiKey, onResetDraw, onClearCache 
             className={`btn-danger ${showConfirm ? 'confirm' : ''}`}
             onClick={handleReset}
           >
-            {showConfirm ? 'Tap again to confirm reset' : 'Reset draw'}
+            {showConfirm ? 'Tap again to confirm' : 'Reset draw'}
           </button>
         </div>
         <p className="hint">
-          Reset draw clears all participant assignments. Fixtures cache clears locally stored match data.
+          Reset clears all participant assignments and unlocks the draw.
+          Clear cache refreshes stored match data.
         </p>
       </div>
 
       <div className="card">
         <h3 className="section-title">About</h3>
         <p className="hint">
-          World Cup Sweep 2026 · Open source · Data from TheSportsDB
+          <strong>Dan's Shed · World Cup Sweep '26</strong>
         </p>
         <p className="hint">
-          Install this app: tap the Share button in Safari then "Add to Home Screen".
+          Open source · Data from openfootball.
+        </p>
+        <p className="hint">
+          Install on iPhone: tap Share in Safari → "Add to Home Screen".
         </p>
       </div>
     </div>
