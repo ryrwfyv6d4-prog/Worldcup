@@ -1,9 +1,30 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
 
 const WALL_KEY = 'dans_shed_wall_v1';
+const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
 
-// Resize image via canvas to keep localStorage size sane (~100KB per photo)
+// Cloud API helpers
+async function apiGet(path) {
+  const res = await fetch(`${WORKER_URL}${path}`);
+  if (!res.ok) throw new Error(`${res.status}`);
+  return res.json();
+}
+async function apiPost(path, body) {
+  const res = await fetch(`${WORKER_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${res.status}`);
+  return res.json();
+}
+async function apiDelete(path) {
+  const res = await fetch(`${WORKER_URL}${path}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`${res.status}`);
+}
+
+// Resize image via canvas to keep payload size sane (~100KB per photo)
 function resizeImage(file, maxPx = 720, quality = 0.72) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -86,9 +107,7 @@ function AddBitForm({ participants, onAdd, onCancel }) {
     }
     setRawFile(file);
     setError(null);
-    // show preview immediately at natural size
-    const url = URL.createObjectURL(file);
-    setPreview(url);
+    setPreview(URL.createObjectURL(file));
   };
 
   const handleSubmit = async () => {
@@ -97,7 +116,7 @@ function AddBitForm({ participants, onAdd, onCancel }) {
     setError(null);
     try {
       const dataUrl = await resizeImage(rawFile);
-      onAdd({ caption: caption.trim(), person: person.trim(), dataUrl });
+      await onAdd({ caption: caption.trim(), person: person.trim(), dataUrl });
     } catch {
       setError('Could not process image. Try a smaller photo.');
     } finally {
@@ -109,11 +128,7 @@ function AddBitForm({ participants, onAdd, onCancel }) {
     <div className="add-bit-form card">
       <h3 className="section-title">Add a Bit</h3>
 
-      {/* Photo picker */}
-      <div
-        className="photo-drop"
-        onClick={() => fileRef.current?.click()}
-      >
+      <div className="photo-drop" onClick={() => fileRef.current?.click()}>
         {preview ? (
           <img src={preview} alt="preview" className="photo-preview" />
         ) : (
@@ -132,7 +147,6 @@ function AddBitForm({ participants, onAdd, onCancel }) {
         />
       </div>
 
-      {/* Caption */}
       <label className="field-label mt">Caption</label>
       <input
         className="input"
@@ -143,7 +157,6 @@ function AddBitForm({ participants, onAdd, onCancel }) {
         maxLength={120}
       />
 
-      {/* Person */}
       <label className="field-label mt">Who's in it / posted by</label>
       {participants.length > 0 ? (
         <div className="person-pills">
@@ -188,21 +201,55 @@ function AddBitForm({ participants, onAdd, onCancel }) {
 }
 
 export default function TheWall({ participants }) {
-  const [photos, setPhotos] = useLocalStorage(WALL_KEY, []);
+  const useCloud = Boolean(WORKER_URL);
+
+  // Local storage (fallback when no Worker URL)
+  const [localPhotos, setLocalPhotos] = useLocalStorage(WALL_KEY, []);
+
+  // Cloud storage state
+  const [cloudPhotos, setCloudPhotos] = useState(null);
+  const [cloudLoading, setCloudLoading] = useState(useCloud);
+  const [cloudError, setCloudError] = useState(null);
+
   const [adding, setAdding] = useState(false);
 
-  const handleAdd = (bit) => {
-    const newPhoto = {
-      id: Date.now(),
-      ts: Date.now(),
-      ...bit,
-    };
-    setPhotos((prev) => [newPhoto, ...prev]);
+  // Load from cloud on mount
+  useEffect(() => {
+    if (!useCloud) return;
+    setCloudLoading(true);
+    apiGet('/photos')
+      .then((data) => { setCloudPhotos(data); setCloudLoading(false); })
+      .catch((e) => { setCloudError(`Could not load photos: ${e.message}`); setCloudLoading(false); });
+  }, [useCloud]);
+
+  const photos = useCloud ? (cloudPhotos ?? []) : localPhotos;
+
+  const handleAdd = async (bit) => {
+    if (useCloud) {
+      try {
+        const photo = await apiPost('/photos', bit);
+        setCloudPhotos((prev) => [photo, ...(prev ?? [])]);
+      } catch (e) {
+        setCloudError(`Upload failed: ${e.message}`);
+      }
+    } else {
+      const newPhoto = { id: Date.now(), ts: Date.now(), ...bit };
+      setLocalPhotos((prev) => [newPhoto, ...prev]);
+    }
     setAdding(false);
   };
 
-  const handleDelete = (id) => {
-    setPhotos((prev) => prev.filter((p) => p.id !== id));
+  const handleDelete = async (id) => {
+    if (useCloud) {
+      try {
+        await apiDelete(`/photos/${id}`);
+        setCloudPhotos((prev) => (prev ?? []).filter((p) => p.id !== id));
+      } catch (e) {
+        setCloudError(`Delete failed: ${e.message}`);
+      }
+    } else {
+      setLocalPhotos((prev) => prev.filter((p) => p.id !== id));
+    }
   };
 
   return (
@@ -216,8 +263,17 @@ export default function TheWall({ participants }) {
             </button>
           )}
         </div>
-        <p className="subtitle">Stick photos here as the bits come up.</p>
+        <p className="subtitle">
+          Stick photos here as the bits come up.
+          {useCloud ? ' ☁️ Synced across all devices.' : ' 📱 Stored locally on this device.'}
+        </p>
       </div>
+
+      {cloudError && (
+        <div className="card" style={{ borderLeft: '3px solid var(--gold)', marginBottom: 12 }}>
+          <p className="hint" style={{ color: '#c0392b' }}>{cloudError}</p>
+        </div>
+      )}
 
       {adding && (
         <AddBitForm
@@ -227,18 +283,24 @@ export default function TheWall({ participants }) {
         />
       )}
 
-      {photos.length === 0 && !adding && (
+      {cloudLoading && (
+        <div className="empty-state"><p className="hint">Loading photos…</p></div>
+      )}
+
+      {!cloudLoading && photos.length === 0 && !adding && (
         <div className="empty-state">
           <div className="empty-icon">🪣</div>
           <p>The wall is bare. Pin your first photo.</p>
         </div>
       )}
 
-      <div className="wall-grid">
-        {photos.map((photo) => (
-          <PhotoCard key={photo.id} photo={photo} onDelete={handleDelete} />
-        ))}
-      </div>
+      {!cloudLoading && (
+        <div className="wall-grid">
+          {photos.map((photo) => (
+            <PhotoCard key={photo.id} photo={photo} onDelete={handleDelete} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
