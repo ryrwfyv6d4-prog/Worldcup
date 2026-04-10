@@ -21,26 +21,34 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
-      # Deploy the Cloudflare Worker + R2 bucket
       - name: Deploy Cloudflare Worker
         id: worker
         working-directory: worker
         run: |
           npx wrangler r2 bucket create dans-shed-wall 2>/dev/null || true
-          npx wrangler deploy 2>&1
 
-          # Get workers.dev subdomain from Cloudflare API (more reliable than parsing wrangler output)
-          SUBDOMAIN=$(curl -sf \
+          echo "=== Deploying Worker ==="
+          DEPLOY_OUT=$(npx wrangler deploy 2>&1)
+          echo "$DEPLOY_OUT"
+
+          echo "=== Cloudflare API: workers subdomain ==="
+          CF_RESP=$(curl -s \
             "https://api.cloudflare.com/client/v4/accounts/1f0d20dfb82aac0372345af33233ed89/workers/subdomain" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            | jq -r '.result.subdomain // empty')
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
+          echo "$CF_RESP"
 
-          if [ -n "$SUBDOMAIN" ]; then
-            URL="https://dans-shed-wall.${SUBDOMAIN}.workers.dev"
-            echo "url=$URL" >> "$GITHUB_OUTPUT"
-            echo "Worker URL: $URL"
+          SUBDOMAIN=$(echo "$CF_RESP" | jq -r '.result.subdomain // empty' 2>/dev/null)
+
+          # Fallback: parse URL directly from wrangler deploy output
+          if [ -z "$SUBDOMAIN" ]; then
+            URL=$(echo "$DEPLOY_OUT" | grep -oE 'https://[^[:space:]]+\.workers\.dev' | head -1)
           else
-            echo "Could not determine workers subdomain"
+            URL="https://dans-shed-wall.${SUBDOMAIN}.workers.dev"
+          fi
+
+          echo "=== WORKER URL: $URL ==="
+          if [ -n "$URL" ]; then
+            echo "url=$URL" >> "$GITHUB_OUTPUT"
           fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
