@@ -1,29 +1,44 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const BASE = 'https://v3.football.api-sports.io';
-const LEAGUE_ID = 1; // FIFA World Cup
-const SEASON = 2026;
-const CACHE_KEY = 'wc_fixtures_cache_v2';
+const BASE = 'https://www.thesportsdb.com/api/v1/json';
+const FREE_KEY = '123';
+const LEAGUE_ID = 4429; // FIFA World Cup
+const CACHE_KEY = 'wc_fixtures_cache_v3';
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
-// API-Football status short codes → our internal status
 const STATUS_MAP = {
-  NS: 'SCHEDULED', TBD: 'SCHEDULED',
-  '1H': 'IN_PLAY', '2H': 'IN_PLAY', ET: 'IN_PLAY', P: 'IN_PLAY', BT: 'IN_PLAY',
-  HT: 'PAUSED',
-  FT: 'FINISHED', AET: 'FINISHED', PEN: 'FINISHED',
-  PST: 'POSTPONED', CANC: 'CANCELLED', SUSP: 'CANCELLED',
+  '': 'SCHEDULED',
+  'Not Started': 'SCHEDULED',
+  'Match Finished': 'FINISHED',
+  'After Extra Time': 'FINISHED',
+  'After Penalties': 'FINISHED',
+  'AOT': 'FINISHED',
+  'Penalties': 'FINISHED',
+  'In Progress': 'IN_PLAY',
+  'Half Time': 'PAUSED',
+  'Postponed': 'POSTPONED',
+  'Canceled': 'CANCELLED',
+  'Cancelled': 'CANCELLED',
 };
 
-function roundToStage(round) {
-  if (!round) return 'GROUP_STAGE';
-  const r = round.toLowerCase();
-  if (r.includes('group')) return 'GROUP_STAGE';
-  if (r.includes('round of 32') || r.includes('1/16')) return 'LAST_32';
-  if (r.includes('round of 16') || r.includes('1/8')) return 'LAST_16';
-  if (r.includes('quarter')) return 'QUARTER_FINALS';
-  if (r.includes('semi')) return 'SEMI_FINALS';
-  if (r === 'final' || r.includes('- final')) return 'FINAL';
+function roundToStage(strRound, intRound) {
+  if (strRound) {
+    const r = strRound.toLowerCase();
+    if (r.includes('group')) return 'GROUP_STAGE';
+    if (r.includes('round of 32') || r.includes('1/16')) return 'LAST_32';
+    if (r.includes('round of 16') || r.includes('1/8')) return 'LAST_16';
+    if (r.includes('quarter')) return 'QUARTER_FINALS';
+    if (r.includes('semi')) return 'SEMI_FINALS';
+    if (r === 'final' || r.endsWith('- final') || r === 'world cup final') return 'FINAL';
+  }
+  // Fallback by round number (WC 2026: group=1-3, R32=4, R16=5, QF=6, SF=7, F=8)
+  const n = parseInt(intRound) || 0;
+  if (n <= 3) return 'GROUP_STAGE';
+  if (n === 4) return 'LAST_32';
+  if (n === 5) return 'LAST_16';
+  if (n === 6) return 'QUARTER_FINALS';
+  if (n === 7) return 'SEMI_FINALS';
+  if (n >= 8) return 'FINAL';
   return 'GROUP_STAGE';
 }
 
@@ -51,11 +66,6 @@ export function useFixtures(apiKey) {
   const [lastFetched, setLastFetched] = useState(null);
 
   const fetchData = useCallback(async (forceRefresh = false) => {
-    if (!apiKey) {
-      setError('No API key – enter one in Settings to load live fixtures.');
-      return;
-    }
-
     if (!forceRefresh) {
       const cached = readCache();
       if (cached) {
@@ -69,77 +79,94 @@ export function useFixtures(apiKey) {
     setLoading(true);
     setError(null);
 
-    const headers = { 'x-apisports-key': apiKey };
+    const key = apiKey && apiKey.trim() ? apiKey.trim() : FREE_KEY;
 
     try {
-      const res = await fetch(
-        `${BASE}/fixtures?league=${LEAGUE_ID}&season=${SEASON}`,
-        { headers }
+      // Fetch all season events; fall back to next+past if season returns empty
+      const seasonRes = await fetch(
+        `${BASE}/${key}/eventsseason.php?id=${LEAGUE_ID}&s=2026`
       );
 
-      if (!res.ok) {
-        const msg =
-          res.status === 401 || res.status === 403
-            ? 'Invalid API key. Check your key at dashboard.api-football.com.'
-            : res.status === 429
-            ? 'Rate limited – please wait a minute and try again.'
-            : `API error: ${res.status}`;
-        throw new Error(msg);
+      if (!seasonRes.ok) {
+        throw new Error(`TheSportsDB error: ${seasonRes.status}`);
       }
 
-      const json = await res.json();
+      const seasonJson = await seasonRes.json();
+      let events = seasonJson.events || [];
 
-      // API-Football wraps errors in the response body even on 200
-      if (json.errors && Object.keys(json.errors).length > 0) {
-        const errMsg = Object.values(json.errors)[0];
-        throw new Error(`API error: ${errMsg}`);
+      // If season endpoint returned nothing, combine next + past league events
+      if (events.length === 0) {
+        const [nextRes, pastRes] = await Promise.all([
+          fetch(`${BASE}/${key}/eventsnextleague.php?id=${LEAGUE_ID}`),
+          fetch(`${BASE}/${key}/eventspastleague.php?id=${LEAGUE_ID}`),
+        ]);
+        const [nextJson, pastJson] = await Promise.all([
+          nextRes.json(),
+          pastRes.json(),
+        ]);
+        events = [...(pastJson.events || []), ...(nextJson.events || [])];
       }
 
-      const normalised = (json.response || []).map((m) => {
-        const statusShort = m.fixture.status.short;
-        const status = STATUS_MAP[statusShort] || 'SCHEDULED';
-        const stage = roundToStage(m.league.round);
-        const homeGoals = m.goals.home;
-        const awayGoals = m.goals.away;
+      const normalised = events.map((m) => {
+        const statusStr = m.strStatus || '';
+        const status = STATUS_MAP[statusStr] ?? 'SCHEDULED';
+        const stage = roundToStage(m.strRound, m.intRound);
+
+        const homeScore =
+          m.intHomeScore !== null && m.intHomeScore !== ''
+            ? parseInt(m.intHomeScore)
+            : null;
+        const awayScore =
+          m.intAwayScore !== null && m.intAwayScore !== ''
+            ? parseInt(m.intAwayScore)
+            : null;
 
         let winner = null;
-        if (status === 'FINISHED' && homeGoals !== null && awayGoals !== null) {
-          if (homeGoals > awayGoals) winner = 'HOME_TEAM';
-          else if (awayGoals > homeGoals) winner = 'AWAY_TEAM';
+        if (status === 'FINISHED' && homeScore !== null && awayScore !== null) {
+          if (homeScore > awayScore) winner = 'HOME_TEAM';
+          else if (awayScore > homeScore) winner = 'AWAY_TEAM';
           else winner = 'DRAW';
         }
 
-        // Extract group letter from round name e.g. "Group A" → "A"
-        const groupMatch = m.league.round.match(/Group\s+([A-L])/i);
+        // Extract group letter from strRound e.g. "Group A" → "A"
+        const groupMatch = (m.strRound || '').match(/Group\s+([A-L])/i);
         const group = groupMatch ? groupMatch[1] : null;
 
+        const utcDate =
+          m.strTimestamp ||
+          (m.dateEvent && m.strTime
+            ? `${m.dateEvent}T${m.strTime}+00:00`
+            : m.dateEvent || null);
+
         return {
-          id: m.fixture.id,
+          id: m.idEvent,
           stage,
           group,
-          utcDate: m.fixture.date,
+          utcDate,
           status,
-          elapsed: m.fixture.status.elapsed,
           homeTeam: {
-            name: m.teams.home.name,
-            crest: m.teams.home.logo,
+            name: m.strHomeTeam,
+            crest: m.strHomeTeamBadge || null,
             tla: '',
           },
           awayTeam: {
-            name: m.teams.away.name,
-            crest: m.teams.away.logo,
+            name: m.strAwayTeam,
+            crest: m.strAwayTeamBadge || null,
             tla: '',
           },
-          score: { home: homeGoals, away: awayGoals, winner },
-          matchday: m.league.round,
+          score: { home: homeScore, away: awayScore, winner },
+          matchday: m.strRound || `Round ${m.intRound}`,
         };
       });
+
+      // Sort chronologically
+      normalised.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
 
       const uniqueTeams = [];
       const seen = new Set();
       for (const m of normalised) {
         for (const side of [m.homeTeam, m.awayTeam]) {
-          if (!seen.has(side.name)) {
+          if (side.name && !seen.has(side.name)) {
             seen.add(side.name);
             uniqueTeams.push({ name: side.name, crest: side.crest });
           }
@@ -151,11 +178,11 @@ export function useFixtures(apiKey) {
       setTeams(uniqueTeams);
       setLastFetched(Date.now());
     } catch (err) {
-      const msg =
+      setError(
         err.message === 'Failed to fetch'
-          ? 'Network error – check your API key is correct and try again. (CORS: make sure requests from this domain are allowed in your api-football.com account.)'
-          : err.message;
-      setError(msg);
+          ? 'Network error – check your connection and try refreshing.'
+          : err.message
+      );
     } finally {
       setLoading(false);
     }

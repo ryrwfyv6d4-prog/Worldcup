@@ -3,18 +3,24 @@ import { GROUPS, STAGE_MAP, SCORING } from '../data/worldcup2026.js';
 // Normalise a team name from API to match our static list
 export function normaliseTeamName(apiName) {
   const map = {
+    // TheSportsDB names
     'United States': 'USA',
     'United States of America': 'USA',
-    'Republic of Korea': 'South Korea',
     'Korea Republic': 'South Korea',
-    'Côte d\'Ivoire': 'Ivory Coast',
+    'Republic of Korea': 'South Korea',
     "Cote d'Ivoire": 'Ivory Coast',
+    'Côte d\'Ivoire': 'Ivory Coast',
+    'Ivory Coast': 'Ivory Coast',
+    'DR Congo': 'DR Congo',
     'Congo DR': 'DR Congo',
+    'Democratic Republic of the Congo': 'DR Congo',
     'IR Iran': 'Iran',
     'Türkiye': 'Turkey',
+    'Turkiye': 'Turkey',
+    'Saudi Arabia': 'Saudi Arabia',
+    'Costa Rica': 'Costa Rica',
     'New Zealand': 'New Zealand',
-    'England': 'England',
-    'Netherlands': 'Netherlands',
+    'South Africa': 'South Africa',
   };
   return map[apiName] || apiName;
 }
