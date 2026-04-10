@@ -21,19 +21,10 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
-      - name: Deploy Cloudflare Worker
-        working-directory: worker
-        run: |
-          npx wrangler r2 bucket create dans-shed-wall 2>/dev/null || true
-          npx wrangler deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        continue-on-error: true
-
       - name: Build React app
         run: npm run build
         env:
-          VITE_WALL_API_URL: https://dans-shed-wall.phil-remington.workers.dev
+          VITE_WALL_API_URL: https://worldcup.phil-remington.workers.dev
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
