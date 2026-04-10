@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navigation from './components/Navigation.jsx';
 import Draw from './components/Draw.jsx';
 import Leaderboard from './components/Leaderboard.jsx';
@@ -9,6 +9,8 @@ import TheWall from './components/TheWall.jsx';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { useFixtures } from './hooks/useFixtures.js';
 
+const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
+
 export default function App() {
   const [tab, setTab] = useState('leaderboard');
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -18,6 +20,34 @@ export default function App() {
   const [drawLocked, setDrawLocked] = useLocalStorage('sweep_draw_locked', false);
 
   const { fixtures, loading, error, lastFetched, refresh } = useFixtures();
+
+  // Cloud state sync — load draw on mount, push on every change
+  const cloudLoaded = useRef(false);
+
+  useEffect(() => {
+    if (!WORKER_URL) { cloudLoaded.current = true; return; }
+    fetch(`${WORKER_URL}/state`)
+      .then(r => r.ok ? r.json() : null)
+      .then(s => {
+        if (s && Object.keys(s.assignments || {}).length > 0) {
+          setParticipants(s.participants || []);
+          setAssignments(s.assignments || {});
+          setDrawType(s.drawType || 'teams');
+          setDrawLocked(s.drawLocked || false);
+        }
+      })
+      .catch(() => {})
+      .finally(() => { cloudLoaded.current = true; });
+  }, []);
+
+  useEffect(() => {
+    if (!cloudLoaded.current || !WORKER_URL) return;
+    fetch(`${WORKER_URL}/state`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ participants, assignments, drawType, drawLocked }),
+    }).catch(() => {});
+  }, [participants, assignments, drawType, drawLocked]);
 
   const handleResetDraw = () => {
     setParticipants([]);

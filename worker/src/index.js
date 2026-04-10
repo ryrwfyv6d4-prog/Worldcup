@@ -1,6 +1,6 @@
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
@@ -20,6 +20,22 @@ export default {
     try {
       const url = new URL(request.url);
       const path = url.pathname;
+
+      // GET /state — load shared draw state
+      if (request.method === 'GET' && path === '/state') {
+        const item = await env.WALL.get('app-state.json');
+        if (!item) return json(null);
+        return json(JSON.parse(await item.text()));
+      }
+
+      // PUT /state — save shared draw state
+      if (request.method === 'PUT' && path === '/state') {
+        const body = await request.json();
+        await env.WALL.put('app-state.json', JSON.stringify(body), {
+          httpMetadata: { contentType: 'application/json' },
+        });
+        return json({ ok: true });
+      }
 
       // GET /photos — list all photos, newest first
       if (request.method === 'GET' && path === '/photos') {
