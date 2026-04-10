@@ -21,15 +21,16 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
+      # No continue-on-error — we need to see if this step actually works.
+      # If it fails, check the error: likely the API token needs
+      # "Workers Scripts: Edit" permission added in the Cloudflare dashboard.
       - name: Deploy Cloudflare Worker
         working-directory: worker
         run: |
-          echo "Deploying worker..."
+          echo "Token prefix: ${CLOUDFLARE_API_TOKEN:0:8}..."
           npx wrangler deploy
-          echo "Worker deployed."
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        continue-on-error: true
 
       - name: Build React app
         run: npm run build
