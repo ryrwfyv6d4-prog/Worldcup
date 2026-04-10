@@ -1,16 +1,8 @@
 import { useState } from 'react';
 import { SCORING, SCORING_LABELS } from '../data/worldcup2026.js';
 
-export default function Settings({ apiKey, setApiKey, onResetDraw, onClearCache }) {
-  const [keyInput, setKeyInput] = useState(apiKey);
-  const [saved, setSaved] = useState(false);
+export default function Settings({ onResetDraw, onClearCache }) {
   const [showConfirm, setShowConfirm] = useState(false);
-
-  const saveKey = () => {
-    setApiKey(keyInput.trim());
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
 
   const handleReset = () => {
     if (showConfirm) {
@@ -26,32 +18,6 @@ export default function Settings({ apiKey, setApiKey, onResetDraw, onClearCache 
     <div className="page">
       <div className="page-header">
         <h2>Settings</h2>
-      </div>
-
-      <div className="card">
-        <h3 className="section-title">Data Source</h3>
-        <p className="hint">
-          Fixtures are loaded from{' '}
-          <a href="https://github.com/openfootball/worldcup.json" target="_blank" rel="noreferrer">
-            openfootball/worldcup.json
-          </a>{' '}
-          — a free, open JSON feed. <strong>No API key required.</strong>
-        </p>
-        <p className="hint">
-          The optional key below is kept for future API integrations and is currently unused.
-        </p>
-        <div className="input-row">
-          <input
-            type="text"
-            className="input"
-            placeholder="Optional API key"
-            value={keyInput}
-            onChange={(e) => setKeyInput(e.target.value)}
-          />
-          <button className="btn-primary sm" onClick={saveKey}>
-            {saved ? '✓ Saved' : 'Save'}
-          </button>
-        </div>
       </div>
 
       <div className="card">
@@ -95,7 +61,11 @@ export default function Settings({ apiKey, setApiKey, onResetDraw, onClearCache 
           <strong>Dan's Shed · World Cup Sweep '26</strong>
         </p>
         <p className="hint">
-          Open source · Data from openfootball.
+          Fixtures from{' '}
+          <a href="https://github.com/openfootball/worldcup.json" target="_blank" rel="noreferrer">
+            openfootball
+          </a>
+          {' '}— free &amp; open, no API key needed.
         </p>
         <p className="hint">
           Install on iPhone: tap Share in Safari → "Add to Home Screen".

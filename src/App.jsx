@@ -13,9 +13,7 @@ export default function App() {
   const [assignments, setAssignments] = useLocalStorage('sweep_assignments', {});
   const [drawType, setDrawType] = useLocalStorage('sweep_draw_type', 'teams');
   const [drawLocked, setDrawLocked] = useLocalStorage('sweep_draw_locked', false);
-  const [apiKey, setApiKey] = useLocalStorage('sweep_api_key', '');
-
-  const { fixtures, loading, error, lastFetched, refresh } = useFixtures(apiKey);
+  const { fixtures, loading, error, lastFetched, refresh } = useFixtures();
 
   const handleResetDraw = () => {
     setParticipants([]);
@@ -76,8 +74,6 @@ export default function App() {
         )}
         {tab === 'settings' && (
           <Settings
-            apiKey={apiKey}
-            setApiKey={setApiKey}
             onResetDraw={handleResetDraw}
             onClearCache={handleClearCache}
           />

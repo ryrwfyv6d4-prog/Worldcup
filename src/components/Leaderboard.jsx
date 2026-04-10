@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { buildLeaderboard } from '../utils/scoring.js';
 import { SCORING, SCORING_LABELS, getFlag } from '../data/worldcup2026.js';
 import { normaliseTeamName } from '../utils/scoring.js';
+import ActivityFeed from './ActivityFeed.jsx';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -187,6 +188,8 @@ export default function Leaderboard({ assignments, drawType, fixtures, apiError,
           </div>
         ))}
       </div>
+
+      <ActivityFeed fixtures={fixtures} assignments={assignments} drawType={drawType} />
 
       <div className="card mt">
         <h3 className="section-title">Scoring System</h3>
