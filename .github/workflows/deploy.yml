@@ -21,6 +21,21 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
+      # Create the R2 bucket if it doesn't exist.
+      # The Cloudflare GitHub App deploys the Worker separately — it needs
+      # the bucket to already exist or the wrangler deploy will fail.
+      - name: Ensure R2 bucket exists
+        run: |
+          RESULT=$(curl -s -X POST \
+            "https://api.cloudflare.com/client/v4/accounts/1f0d20dfb82aac0372345af33233ed89/r2/buckets" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"name": "dans-shed-wall"}')
+          echo "$RESULT"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        continue-on-error: true
+
       - name: Build React app
         run: npm run build
         env:
