@@ -5,6 +5,7 @@ import Leaderboard from './components/Leaderboard.jsx';
 import Fixtures from './components/Fixtures.jsx';
 import Settings from './components/Settings.jsx';
 import TeamDetail from './components/TeamDetail.jsx';
+import TheWall from './components/TheWall.jsx';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { useFixtures } from './hooks/useFixtures.js';
 
@@ -105,6 +106,9 @@ export default function App() {
                 drawType={drawType}
                 onSelectTeam={handleSelectTeam}
               />
+            )}
+            {tab === 'wall' && (
+              <TheWall participants={participants} />
             )}
             {tab === 'settings' && (
               <Settings

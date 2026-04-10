@@ -3,6 +3,7 @@ import { buildLeaderboard } from '../utils/scoring.js';
 import { SCORING, SCORING_LABELS, getFlag } from '../data/worldcup2026.js';
 import { normaliseTeamName } from '../utils/scoring.js';
 import ActivityFeed from './ActivityFeed.jsx';
+import { formatTimeAEST, formatDateAEST } from '../utils/time.js';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -41,8 +42,8 @@ function NextMatch({ fixtures, onSelectTeam }) {
   const away = normaliseTeamName(next.awayTeam.name);
   const ms = next.ts - Date.now();
   const kickoff = new Date(next.ts);
-  const dateStr = kickoff.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
-  const timeStr = kickoff.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  const dateStr = formatDateAEST(next.ts);
+  const timeStr = formatTimeAEST(next.ts) + ' AEST';
 
   return (
     <div className="next-match">

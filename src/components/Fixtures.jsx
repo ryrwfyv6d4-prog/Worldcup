@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { getFlag } from '../data/worldcup2026.js';
 import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
+import { formatTimeAEST, formatDateAEST } from '../utils/time.js';
 
 const STAGE_ORDER = ['GROUP_STAGE', 'LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL'];
 const STAGE_LABELS = {
@@ -17,15 +18,6 @@ const STATUS_BADGE = {
 };
 const PAGE_SIZE = 15;
 
-function formatDate(utcDate) {
-  if (!utcDate) return '';
-  return new Date(utcDate).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
-}
-function formatTime(utcDate) {
-  if (!utcDate) return '';
-  return new Date(utcDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-}
-
 function MatchCard({ match, ownerMap, onSelectTeam }) {
   const home = normaliseTeamName(match.homeTeam.name);
   const away = normaliseTeamName(match.awayTeam.name);
@@ -39,7 +31,7 @@ function MatchCard({ match, ownerMap, onSelectTeam }) {
   return (
     <div className={`match-card ${isLive ? 'live' : ''} ${hasOwner && !isLive ? 'has-owner' : ''}`}>
       <div className="match-date">
-        {formatTime(match.utcDate)}
+        {formatTimeAEST(match.utcDate)} AEST
         {match.group && <span className="match-group">{match.group.replace('GROUP_', 'Group ')}</span>}
       </div>
       <div className="match-row">
@@ -52,7 +44,6 @@ function MatchCard({ match, ownerMap, onSelectTeam }) {
             </div>
           </button>
         </div>
-
         <div className="score-center">
           {showScore ? (
             <span className="score">
@@ -62,7 +53,6 @@ function MatchCard({ match, ownerMap, onSelectTeam }) {
             <span className={`status-badge ${cls}`}>{label}</span>
           )}
         </div>
-
         <div className={`team-side right ${awayOwner ? 'owned' : ''}`}>
           <button className="team-btn" onClick={() => onSelectTeam(away)} style={{ gap: 6, flexDirection: 'row-reverse' }}>
             <span className="flag">{getFlag(away)}</span>
@@ -80,9 +70,10 @@ function MatchCard({ match, ownerMap, onSelectTeam }) {
 export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType, onSelectTeam }) {
   const [stageFilter, setStageFilter] = useState('ALL');
   const [showFinished, setShowFinished] = useState(true);
+  const [search, setSearch] = useState('');
   const [limit, setLimit] = useState(PAGE_SIZE);
 
-  useEffect(() => { setLimit(PAGE_SIZE); }, [stageFilter, showFinished]);
+  useEffect(() => { setLimit(PAGE_SIZE); }, [stageFilter, showFinished, search]);
 
   const ownerMap = useMemo(() => {
     const map = {};
@@ -99,18 +90,28 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
   }, [fixtures]);
 
   const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
     let list = fixtures;
     if (stageFilter !== 'ALL') list = list.filter((f) => f.stage === stageFilter);
     if (!showFinished) list = list.filter((f) => f.status !== 'FINISHED');
+    if (q) {
+      list = list.filter((f) => {
+        const home = normaliseTeamName(f.homeTeam.name).toLowerCase();
+        const away = normaliseTeamName(f.awayTeam.name).toLowerCase();
+        const homeOwner = (ownerMap[normaliseTeamName(f.homeTeam.name)] || '').toLowerCase();
+        const awayOwner = (ownerMap[normaliseTeamName(f.awayTeam.name)] || '').toLowerCase();
+        return home.includes(q) || away.includes(q) || homeOwner.includes(q) || awayOwner.includes(q);
+      });
+    }
     return [...list].sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
-  }, [fixtures, stageFilter, showFinished]);
+  }, [fixtures, stageFilter, showFinished, search, ownerMap]);
 
   const visible = useMemo(() => filtered.slice(0, limit), [filtered, limit]);
 
   const grouped = useMemo(() => {
     const map = new Map();
     for (const m of visible) {
-      const day = formatDate(m.utcDate) || 'TBD';
+      const day = formatDateAEST(m.utcDate) || 'TBD';
       if (!map.has(day)) map.set(day, []);
       map.get(day).push(m);
     }
@@ -130,7 +131,7 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         </div>
         {lastFetched && (
           <p className="subtitle">
-            Updated {new Date(lastFetched).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+            Updated {new Date(lastFetched).toLocaleTimeString('en-AU', { timeZone: 'Australia/Brisbane', hour: '2-digit', minute: '2-digit', hour12: true })} AEST
           </p>
         )}
         {error && <p className="error-msg">{error}</p>}
@@ -138,6 +139,21 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
 
       {fixtures.length > 0 && (
         <div className="filter-bar">
+          {/* Search */}
+          <div className="search-row">
+            <input
+              className="search-input"
+              type="search"
+              placeholder="Search country or player…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {search && (
+              <button className="search-clear" onClick={() => setSearch('')}>✕</button>
+            )}
+          </div>
+
+          {/* Stage pills */}
           <div className="stage-filters">
             <button className={`filter-btn ${stageFilter === 'ALL' ? 'active' : ''}`} onClick={() => setStageFilter('ALL')}>All</button>
             {stages.map((s) => (
@@ -146,6 +162,7 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
               </button>
             ))}
           </div>
+
           <label className="toggle-label">
             <input type="checkbox" checked={showFinished} onChange={(e) => setShowFinished(e.target.checked)} />
             <span>Show finished</span>
@@ -157,6 +174,13 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         <div className="empty-state">
           <div className="empty-icon">📅</div>
           <p>{error || 'No fixtures found. Pull to refresh or check your connection.'}</p>
+        </div>
+      )}
+
+      {filtered.length === 0 && !loading && fixtures.length > 0 && (
+        <div className="empty-state">
+          <div className="empty-icon">🔍</div>
+          <p>No matches found for "{search}"</p>
         </div>
       )}
 

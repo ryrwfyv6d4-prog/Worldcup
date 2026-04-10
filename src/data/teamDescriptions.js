@@ -1,121 +1,121 @@
 export const TEAM_DESCRIPTIONS = {
   // Group A
   Mexico:
-    "Perennial round-of-16 residents. So reliably knocked out at that stage, FIFA nearly named it after them. El Tri fans travel in their millions anyway.",
+    "Fought the Americans twice and lost both times. Now they meet every four years in a gentler kind of conflict where Mexico also loses, but with more flair. El Tri fans travel in the millions — partly for football, partly because they live there now.",
   'South Africa':
-    "Hosted the first African World Cup in 2010 and the vuvuzelas were heard from space. Now back to prove the hosting wasn't the hard part.",
+    "Once the most sanctioned nation on Earth. Now just the one that somehow gets overlooked every four years. They hosted the 2010 World Cup, which was great, and the vuvuzelas were heard from space, which was not.",
   'South Korea':
-    "Finished fourth on home soil in 2002. Their opponents from that run are still filing complaints. Technically excellent, tactically disciplined, absolutely not to be underestimated.",
+    "Split in two by a war nobody technically ended. The South got the semiconductors, the K-pop, and the football. The North got a very different kind of squad selection process. Korea Republic marches on.",
   'Czech Republic':
-    "Formerly one half of Czechoslovakia, apparently keeping all the football talent in the split. Pragmatic, hard to beat, and deeply underrated.",
+    "Occupied by Nazis, then Soviets, then peacefully dissolved their own country in 1993. At this point the Czechs have been through enough that a tough group stage is basically a spa day.",
 
   // Group B
   Canada:
-    "First World Cup since 1986. In 2022 they finally showed up. In 2026 they're playing at home. Alphonso Davies has been waiting his whole career for this.",
+    "Their armed forces are deployed exclusively for UN peacekeeping. Their football team has historically kept the peace by not threatening anyone. Alphonso Davies has ended that era. The sleeping giant has been disturbed.",
   'Bosnia & Herzegovina':
-    "A nation that can't agree on much, except that their football team should be genuinely excellent. Technically gifted and always up for a scrap.",
+    "Survived a 1,425-day siege of Sarajevo. Snipers. Starvation. The complete collapse of a nation. After that, a hostile group draw is genuinely light entertainment. They play angry. Understandably.",
   Qatar:
-    "Built the stadiums, bought the hosting rights, lost every group game in 2022. The full host-nation experience. Hopefully improved since.",
+    "Built stadiums using migrant workers in conditions that killed thousands. Bought a World Cup. Lost every game. The full arc of empire in three group matches. Now back as a contestant rather than host. Lower expectations.",
   Switzerland:
-    "Neutral in wars, Switzerland takes no sides in football either — typically draws its way to the knockouts, then exits on penalties. Infuriatingly consistent.",
+    "Armed neutrality since 1515. Hidden assets for every regime in history. No enemies. No convictions. Their football team operates similarly — technically impeccable, morally flexible, exits on penalties every time.",
 
   // Group C
   Brazil:
-    "Five-time champions who invented beautiful football and then made it heartbreaking. The Maracanã '50, Italia '82, the Mineirazu '14 — suffering is part of the brand now.",
+    "Military dictatorship from 1964–85, propped up by the CIA. The junta used football to pacify the population and it worked beautifully — they won three World Cups during it. The beautiful game masking beautiful atrocities.",
   Morocco:
-    "2022 semi-finalists who showed the world that Africa doesn't just travel well — it actually wins. The Atlas Lions were the story of Qatar.",
+    "Colonised by both France AND Spain simultaneously, which is genuinely greedy even by colonial standards. Now beats both of them at football regularly. The 2022 semi-final was historical redress with added drama.",
   Scotland:
-    "Invented the passing game in 1872 and have been inventing increasingly creative excuses since. Never beaten England in a tournament though, which technically counts.",
+    "Massacred at Culloden in 1746, bagpipes banned, clans destroyed. Still here 280 years later, still drinking, still producing world-class players for other nations, still finding new and inventive ways to not qualify for things.",
   Haiti:
-    "Football is the one constant in a country that has been through everything. They play with a passion and grit that makes them genuinely hard to watch lose.",
+    "The only successful slave revolt in history. Defeated Napoleon's army. Then France forced them to pay reparations for 122 years for the crime of winning their freedom. Their football is furious. It should be.",
 
   // Group D
   USA:
-    "Co-hosting this tournament, which means they've guaranteed at least one thing: they'll definitely be in it. The USMNT has actual talent now, which is alarming for everyone.",
+    "Involved in roughly 85% of the world's conflicts since 1945. Won approximately 40% of them. Co-hosting this tournament, which guarantees qualification. The military-industrial complex finally meets a deadline.",
   Australia:
-    "The Socceroos. Improbably good at football for a country where it's the fifth sport named football. 2022 quarterfinalists. Matildas-level buzz is contagious.",
+    "Charged into machine gun fire at Gallipoli in 1915, which was a catastrophic military error now celebrated as the birth of a nation. Australian football operates with identical logic: technically disastrous, spiritually unbreakable.",
   Paraguay:
-    "South America's wildcard. Compact, hard to break down, lethal on the break. They have a habit of going deep in tournaments nobody expected them to.",
+    "Lost 60–70% of its entire male population in the War of the Triple Alliance (1864–70). Fought Brazil, Argentina, AND Uruguay simultaneously. Lost. Rebuilt from almost nothing. Do not underestimate a country that has done that.",
   Turkey:
-    "Finished third at the 2002 World Cup and have been trying to get back there ever since. Technically they're in Europe for football purposes. Their midfield agrees.",
+    "Ottoman Empire: dissolved. Sultanate: abolished. Capital: moved. Caliphate: ended. Alphabet: changed. Country renamed. Currency replaced. Through all of it: third place at the 2002 World Cup. Some things are eternal.",
 
   // Group E
   Germany:
-    "Four-time world champions with a factory-like approach to producing players and a recent tradition of spectacular early exits. The machine has been rebooted. Again.",
+    "You know what happened. They've been apologising for 80 years with Teutonic thoroughness and rebuilding with similar efficiency. Four World Cups. The most organised nation in history — in all senses, including the catastrophic one.",
   Ecuador:
-    "High altitude advantage at home in Quito at 2,800m. At sea level they're merely very good. Dangerous from set-pieces and deeply undervalued by bookmakers.",
+    "Spanish conquest. Colonial exploitation for 300 years. Independence wars. Border conflict with Peru as recently as 1995. At 2,800m altitude in Quito, all of that history becomes your opponents' problem as they slowly suffocate.",
   'Ivory Coast':
-    "The Drogba-era Golden Generation officially retired, but Ivory Coast keeps producing new ones. AFCON winners. Technically excellent. Always threatening to go deep.",
+    "Two civil wars in 20 years. The Drogba generation was so beloved they negotiated an actual ceasefire — both sides agreed to stop shooting so everyone could watch a World Cup qualifier. Football ending war. This happened.",
   'Curaçao':
-    "A Dutch Caribbean island of 150,000 people somehow made it to the World Cup. No, really. This is genuinely remarkable. Give them all the respect.",
+    "A Dutch Caribbean colony of 150,000 people. Four centuries of European control over an island the size of a city. Then independence. Then a World Cup. The post-colonial football project, fully realised.",
 
   // Group F
   Netherlands:
-    "Brilliant, bottlers, brilliant again. Three finals, zero wins, one 1988 European Championship. The most elegant team to regularly break your heart.",
+    "Occupied by Nazi Germany. Watched the Jews of Amsterdam deported from their windows. Anne Frank was Dutch. They carry this. Their total football was also genuinely aggressive — gegenpressing as historical processing.",
   Japan:
-    "Shocked Germany and Spain in 2022, advanced from the group of death, lost to Croatia on penalties. Organized, technical, deeply dangerous. The Blue Samurai are serious.",
+    "Firebombed. Nuked. Twice. Occupied. Rebuilt into the world's third-largest economy in 40 years. Their football mirrors this: obliterated at 2022 group stage predictions, won the group. They will not be underestimated again.",
   Sweden:
-    "Zlatan retired and Sweden got to the 2018 semi-finals. Coincidence? Their pressing and set-piece excellence suggests not. Solid and difficult to beat.",
+    "Last fought a war in 1814. Two centuries of peace, arms exports to both sides of every conflict, and a foreign policy best described as 'profitable neutrality'. On the pitch, Sweden takes a firm side. Usually the winning one.",
   Tunisia:
-    "North Africa's most consistent qualifier and yet to get past the group stage. A story that needs a different ending. Technically capable, tournament experience building.",
+    "Carthaginian Empire, Roman province, Arab conquest, Ottoman rule, French protectorate, independence 1956. Every major empire in history has had a crack at Tunisia. None of them have got them out of a World Cup group stage either.",
 
   // Group G
   Belgium:
-    "The Golden Generation is now the Bronze Generation. De Bruyne, Lukaku — the best Belgian squad ever assembled has one last chance. They know it too.",
+    "The most bombed real estate in World War One. The Somme, Passchendaele, Ypres — entire generations of Europe slaughtered on Belgian soil. The Golden Generation was supposed to be redemption. They choked in every semi-final. The mud takes everything.",
   Egypt:
-    "Mohamed Salah's entire purpose on Earth is to drag Egypt to a World Cup and then score every goal. He's trying very hard. Egypt is trying with him.",
+    "Built civilisation. Invented writing, mathematics, and organised religion. Also fought Israel four times between 1948 and 1973. Now has Mo Salah, who could probably win one of those too if you gave him the ball.",
   Iran:
-    "Qualifies every four years through sheer bloody-mindedness. Extremely well-organized, physically intense, a proper tactical challenge for anyone. Don't underestimate them.",
+    "Eight years of total war with Iraq. One million casualties. Chemical weapons. Then US sanctions. Then a revolution. Then more sanctions. Their football qualification is the most stable institution in the country.",
   'New Zealand':
-    "The All Whites. World-class at rugby, cheerfully competitive at football. Small pool, massive heart. The OFC's finest export, which admittedly has limited competition.",
+    "ANZAC soldiers charged barbed wire and machine guns at Gallipoli without flinching. Their football team similarly runs at things that should be impossible. The spirit is identical. So, occasionally, are the results.",
 
   // Group H
   Spain:
-    "2010 World Champions. The tiki-taka inventors. Still building through the thirds with religious conviction. La Roja keep regenerating like Doctor Who, each iteration annoying to face.",
+    "Spanish Civil War. Franco's dictatorship for 40 years. The Inquisition before that. Nobody expects the Spanish Inquisition, but everyone expects their tiki-taka. 1,000 short passes to goal. Relentless. Suffocating. You will submit.",
   Uruguay:
-    "Two World Cups, one tiny country, an enormous chip on their shoulder, and Luis Suárez's spiritual successor already causing problems. Perpetually dangerous.",
+    "Tiny country of 3 million. Two World Cups. Beat Brazil in front of 200,000 people in the Maracanã in 1950, causing what was described as a collective national trauma in Brazil. This is what psychological warfare looks like at its finest.",
   'Saudi Arabia':
-    "Beat Argentina in 2022. BEAT ARGENTINA. The whole country got a public holiday. That result alone earns them respect forever. They've been buzzing since.",
+    "Absolute monarchy sitting on 17% of the world's proven oil reserves. Financing and arming half the conflicts in the region simultaneously. Also beat Argentina 2-1 in 2022 and the king gave everyone a national holiday. Different kind of oil money.",
   'Cape Verde':
-    "A tiny Atlantic archipelago of 500,000 people producing genuine football talent. Nothing to lose and everything to gain. The tournament's feel-good story candidate.",
+    "Portuguese colony for 500 years. Independence achieved through armed liberation in 1975. Population: 500,000. World Cup qualification: completed. The most successful insurgency per capita in football history.",
 
   // Group I
   France:
-    "2018 champions. 2022 runners-up. Mbappé's team now, officially. Probably the deepest squad in the tournament. The favourites to win it, which historically means something will go wrong.",
+    "Won World War One by attrition and American reinforcements. Lost World War Two in six weeks, then spent 50 years pretending the Resistance was everyone. 2018 World Champions. 2022 runners-up. The self-belief survives all evidence.",
   Senegal:
-    "2022 AFCON champions and the finest African side in this tournament. Fast, physical, technically superb, and organized by a manager who knows how to win.",
+    "The Tirailleurs Sénégalais fought in both World Wars for France. When they asked for the same pensions as French veterans in 1944, France massacred them. Their football team is revenge served at the highest possible level.",
   Norway:
-    "Erling Haaland scores for fun in club football. Norway qualifies and now we find out if one man can genuinely carry a tournament. Experiment underway.",
+    "Occupied by Nazi Germany. Ran an active resistance. Then produced Haaland, who scores goals the way the resistance sabotaged railways: constantly, efficiently, and without remorse. Norway's dark period is well documented. So are his stats.",
   Iraq:
-    "Their first World Cup in 40 years. A nation that has been through everything finding something to celebrate. Football does that. You want them to do well.",
+    "Gulf War. Sanctions. Invasion. Civil war. ISIS. 20-odd years of continuous catastrophe. And yet: a football team. And yet: qualified. The most remarkable sporting achievement of the 21st century, full stop.",
 
   // Group J
   Argentina:
-    "World Champions. Messi got his medal. The GOAT debate is settled. Now a squad of players who know what it feels like to win and want it again. Terrifying.",
+    "Dirty War. 30,000 people disappeared. Military junta. The Falklands — lost. Then Maradona scored the Hand of God against England the same year. Described it as revenge for the Malvinas. Football as geopolitical settlement. He won.",
   Algeria:
-    "2019 AFCON champions and one of Africa's strongest squads. Technically gifted, physically capable, and carrying the expectation of 45 million people. No pressure.",
+    "1.5 million killed in the Algerian War of Independence against France (1954–62). France's response to being asked to leave was, historically, disproportionate. Algeria's response is to beat France at football as often as possible.",
   Austria:
-    "David Alaba is doing everything except playing every position simultaneously. Austria has genuine quality throughout the squad but tends to find a way to make things complicated.",
+    "Gave the world Adolf Hitler, then successfully argued to be classified as his first victim. This is the greatest diplomatic manoeuvre in the 20th century. Their football team similarly avoids accountability but has better finishing.",
   Jordan:
-    "Their first ever World Cup appearance. The whole nation is watching. A team with nothing to lose and the joy of just being there. Football's great equalizer.",
+    "Hosts more refugees per capita than almost any nation on Earth. Surrounded by Syria, Israel, Iraq, and Saudi Arabia. Still functioning. Still stable. Their first World Cup is the triumph of sheer bloody-minded survival.",
 
   // Group K
   Portugal:
-    "Ronaldo's era is officially over. The new Portugal — Félix, Leão, Nunes — is arguably better. The perennial 'this is our year' candidate with an actual case for it.",
+    "Last empire to decolonise, holding on until 1975 while everyone else had left decades earlier. Angola, Mozambique, East Timor — all pried away eventually. The empire is now just Ronaldo's personal Instagram brand. Some things persist.",
   Colombia:
-    "James Rodríguez's theme music plays whenever they score. Exceptionally watchable, deeply unpredictable, capable of beating anyone on a good day. Must-see TV.",
+    "Pablo Escobar. FARC. 50 years of civil war. Andres Escobar shot dead after scoring an own goal at a World Cup. The stakes for Colombian football are genuinely, historically different from the stakes for yours.",
   'DR Congo':
-    "Africa's sleeping giant, finally awake. Enormous country, enormous talent pool, and a squad that should have been here before. Long overdue a proper tournament run.",
+    "The deadliest conflict since World War Two is happening here, right now. Six million dead. Nobody covers it. Their football team is joyful, technical, and furious in equal measure. They are owed a World Cup run.",
   Uzbekistan:
-    "The Silk Road sends a football team. Well-organized, disciplined, and more technically capable than most expect. Asia's quietly impressive qualifier.",
+    "Soviet Republic. Stalin's purges took a specific toll on Central Asia. Post-independence authoritarian rule. The Silk Road's darkest stretches. Their football team is disciplined in the way that only countries with complicated recent histories are.",
 
   // Group L
   England:
-    "'Football's coming home' has become a meme, a tragedy, a punchline, and possibly — just possibly — a prophecy. The most talent since 1966. The most anxiety since forever.",
+    "Invaded 90% of the world's countries. Invented football and then spent 60 years losing it to the countries they'd colonised. Still believes the empire is coming home along with the trophy. The audacity is, genuinely, the brand.",
   Croatia:
-    "Four million people producing world-class midfielders like they're making them in a factory. Modric keeps going. 2018 finalists. The formula that shouldn't work but does.",
+    "Independent for five minutes before a war of secession consumed the Balkans. Fought for existence against a Soviet-armed Yugoslav army. Six million people. 2018 World Cup finalists. The most overperforming nation per capita in history.",
   Panama:
-    "They have a canal and a football team. The canal runs more smoothly, but the team is punching. Organized, disciplined, and thoroughly here to make life difficult.",
+    "The United States literally created Panama in 1903 to build a canal, then invaded in 1989 to remove their own former ally Manuel Noriega. Panama still has the canal. They now also have a World Cup team. The takeover is complete.",
   Ghana:
-    "The Black Stars. Talented, unpredictable, capable of beating anyone on their day and also capable of the opposite. Suárez still can't watch the 2010 quarter-final.",
+    "First sub-Saharan African nation to gain independence, which inspired the entire continent. In 2010, Suárez deliberately handballed on the line to deny Ghana a semi-final. He called it the save of the tournament. Ghana calls it something else.",
 };

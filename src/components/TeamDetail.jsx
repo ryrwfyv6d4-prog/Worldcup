@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { GROUPS, getFlag, getGroupForTeam, SCORING, STAGE_MAP } from '../data/worldcup2026.js';
 import { TEAM_DESCRIPTIONS } from '../data/teamDescriptions.js';
 import { normaliseTeamName } from '../utils/scoring.js';
+import { formatTimeAEST, formatDateAEST } from '../utils/time.js';
 
 const STAGE_ORDER = ['GROUP_STAGE', 'LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL'];
 const STAGE_LABELS = {
@@ -15,11 +16,11 @@ const STAGE_LABELS = {
 
 function formatDate(utcDate) {
   if (!utcDate) return '';
-  return new Date(utcDate).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+  return formatDateAEST(utcDate);
 }
 function formatTime(utcDate) {
   if (!utcDate) return '';
-  return new Date(utcDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  return formatTimeAEST(utcDate) + ' AEST';
 }
 
 // Compute group standing for this team
