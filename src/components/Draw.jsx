@@ -187,12 +187,7 @@ export default function Draw({
               ⚽ By Team
             </button>
             <button
-              className={`toggle-btn ${drawType === 'groups' ? 'active' : ''}`}
-              onClick={() => setDrawType('groups')}
-              disabled={animating}
-            >
-              🗂️ By Group
-            </button>
+              
             <button
               className={`toggle-btn ${drawType === 'tiered' ? 'active' : ''}`}
               onClick={() => setDrawType('tiered')}
