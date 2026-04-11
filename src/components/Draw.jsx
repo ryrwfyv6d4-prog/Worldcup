@@ -34,24 +34,29 @@ function runFlatDraw(names, drawType) {
 // Scales to any player count: tiers of n players, bottom teams dropped if 48 % n != 0
 function runTieredDraw(names) {
   const n = names.length;
-  const tierSize = n; // one team per player per tier
-  const numTiers = Math.floor(TEAMS_BY_RANK.length / tierSize); // e.g. 10 players → 4 tiers of 10
-  const teamsUsed = numTiers * tierSize; // e.g. 40 teams used, 8 dropped from bottom
+  const total = TEAMS_BY_RANK.length; // 48
+  const numTiers = Math.floor(total / n);
+  const leftover = total % n;
 
-  // Build tiers and shuffle within each
+  // Build full tiers and shuffle within each
   const tiers = [];
   for (let t = 0; t < numTiers; t++) {
-    const tier = TEAMS_BY_RANK.slice(t * tierSize, (t + 1) * tierSize);
+    const tier = TEAMS_BY_RANK.slice(t * n, (t + 1) * n);
     tiers.push(shuffle(tier));
   }
 
-  // Assign: each player gets tiers[0][i], tiers[1][i], tiers[2][i], ...
+  // Leftover minnow teams distributed randomly to some players
+  const leftovers = leftover > 0 ? shuffle(TEAMS_BY_RANK.slice(numTiers * n)) : [];
+
+  // Assign: each player gets one from each full tier, plus a bonus minnow if leftover
   const shuffledNames = shuffle([...names]);
   const assignments = {};
   shuffledNames.forEach((name, i) => {
-    assignments[name] = tiers.map((tier) => tier[i]);
+    const teams = tiers.map((tier) => tier[i]);
+    if (i < leftovers.length) teams.push(leftovers[i]);
+    assignments[name] = teams;
   });
-  return { assignments, numTiers, teamsUsed, teamsDropped: TEAMS_BY_RANK.length - teamsUsed };
+  return { assignments, numTiers, teamsUsed: total, teamsDropped: 0, n };
 }
 
 // Get tier number (1-based) for a team in a tiered draw
