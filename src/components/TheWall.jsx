@@ -11,17 +11,40 @@ async function apiGet(path) {
   return res.json();
 }
 async function apiUploadPhoto(caption, person, blob) {
-  // Use FormData so the browser sets Content-Type: multipart/form-data automatically.
-  // This is a CORS "simple request" — no preflight OPTIONS needed, which iOS Safari
-  // can silently fail on when the CORS preflight doesn't go through.
+  // When a service worker controls the page, route the upload through SW messaging
+  // instead of a direct fetch(). iOS Safari drops POST bodies when a SW forwards
+  // event.request via fetch(), causing "TypeError: Load failed". The fix: send the
+  // image buffer to the SW via postMessage so the SW makes its own fresh fetch() call
+  // (not forwarding a page FetchEvent). SW-initiated fetches don't have this bug.
+  const controller = navigator.serviceWorker?.controller;
+  if (controller) {
+    const id = `${Date.now()}_${Math.random()}`;
+    const buffer = await blob.arrayBuffer();
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        navigator.serviceWorker.removeEventListener('message', handler);
+        reject(new Error('Upload timed out'));
+      }, 30000);
+      const handler = (e) => {
+        if (e.data?.type !== 'UPLOAD_RESULT' || e.data.id !== id) return;
+        clearTimeout(timeout);
+        navigator.serviceWorker.removeEventListener('message', handler);
+        if (e.data.ok) resolve(e.data.data);
+        else reject(new Error(e.data.error || 'Upload failed'));
+      };
+      navigator.serviceWorker.addEventListener('message', handler);
+      controller.postMessage(
+        { type: 'UPLOAD_PHOTO', id, caption, person, buffer, contentType: blob.type || 'image/jpeg' },
+        [buffer]
+      );
+    });
+  }
+  // Fallback: direct fetch (no service worker controlling the page)
   const formData = new FormData();
   formData.append('image', blob, 'photo.jpg');
   formData.append('caption', caption);
   formData.append('person', person);
-  const res = await fetch(`${WORKER_URL}/photos`, {
-    method: 'POST',
-    body: formData,
-  });
+  const res = await fetch(`${WORKER_URL}/photos`, { method: 'POST', body: formData });
   if (!res.ok) throw new Error(`${res.status}`);
   return res.json();
 }
