@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [claude/world-cup-sweep-app-oFZHS]
+        branches: [main]
 
 jobs:
   deploy:
