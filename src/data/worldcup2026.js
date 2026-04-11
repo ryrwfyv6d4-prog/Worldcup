@@ -93,3 +93,12 @@ export const SCORING_LABELS = {
     FINAL_WIN: 'Champion',
     RUNNER_UP: 'Runner-up',
 };
+
+export const STAGE_MAP = {
+  GROUP_STAGE: 'GROUP_WIN',
+  LAST_32: 'R32_WIN',
+  LAST_16: 'R16_WIN',
+  QUARTER_FINALS: 'QF_WIN',
+  SEMI_FINALS: 'SF_WIN',
+  FINAL: 'FINAL_WIN',
+};
