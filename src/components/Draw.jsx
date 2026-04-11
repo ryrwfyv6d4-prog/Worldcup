@@ -157,7 +157,7 @@ export default function Draw({
           <span className="lock-icon">🔒</span>
           <div className="lock-text">
             <strong>Draw is locked</strong>
-            {participants.length} participant{participants.length !== 1 ? 's' : ''} · {drawType === 'tiered' ? 'tiered' : drawType === 'teams' ? 'teams' : 'groups'}
+            {participants.length} participant{participants.length !== 1 ? 's' : ''} · {drawType === 'tiered' ? 'tiered' : 'teams'}
           </div>
           <button className="btn-outline-gold" onClick={handleUnlock}>
             Manage
@@ -205,9 +205,7 @@ export default function Draw({
           <p className="hint">
             {drawType === 'tiered'
               ? `Teams ranked by FIFA ranking are split into tiers equal to your player count. Everyone draws one team per tier — guaranteed fair split.`
-              : drawType === 'teams'
-              ? `Each person is randomly assigned teams from the pool of ${poolLabel}.`
-              : `Each person is randomly assigned one or more of the ${poolLabel}.`}
+              : `Each person is randomly assigned teams from the pool of ${poolLabel}.`}
           </p>
 
           {drawType === 'tiered' && (() => {
