@@ -28,6 +28,13 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         runtimeCaching: [
           {
+            // Explicitly forward all Worker API requests through the SW using
+            // fetch(request.clone()). Without this, iOS Safari's implicit SW
+            // fallback silently drops POST/PUT request bodies.
+            urlPattern: ({ url }) => url.hostname === 'worldcup.phil-remington.workers.dev',
+            handler: 'NetworkOnly',
+          },
+          {
             urlPattern: /^https:\/\/api\.football-data\.org\//,
             handler: 'NetworkFirst',
             options: {
