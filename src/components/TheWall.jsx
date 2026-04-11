@@ -11,11 +11,16 @@ async function apiGet(path) {
   return res.json();
 }
 async function apiUploadPhoto(caption, person, blob) {
-  const params = new URLSearchParams({ caption, person });
-  const res = await fetch(`${WORKER_URL}/photos?${params}`, {
+  // Use FormData so the browser sets Content-Type: multipart/form-data automatically.
+  // This is a CORS "simple request" — no preflight OPTIONS needed, which iOS Safari
+  // can silently fail on when the CORS preflight doesn't go through.
+  const formData = new FormData();
+  formData.append('image', blob, 'photo.jpg');
+  formData.append('caption', caption);
+  formData.append('person', person);
+  const res = await fetch(`${WORKER_URL}/photos`, {
     method: 'POST',
-    headers: { 'Content-Type': blob.type || 'image/jpeg' },
-    body: blob,
+    body: formData,
   });
   if (!res.ok) throw new Error(`${res.status}`);
   return res.json();

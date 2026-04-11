@@ -50,14 +50,16 @@ export default {
         return json(photos.filter(Boolean).sort((a, b) => b.ts - a.ts));
       }
 
-      // POST /photos — binary image body, metadata as query params
-      // Avoids large JSON bodies that can fail on iOS Safari
+      // POST /photos — multipart/form-data (image + caption + person)
+      // FormData upload is a CORS simple request — no preflight — works on iOS Safari
       if (request.method === 'POST' && path === '/photos') {
-        const caption = url.searchParams.get('caption') || '';
-        const person = url.searchParams.get('person') || '';
+        const formData = await request.formData();
+        const image = formData.get('image');
+        const caption = formData.get('caption') || '';
+        const person = formData.get('person') || '';
         const id = Date.now();
-        const contentType = request.headers.get('Content-Type') || 'image/jpeg';
-        const imageData = await request.arrayBuffer();
+        const contentType = image.type || 'image/jpeg';
+        const imageData = await image.arrayBuffer();
 
         await env.WALL.put(`photos/${id}.img`, imageData, {
           httpMetadata: { contentType },
