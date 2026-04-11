@@ -7,23 +7,39 @@ import { clientsClaim } from 'workbox-core';
 self.skipWaiting();
 clientsClaim();
 
-// Guard: do not intercept any requests to the Cloudflare Worker API.
-// iOS Safari throws "FetchEvent.respondWith received an error: Load failed"
-// whenever the SW intercepts cross-origin requests to this domain.
-// import.meta.env is NOT inlined into the SW sub-build, so hardcode the
-// hostname directly. Returning without calling event.respondWith lets the
-// browser handle the request natively, bypassing the SW entirely.
+// iOS Safari fix for Cloudflare Worker API requests.
+//
+// Simply returning without calling event.respondWith() is not sufficient on
+// iOS Safari — even unhandled fetch events fail for cross-origin requests with
+// bodies ("FetchEvent.respondWith received an error: Load failed").
+//
+// We must call event.respondWith() explicitly. The key fix is to materialise
+// the body as an ArrayBuffer BEFORE passing it to fetch(). iOS Safari drops
+// ReadableStream bodies when they flow through a SW fetch handler, but
+// ArrayBuffer bodies (concrete bytes) are forwarded correctly.
+//
+// Note: import.meta.env is NOT inlined in the VitePWA SW sub-build, so the
+// hostname is hardcoded rather than read from VITE_WALL_API_URL.
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('workers.dev')) {
-    return; // Do not intercept — browser handles natively
-  }
+  if (!event.request.url.includes('workers.dev')) return;
+  event.respondWith((async () => {
+    const { url, method, headers } = event.request;
+    if (method === 'GET' || method === 'HEAD' || method === 'DELETE') {
+      return fetch(url, { method, headers });
+    }
+    // Materialise body as ArrayBuffer — avoids iOS Safari ReadableStream bug
+    const body = await event.request.arrayBuffer();
+    return fetch(url, {
+      method,
+      headers,
+      body: body.byteLength > 0 ? body : undefined,
+    });
+  })());
 });
 
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 
-// Worker API requests are intentionally excluded above.
-// Only cache third-party APIs that don't have the iOS Safari cross-origin bug.
 registerRoute(
   /^https:\/\/api\.football-data\.org\//,
   new NetworkFirst({
