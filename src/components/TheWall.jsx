@@ -7,7 +7,7 @@ const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
 // Cloud API helpers
 async function apiGet(path) {
   const res = await fetch(`${WORKER_URL}${path}`);
-  if (!res.ok) throw new Error(`${res.status}`);h
+  if (!res.ok) throw new Error(`${res.status}`);
   return res.json();
 }
 async function apiUploadPhoto(caption, person, blob) {
