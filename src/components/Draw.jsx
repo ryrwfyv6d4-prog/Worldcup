@@ -211,8 +211,7 @@ export default function Draw({
             const dropped = 48 - used;
             return (
               <div className="hint" style={{ marginTop: 4, color: 'var(--gold)' }}>
-                {n} players → {numTiers} tiers of {n} teams = {used} teams used
-                {dropped > 0 ? `, ${dropped} weakest teams dropped` : ', all 48 teams included'}.
+                {n} players → {numTiers} tiers of {n} = {used} teams{dropped > 0 ? `, ${dropped} player${dropped !== 1 ? 's' : ''} also get a bonus minnow` : ' — all 48 included'}.
               </div>
             );
           })()}
