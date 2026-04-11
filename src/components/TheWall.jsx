@@ -11,35 +11,6 @@ async function apiGet(path) {
   return res.json();
 }
 async function apiUploadPhoto(caption, person, blob) {
-  // When a service worker controls the page, route the upload through SW messaging
-  // instead of a direct fetch(). iOS Safari drops POST bodies when a SW forwards
-  // event.request via fetch(), causing "TypeError: Load failed". The fix: send the
-  // image buffer to the SW via postMessage so the SW makes its own fresh fetch() call
-  // (not forwarding a page FetchEvent). SW-initiated fetches don't have this bug.
-  const controller = navigator.serviceWorker?.controller;
-  if (controller) {
-    const id = `${Date.now()}_${Math.random()}`;
-    const buffer = await blob.arrayBuffer();
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        navigator.serviceWorker.removeEventListener('message', handler);
-        reject(new Error('Upload timed out'));
-      }, 30000);
-      const handler = (e) => {
-        if (e.data?.type !== 'UPLOAD_RESULT' || e.data.id !== id) return;
-        clearTimeout(timeout);
-        navigator.serviceWorker.removeEventListener('message', handler);
-        if (e.data.ok) resolve(e.data.data);
-        else reject(new Error(e.data.error || 'Upload failed'));
-      };
-      navigator.serviceWorker.addEventListener('message', handler);
-      controller.postMessage(
-        { type: 'UPLOAD_PHOTO', id, caption, person, buffer, contentType: blob.type || 'image/jpeg' },
-        [buffer]
-      );
-    });
-  }
-  // Fallback: direct fetch (no service worker controlling the page)
   const formData = new FormData();
   formData.append('image', blob, 'photo.jpg');
   formData.append('caption', caption);
@@ -69,7 +40,20 @@ function resizeImageToBlob(file, maxPx = 720, quality = 0.72) {
       canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error('toBlob failed'))),
+        (blob) => {
+          if (blob) { resolve(blob); return; }
+          // iOS fallback: toBlob returned null, convert via toDataURL
+          try {
+            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+            const binary = atob(base64);
+            const arr = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+            resolve(new Blob([arr], { type: 'image/jpeg' }));
+          } catch (err) {
+            reject(new Error('toBlob failed'));
+          }
+        },
         'image/jpeg',
         quality
       );
