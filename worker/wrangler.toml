@@ -1,0 +1,7 @@
+name = "worldcup"
+main = "src/index.js"
+compatibility_date = "2024-04-05"
+
+[[r2_buckets]]
+binding = "WALL"
+bucket_name = "dans-shed-wall"
