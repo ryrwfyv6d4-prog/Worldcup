@@ -28,7 +28,7 @@ export function normaliseTeamName(apiName) {
 // Get all teams that a participant "owns" based on draw type
 export function getTeamsForParticipant(participant, assignments, drawType) {
   const assigned = assignments[participant] || [];
-  if (drawType === 'teams') return assigned;
+  if (drawType === 'teams' || drawType === 'tiered') return assigned;
   // drawType === 'groups': return all teams in assigned groups
   return assigned.flatMap((g) => {
     const letter = g.replace('Group ', '');
