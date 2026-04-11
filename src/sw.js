@@ -7,15 +7,15 @@ import { clientsClaim } from 'workbox-core';
 self.skipWaiting();
 clientsClaim();
 
-// Guard: do not intercept any requests to the Worker API.
-// iOS Safari throws "FetchEvent.respondWith received an error: TypeError: Load
-// failed" whenever the SW intercepts cross-origin requests to this domain —
-// even GET requests. By returning early (not calling event.respondWith), the
-// browser handles those requests natively and the SW is bypassed entirely.
-const WORKER_API_URL = import.meta.env.VITE_WALL_API_URL || '';
+// Guard: do not intercept any requests to the Cloudflare Worker API.
+// iOS Safari throws "FetchEvent.respondWith received an error: Load failed"
+// whenever the SW intercepts cross-origin requests to this domain.
+// import.meta.env is NOT inlined into the SW sub-build, so hardcode the
+// hostname directly. Returning without calling event.respondWith lets the
+// browser handle the request natively, bypassing the SW entirely.
 self.addEventListener('fetch', (event) => {
-  if (WORKER_API_URL && event.request.url.startsWith(WORKER_API_URL)) {
-    return; // Let the browser fetch natively — do not intercept
+  if (event.request.url.includes('workers.dev')) {
+    return; // Do not intercept — browser handles natively
   }
 });
 
