@@ -78,7 +78,10 @@ export default {
       if (request.method === 'GET' && imageMatch) {
         const item = await env.WALL.get(`photos/${imageMatch[1]}.img`);
         if (!item) return json({ error: 'Not found' }, 404);
-        return new Response(item.body, {
+        // Use arrayBuffer() instead of item.body (ReadableStream) to avoid
+        // streaming issues with binary data in Cloudflare Workers
+        const imageData = await item.arrayBuffer();
+        return new Response(imageData, {
           headers: {
             ...CORS_HEADERS,
             'Content-Type': item.httpMetadata?.contentType || 'image/jpeg',
