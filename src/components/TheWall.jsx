@@ -155,12 +155,10 @@ function AddBitForm({ participants, onAdd, onCancel }) {
           ref={fileRef}
           type="file"
           accept="image/*"
-         
           onChange={handleFile}
           style={{ display: 'none' }}
         />
       </div>
-
       <label className="field-label mt">Caption</label>
       <input
         className="input"
