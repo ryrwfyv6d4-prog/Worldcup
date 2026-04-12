@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Navigation from './components/Navigation.jsx';
 import Draw from './components/Draw.jsx';
 import Leaderboard from './components/Leaderboard.jsx';
@@ -22,12 +22,18 @@ export default function App() {
   const [drawLocked, setDrawLocked] = useLocalStorage('sweep_draw_locked', false);
   const [currentUser, setCurrentUser] = useLocalStorage('sweep_current_user', null);
   const [lbReactions, setLbReactions] = useLocalStorage('lb_reactions_v1', {});
+  // wallReactions stored in cloud state so they survive tab switches without a new Worker endpoint
+  const [wallReactions, setWallReactions] = useLocalStorage('wall_reactions_v1', {});
   const [showWhoAmI, setShowWhoAmI] = useState(false);
 
   // Predictions — loaded from cloud
   const [predictions, setPredictions] = useState({});
 
   const { fixtures, loading, error, lastFetched, refresh } = useFixtures();
+
+  // Guard: prevent accidentally overwriting a draw that lived in the cloud
+  // with empty state on a device that hasn't loaded the draw locally yet.
+  const cloudHadDrawRef = useRef(false);
 
   // Cloud state sync — load draw on mount, push on every change
   const [cloudLoaded, setCloudLoaded] = useState(false);
@@ -38,14 +44,14 @@ export default function App() {
       .then(r => r.ok ? r.json() : null)
       .then(s => {
         if (s && Object.keys(s.assignments || {}).length > 0) {
+          cloudHadDrawRef.current = true;
           setParticipants(s.participants || []);
           setAssignments(s.assignments || {});
           setDrawType(s.drawType || 'teams');
           setDrawLocked(s.drawLocked || false);
         }
-        if (s && s.lbReactions) {
-          setLbReactions(s.lbReactions);
-        }
+        if (s && s.lbReactions) setLbReactions(s.lbReactions);
+        if (s && s.wallReactions) setWallReactions(s.wallReactions);
       })
       .catch(() => {})
       .finally(() => { setCloudLoaded(true); });
@@ -53,12 +59,19 @@ export default function App() {
 
   useEffect(() => {
     if (!cloudLoaded || !WORKER_URL) return;
+    // Safety guard: never overwrite a known cloud draw with empty local state.
+    // This can happen if reactions fire the sync before the draw state is stable.
+    if (
+      cloudHadDrawRef.current &&
+      participants.length === 0 &&
+      Object.keys(assignments).length === 0
+    ) return;
     fetch(`${WORKER_URL}/state`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ participants, assignments, drawType, drawLocked, lbReactions }),
+      body: JSON.stringify({ participants, assignments, drawType, drawLocked, lbReactions, wallReactions }),
     }).catch(() => {});
-  }, [cloudLoaded, participants, assignments, drawType, drawLocked, lbReactions]);
+  }, [cloudLoaded, participants, assignments, drawType, drawLocked, lbReactions, wallReactions]);
 
   // Load predictions from cloud
   useEffect(() => {
@@ -126,6 +139,24 @@ export default function App() {
     });
   }, [currentUser]);
 
+  const handleWallReact = useCallback((photoId, emoji) => {
+    if (!currentUser || currentUser === '__guest__') return;
+    setWallReactions(prev => {
+      const updated = { ...prev };
+      const photoReactions = { ...(updated[photoId] || {}) };
+      const people = [...(photoReactions[emoji] || [])];
+      const idx = people.indexOf(currentUser);
+      if (idx === -1) {
+        photoReactions[emoji] = [...people, currentUser];
+      } else {
+        photoReactions[emoji] = people.filter((_, i) => i !== idx);
+        if (photoReactions[emoji].length === 0) delete photoReactions[emoji];
+      }
+      updated[photoId] = photoReactions;
+      return updated;
+    });
+  }, [currentUser]);
+
   const handlePick = useCallback((matchId, person, pick) => {
     setPredictions(prev => ({
       ...prev,
@@ -140,6 +171,8 @@ export default function App() {
   }, []);
 
   const handleResetDraw = () => {
+    // Allow the sync to send empty state (intentional reset)
+    cloudHadDrawRef.current = false;
     setParticipants([]);
     setAssignments({});
     setDrawLocked(false);
@@ -242,7 +275,12 @@ export default function App() {
               />
             )}
             {tab === 'wall' && (
-              <TheWall participants={participants} currentUser={resolvedUser} />
+              <TheWall
+                participants={participants}
+                currentUser={resolvedUser}
+                wallReactions={wallReactions}
+                onWallReact={handleWallReact}
+              />
             )}
             {tab === 'settings' && (
               <Settings

@@ -24,7 +24,9 @@ async function apiDelete(path) {
   const res = await fetch(`${WORKER_URL}${path}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`${res.status}`);
 }
-async function apiReact(photoId, emoji, person) {
+// NOTE: reactions are now handled via the /state cloud sync in App.jsx
+// to avoid requiring a new Worker endpoint. apiReact is no longer used.
+async function _apiReact_unused(photoId, emoji, person) {
   const res = await fetch(`${WORKER_URL}/photos/${photoId}/reactions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -99,7 +101,7 @@ function ReactionBar({ reactions = {}, currentUser, onReact, compact = false }) 
   );
 }
 
-function Lightbox({ photos, startIndex, currentUser, onClose, onReact }) {
+function Lightbox({ photos, startIndex, currentUser, wallReactions, onClose, onReact }) {
   const [index, setIndex] = useState(startIndex);
   const touchStart = useRef(null);
   const photo = photos[index];
@@ -164,7 +166,7 @@ function Lightbox({ photos, startIndex, currentUser, onClose, onReact }) {
 
       <div className="lightbox-reactions">
         {EMOJIS.map((emoji) => {
-          const people = (photo.reactions || {})[emoji] || [];
+          const people = ((wallReactions || {})[photo.id] || {})[emoji] || [];
           const mine = currentUser && people.includes(currentUser);
           return (
             <button
@@ -182,7 +184,7 @@ function Lightbox({ photos, startIndex, currentUser, onClose, onReact }) {
   );
 }
 
-function PhotoCard({ photo, currentUser, onDelete, onOpen, onReact }) {
+function PhotoCard({ photo, reactions, currentUser, onDelete, onOpen, onReact }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const date = new Date(photo.ts).toLocaleDateString('en-AU', {
     day: 'numeric', month: 'short', year: 'numeric',
@@ -200,7 +202,7 @@ function PhotoCard({ photo, currentUser, onDelete, onOpen, onReact }) {
           <span className="polaroid-date">{date}</span>
         </div>
         <ReactionBar
-          reactions={photo.reactions}
+          reactions={reactions}
           currentUser={currentUser}
           onReact={(emoji) => onReact(photo.id, emoji)}
           compact
@@ -333,7 +335,7 @@ function AddBitForm({ participants, onAdd, onCancel }) {
   );
 }
 
-export default function TheWall({ participants, currentUser }) {
+export default function TheWall({ participants, currentUser, wallReactions = {}, onWallReact }) {
   const useCloud = Boolean(WORKER_URL);
 
   const [localPhotos, setLocalPhotos] = useLocalStorage(WALL_KEY, []);
@@ -343,7 +345,6 @@ export default function TheWall({ participants, currentUser }) {
   const [adding, setAdding] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [identityPrompt, setIdentityPrompt] = useState(false);
-  const pendingReaction = useRef(null);
 
   useEffect(() => {
     if (!useCloud) return;
@@ -392,21 +393,14 @@ export default function TheWall({ participants, currentUser }) {
     }
   };
 
-  const handleReact = async (photoId, emoji) => {
+  // Reactions are managed in App.jsx state and synced via /state cloud endpoint.
+  // No direct Worker call needed — reactions persist across tab switches.
+  const handleReact = (photoId, emoji) => {
     if (!currentUser) {
-      pendingReaction.current = { photoId, emoji };
       setIdentityPrompt(true);
       return;
     }
-    if (!useCloud) return;
-    try {
-      const reactions = await apiReact(photoId, emoji, currentUser);
-      setCloudPhotos((prev) => (prev ?? []).map(
-        (p) => p.id === photoId ? { ...p, reactions } : p
-      ));
-    } catch (e) {
-      setCloudError(`Reaction failed: ${e.message}`);
-    }
+    onWallReact?.(photoId, emoji);
   };
 
   return (
@@ -466,6 +460,7 @@ export default function TheWall({ participants, currentUser }) {
             <PhotoCard
               key={photo.id}
               photo={photo}
+              reactions={wallReactions[photo.id]}
               currentUser={currentUser}
               onDelete={handleDelete}
               onOpen={() => setLightboxIndex(idx)}
@@ -480,6 +475,7 @@ export default function TheWall({ participants, currentUser }) {
           photos={photos}
           startIndex={lightboxIndex}
           currentUser={currentUser}
+          wallReactions={wallReactions}
           onClose={() => setLightboxIndex(null)}
           onReact={handleReact}
         />
