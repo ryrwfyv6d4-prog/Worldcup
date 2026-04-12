@@ -7,7 +7,6 @@ import Settings from './components/Settings.jsx';
 import TeamDetail from './components/TeamDetail.jsx';
 import TheWall from './components/TheWall.jsx';
 import WhoAmIModal from './components/WhoAmIModal.jsx';
-import Predictions from './components/Predictions.jsx';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { useFixtures } from './hooks/useFixtures.js';
 
@@ -25,9 +24,6 @@ export default function App() {
   // wallReactions stored in cloud state so they survive tab switches without a new Worker endpoint
   const [wallReactions, setWallReactions] = useLocalStorage('wall_reactions_v1', {});
   const [showWhoAmI, setShowWhoAmI] = useState(false);
-
-  // Predictions — loaded from cloud
-  const [predictions, setPredictions] = useState({});
 
   const { fixtures, loading, error, lastFetched, refresh } = useFixtures();
 
@@ -47,7 +43,16 @@ export default function App() {
           cloudHadDrawRef.current = true;
           setParticipants(s.participants || []);
           setAssignments(s.assignments || {});
-          setDrawType(s.drawType || 'teams');
+          // Detect stale drawType: cloud may still say 'groups' but assignments
+          // now contain team names (from a tiered draw). If so, correct to 'tiered'.
+          let loadedDrawType = s.drawType || 'teams';
+          if (loadedDrawType === 'groups') {
+            const sample = Object.values(s.assignments || {})[0] || [];
+            if (sample.length > 0 && !String(sample[0]).startsWith('Group ')) {
+              loadedDrawType = 'tiered';
+            }
+          }
+          setDrawType(loadedDrawType);
           setDrawLocked(s.drawLocked || false);
         }
         if (s && s.lbReactions) setLbReactions(s.lbReactions);
@@ -72,15 +77,6 @@ export default function App() {
       body: JSON.stringify({ participants, assignments, drawType, drawLocked, lbReactions, wallReactions }),
     }).catch(() => {});
   }, [cloudLoaded, participants, assignments, drawType, drawLocked, lbReactions, wallReactions]);
-
-  // Load predictions from cloud
-  useEffect(() => {
-    if (!WORKER_URL) return;
-    fetch(`${WORKER_URL}/predictions`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setPredictions(data); })
-      .catch(() => {});
-  }, []);
 
   // Show identity picker on first open if participants exist and user is unknown
   useEffect(() => {
@@ -156,19 +152,6 @@ export default function App() {
       return updated;
     });
   }, [currentUser]);
-
-  const handlePick = useCallback((matchId, person, pick) => {
-    setPredictions(prev => ({
-      ...prev,
-      [matchId]: { ...(prev[matchId] || {}), [person]: pick },
-    }));
-    if (!WORKER_URL) return;
-    fetch(`${WORKER_URL}/predictions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ matchId, person, pick }),
-    }).catch(() => {});
-  }, []);
 
   const handleResetDraw = () => {
     // Allow the sync to send empty state (intentional reset)
@@ -263,15 +246,6 @@ export default function App() {
                 assignments={assignments}
                 drawType={drawType}
                 onSelectTeam={handleSelectTeam}
-              />
-            )}
-            {tab === 'predictions' && (
-              <Predictions
-                fixtures={fixtures}
-                currentUser={resolvedUser}
-                participants={participants}
-                predictions={predictions}
-                onPick={handlePick}
               />
             )}
             {tab === 'wall' && (

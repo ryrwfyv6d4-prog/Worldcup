@@ -2,7 +2,6 @@ export default function Navigation({ tab, setTab }) {
   const tabs = [
     { id: 'leaderboard', label: 'Standings', icon: '🏆' },
     { id: 'fixtures', label: 'Fixtures', icon: '📅' },
-    { id: 'predictions', label: 'Picks', icon: '🎯' },
     { id: 'wall', label: 'Wall', icon: '📸' },
     { id: 'draw', label: 'Draw', icon: '🎲' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
