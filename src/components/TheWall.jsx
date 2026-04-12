@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
 
 const WALL_KEY = 'dans_shed_wall_v1';
 const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
+const EMOJIS = ['😂', '🔥', '❤️', '😭', '👏', '🍻'];
 
 // Cloud API helpers
 async function apiGet(path) {
@@ -23,6 +24,15 @@ async function apiDelete(path) {
   const res = await fetch(`${WORKER_URL}${path}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`${res.status}`);
 }
+async function apiReact(photoId, emoji, person) {
+  const res = await fetch(`${WORKER_URL}/photos/${photoId}/reactions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ emoji, person }),
+  });
+  if (!res.ok) throw new Error(`${res.status}`);
+  return res.json();
+}
 
 // Resize image via canvas and return a Blob (avoids large base64 JSON bodies on iOS Safari)
 function resizeImageToBlob(file, maxPx = 720, quality = 0.72) {
@@ -42,7 +52,6 @@ function resizeImageToBlob(file, maxPx = 720, quality = 0.72) {
       canvas.toBlob(
         (blob) => {
           if (blob) { resolve(blob); return; }
-          // iOS fallback: toBlob returned null, convert via toDataURL
           try {
             const dataUrl = canvas.toDataURL('image/jpeg', quality);
             const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
@@ -69,7 +78,111 @@ function tiltStyle(id) {
   return { transform: `rotate(${tilts[n]}deg)` };
 }
 
-function PhotoCard({ photo, onDelete }) {
+function ReactionBar({ reactions = {}, currentUser, onReact, compact = false }) {
+  return (
+    <div className="reaction-bar">
+      {EMOJIS.map((emoji) => {
+        const people = reactions[emoji] || [];
+        const mine = currentUser && people.includes(currentUser);
+        return (
+          <button
+            key={emoji}
+            className={`reaction-btn ${mine ? 'mine' : ''}`}
+            onClick={(e) => { e.stopPropagation(); onReact(emoji); }}
+          >
+            <span>{emoji}</span>
+            {people.length > 0 && <span className="reaction-count">{people.length}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Lightbox({ photos, startIndex, currentUser, onClose, onReact }) {
+  const [index, setIndex] = useState(startIndex);
+  const touchStart = useRef(null);
+  const photo = photos[index];
+
+  const goPrev = useCallback(() => setIndex(i => Math.max(0, i - 1)), []);
+  const goNext = useCallback(() => setIndex(i => Math.min(photos.length - 1, i + 1)), [photos.length]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'ArrowLeft') goPrev();
+      else if (e.key === 'ArrowRight') goNext();
+      else if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [goPrev, goNext, onClose]);
+
+  const handleTouchStart = (e) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!touchStart.current) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = e.changedTouches[0].clientY - touchStart.current.y;
+    touchStart.current = null;
+    if (Math.abs(dy) > Math.abs(dx) && dy > 60) { onClose(); return; }
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) goNext();
+      else goPrev();
+    }
+  };
+
+  const date = new Date(photo.ts).toLocaleDateString('en-AU', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  });
+
+  return (
+    <div
+      className="lightbox-overlay"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      <button className="lightbox-close" onClick={onClose}>✕</button>
+      <div className="lightbox-counter">{index + 1} / {photos.length}</div>
+
+      <div className="lightbox-img-wrap">
+        <img
+          src={photo.dataUrl || photo.imageUrl}
+          alt={photo.caption}
+          className="lightbox-img"
+        />
+      </div>
+
+      <div className="lightbox-info">
+        {photo.caption && <p className="lightbox-caption">{photo.caption}</p>}
+        <p className="lightbox-meta">
+          {photo.person && <span>{photo.person} · </span>}
+          {date}
+        </p>
+      </div>
+
+      <div className="lightbox-reactions">
+        {EMOJIS.map((emoji) => {
+          const people = (photo.reactions || {})[emoji] || [];
+          const mine = currentUser && people.includes(currentUser);
+          return (
+            <button
+              key={emoji}
+              className={`reaction-btn ${mine ? 'mine' : ''}`}
+              onClick={() => onReact(photo.id, emoji)}
+            >
+              <span>{emoji}</span>
+              {people.length > 0 && <span className="reaction-count">{people.length}</span>}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function PhotoCard({ photo, currentUser, onDelete, onOpen, onReact }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const date = new Date(photo.ts).toLocaleDateString('en-AU', {
     day: 'numeric', month: 'short', year: 'numeric',
@@ -77,7 +190,7 @@ function PhotoCard({ photo, onDelete }) {
 
   return (
     <div className="polaroid" style={tiltStyle(photo.id)}>
-      <div className="polaroid-img-wrap">
+      <div className="polaroid-img-wrap" onClick={onOpen} style={{ cursor: 'pointer' }}>
         <img src={photo.dataUrl || photo.imageUrl} alt={photo.caption} className="polaroid-img" />
       </div>
       <div className="polaroid-body">
@@ -86,6 +199,12 @@ function PhotoCard({ photo, onDelete }) {
           {photo.person && <span className="polaroid-person">{photo.person}</span>}
           <span className="polaroid-date">{date}</span>
         </div>
+        <ReactionBar
+          reactions={photo.reactions}
+          currentUser={currentUser}
+          onReact={(emoji) => onReact(photo.id, emoji)}
+          compact
+        />
         <button
           className={`polaroid-delete ${confirmDelete ? 'confirm' : ''}`}
           onClick={() => {
@@ -214,20 +333,18 @@ function AddBitForm({ participants, onAdd, onCancel }) {
   );
 }
 
-export default function TheWall({ participants }) {
+export default function TheWall({ participants, currentUser }) {
   const useCloud = Boolean(WORKER_URL);
 
-  // Local storage (fallback when no Worker URL)
   const [localPhotos, setLocalPhotos] = useLocalStorage(WALL_KEY, []);
-
-  // Cloud storage state
   const [cloudPhotos, setCloudPhotos] = useState(null);
   const [cloudLoading, setCloudLoading] = useState(useCloud);
   const [cloudError, setCloudError] = useState(null);
-
   const [adding, setAdding] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [identityPrompt, setIdentityPrompt] = useState(false);
+  const pendingReaction = useRef(null);
 
-  // Load from cloud on mount
   useEffect(() => {
     if (!useCloud) return;
     setCloudLoading(true);
@@ -254,7 +371,7 @@ export default function TheWall({ participants }) {
       const dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onerror = reject;
-        reader.onload = (e) => resolve(e.target.result);
+        reader.onload = (ev) => resolve(ev.target.result);
         reader.readAsDataURL(rawBlob);
       });
       setLocalPhotos((prev) => [{ id: Date.now(), ts: Date.now(), caption, person, dataUrl }, ...prev]);
@@ -272,6 +389,23 @@ export default function TheWall({ participants }) {
       }
     } else {
       setLocalPhotos((prev) => prev.filter((p) => p.id !== id));
+    }
+  };
+
+  const handleReact = async (photoId, emoji) => {
+    if (!currentUser) {
+      pendingReaction.current = { photoId, emoji };
+      setIdentityPrompt(true);
+      return;
+    }
+    if (!useCloud) return;
+    try {
+      const reactions = await apiReact(photoId, emoji, currentUser);
+      setCloudPhotos((prev) => (prev ?? []).map(
+        (p) => p.id === photoId ? { ...p, reactions } : p
+      ));
+    } catch (e) {
+      setCloudError(`Reaction failed: ${e.message}`);
     }
   };
 
@@ -298,6 +432,15 @@ export default function TheWall({ participants }) {
         </div>
       )}
 
+      {identityPrompt && (
+        <div className="card" style={{ marginBottom: 12, borderLeft: '3px solid var(--gold)' }}>
+          <p className="hint">Set your name in <strong>Settings</strong> to react to photos.</p>
+          <button className="btn-secondary" style={{ marginTop: 8 }} onClick={() => setIdentityPrompt(false)}>
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {adding && (
         <AddBitForm
           participants={participants}
@@ -319,10 +462,27 @@ export default function TheWall({ participants }) {
 
       {!cloudLoading && (
         <div className="wall-grid">
-          {photos.map((photo) => (
-            <PhotoCard key={photo.id} photo={photo} onDelete={handleDelete} />
+          {photos.map((photo, idx) => (
+            <PhotoCard
+              key={photo.id}
+              photo={photo}
+              currentUser={currentUser}
+              onDelete={handleDelete}
+              onOpen={() => setLightboxIndex(idx)}
+              onReact={handleReact}
+            />
           ))}
         </div>
+      )}
+
+      {lightboxIndex !== null && photos[lightboxIndex] && (
+        <Lightbox
+          photos={photos}
+          startIndex={lightboxIndex}
+          currentUser={currentUser}
+          onClose={() => setLightboxIndex(null)}
+          onReact={handleReact}
+        />
       )}
     </div>
   );

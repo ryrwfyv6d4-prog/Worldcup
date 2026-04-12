@@ -51,7 +51,6 @@ export default {
       }
 
       // POST /photos — multipart/form-data (image + caption + person)
-      // FormData upload is a CORS simple request — no preflight — works on iOS Safari
       if (request.method === 'POST' && path === '/photos') {
         const formData = await request.formData();
         const image = formData.get('image');
@@ -65,7 +64,7 @@ export default {
           httpMetadata: { contentType },
         });
 
-        const photo = { id, ts: id, caption, person };
+        const photo = { id, ts: id, caption, person, reactions: {} };
         await env.WALL.put(`photos/${id}.json`, JSON.stringify(photo), {
           httpMetadata: { contentType: 'application/json' },
         });
@@ -73,13 +72,35 @@ export default {
         return json(photo, 201);
       }
 
+      // POST /photos/:id/reactions — toggle emoji reaction for a person
+      const reactMatch = path.match(/^\/photos\/(\d+)\/reactions$/);
+      if (request.method === 'POST' && reactMatch) {
+        const id = reactMatch[1];
+        const { emoji, person } = await request.json();
+        const item = await env.WALL.get(`photos/${id}.json`);
+        if (!item) return json({ error: 'Not found' }, 404);
+        const photo = JSON.parse(await item.text());
+        const reactions = photo.reactions || {};
+        const people = reactions[emoji] || [];
+        const idx = people.indexOf(person);
+        if (idx === -1) {
+          reactions[emoji] = [...people, person];
+        } else {
+          reactions[emoji] = people.filter((_, i) => i !== idx);
+          if (reactions[emoji].length === 0) delete reactions[emoji];
+        }
+        photo.reactions = reactions;
+        await env.WALL.put(`photos/${id}.json`, JSON.stringify(photo), {
+          httpMetadata: { contentType: 'application/json' },
+        });
+        return json(reactions);
+      }
+
       // GET /photos/:id/image — serve raw image from R2
       const imageMatch = path.match(/^\/photos\/(\d+)\/image$/);
       if (request.method === 'GET' && imageMatch) {
         const item = await env.WALL.get(`photos/${imageMatch[1]}.img`);
         if (!item) return json({ error: 'Not found' }, 404);
-        // Use arrayBuffer() instead of item.body (ReadableStream) to avoid
-        // streaming issues with binary data in Cloudflare Workers
         const imageData = await item.arrayBuffer();
         return new Response(imageData, {
           headers: {
@@ -98,6 +119,26 @@ export default {
           env.WALL.delete(`photos/${id}.json`),
           env.WALL.delete(`photos/${id}.img`),
         ]);
+        return json({ ok: true });
+      }
+
+      // GET /predictions — load all predictions
+      if (request.method === 'GET' && path === '/predictions') {
+        const item = await env.WALL.get('predictions.json');
+        if (!item) return json({});
+        return json(JSON.parse(await item.text()));
+      }
+
+      // POST /predictions — save a prediction { matchId, person, pick }
+      if (request.method === 'POST' && path === '/predictions') {
+        const { matchId, person, pick } = await request.json();
+        const item = await env.WALL.get('predictions.json');
+        const preds = item ? JSON.parse(await item.text()) : {};
+        if (!preds[matchId]) preds[matchId] = {};
+        preds[matchId][person] = pick;
+        await env.WALL.put('predictions.json', JSON.stringify(preds), {
+          httpMetadata: { contentType: 'application/json' },
+        });
         return json({ ok: true });
       }
 

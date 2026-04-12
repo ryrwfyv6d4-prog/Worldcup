@@ -155,9 +155,9 @@ body {
 .nav-btn:active { background: rgba(255, 255, 255, 0.04); }
 .nav-icon { font-size: 18px; line-height: 1; }
 .nav-label {
-  font-size: 0.58rem;
+  font-size: 0.52rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
 }
 
@@ -1223,3 +1223,376 @@ body {
 }
 
 .add-bit-form { margin-bottom: 14px; }
+
+/* ── Who Are You modal ── */
+.whoami-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 11, 22, 0.92);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(4px);
+}
+.whoami-modal {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 32px 24px 24px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  text-align: center;
+}
+.whoami-icon { font-size: 44px; margin-bottom: 12px; }
+.whoami-title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.whoami-sub {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+.whoami-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.whoami-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--gold);
+  color: var(--navy);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.whoami-btn:hover { background: var(--gold-dark); }
+.whoami-btn:active { transform: scale(0.97); }
+.whoami-skip {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 8px;
+}
+
+/* ── Install steps ── */
+.install-steps { display: flex; flex-direction: column; gap: 12px; }
+.install-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.45;
+}
+.install-num {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  background: var(--gold);
+  color: var(--navy);
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.install-icon {
+  display: inline-block;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  padding: 0 4px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  margin: 0 2px;
+}
+
+/* ── Lightbox ── */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.95);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: #fff;
+  font-size: 1.1rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+.lightbox-counter {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.6);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.lightbox-img-wrap {
+  width: 100%;
+  max-width: 480px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox-img {
+  max-width: 100%;
+  max-height: 60vh;
+  border-radius: 4px;
+  object-fit: contain;
+  display: block;
+}
+.lightbox-info {
+  width: 100%;
+  max-width: 480px;
+  padding: 16px 24px 0;
+  text-align: center;
+}
+.lightbox-caption {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.lightbox-meta {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.5);
+}
+
+/* ── Reactions ── */
+.reaction-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+.reaction-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--card-alt);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  color: var(--text);
+}
+.reaction-btn.mine {
+  background: rgba(245, 166, 35, 0.18);
+  border-color: var(--gold);
+  color: var(--gold-dark);
+}
+.reaction-btn:active { transform: scale(0.93); }
+.reaction-count { font-size: 0.72rem; font-weight: 700; }
+.lightbox-reactions {
+  width: 100%;
+  max-width: 480px;
+  padding: 12px 24px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+.lightbox-reactions .reaction-btn { font-size: 0.9rem; padding: 5px 11px; }
+
+/* ── Leaderboard reactions ── */
+.lb-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 16px 12px;
+  border-top: 1px solid var(--border);
+}
+.lb-reaction-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--card-alt);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  color: var(--text);
+}
+.lb-reaction-btn.mine {
+  background: rgba(245, 166, 35, 0.18);
+  border-color: var(--gold);
+  color: var(--gold-dark);
+}
+.lb-reaction-btn:active { transform: scale(0.93); }
+.lb-reaction-who {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  padding: 2px 10px 8px;
+  font-style: italic;
+}
+
+/* ── Today's Matches ── */
+.today-matches {
+  background: linear-gradient(135deg, #0D1E35 0%, #142338 100%);
+  border: 1px solid var(--navy-light);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.today-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.today-match-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.83rem;
+  color: var(--text-on-dark);
+}
+.today-match-row:last-child { border-bottom: none; }
+.today-match-row.live-row { background: rgba(220, 38, 38, 0.08); border-radius: 6px; padding: 7px 8px; }
+.today-teams { flex: 1; font-weight: 600; }
+.today-owner { font-size: 0.68rem; color: var(--gold); font-weight: 700; margin-top: 2px; }
+.today-time { font-size: 0.75rem; color: var(--text-muted-dark); flex-shrink: 0; }
+.today-score { font-size: 0.82rem; font-weight: 800; color: var(--text-on-dark); flex-shrink: 0; }
+.today-live-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--live-red);
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+/* ── Predictions ── */
+.pred-list { display: flex; flex-direction: column; gap: 10px; }
+.pred-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+}
+.pred-match-teams {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.pred-match-vs { color: var(--text-muted); font-size: 0.78rem; font-weight: 500; }
+.pred-match-meta { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 12px; }
+.pred-odds-row {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  font-style: italic;
+}
+.pred-btns {
+  display: flex;
+  gap: 6px;
+}
+.pred-btn {
+  flex: 1;
+  padding: 10px 4px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-alt);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.pred-btn:hover { border-color: var(--gold); color: var(--gold-dark); }
+.pred-btn.selected {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--navy);
+}
+.pred-btn.correct { background: rgba(22, 163, 74, 0.15); border-color: var(--green); color: var(--green); }
+.pred-btn.wrong { opacity: 0.45; }
+.pred-result-msg {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.pred-result-msg.correct { color: var(--green); }
+.pred-pts-table { margin-top: 12px; }
+.pred-pts-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.pred-pts-row:last-child { border-bottom: none; }
+.pred-pts-val { font-weight: 800; color: var(--gold-dark); }
+
+/* ── PWA polish ── */
+button, a, [role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.main { overscroll-behavior: none; }
+.nav { overscroll-behavior: none; }
+.stage-filters { overscroll-behavior-x: contain; }
+h1, h2, h3, .app-title, .app-year, .lb-name, .lb-pts,
+.section-title, .polaroid-caption, .whoami-title {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .whoami-modal { background: var(--card); }
+  .install-step { color: var(--text); }
+}
+
