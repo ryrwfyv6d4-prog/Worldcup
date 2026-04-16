@@ -27,13 +27,15 @@ self.addEventListener('fetch', (event) => {
     if (method === 'GET' || method === 'HEAD' || method === 'DELETE') {
       return fetch(url, { method, headers });
     }
-    // Materialise body as ArrayBuffer — avoids iOS Safari ReadableStream bug
-    const body = await event.request.arrayBuffer();
-    return fetch(url, {
-      method,
-      headers,
-      body: body.byteLength > 0 ? body : undefined,
-    });
+    // Materialise body — avoids iOS Safari ReadableStream bug.
+    // FormData (multipart) must be cloned as blob, not arrayBuffer —
+    // arrayBuffer() loses the multipart boundary so the Worker can't parse fields.
+    const contentType = headers.get('content-type') || '';
+    const body = contentType.includes('multipart/form-data')
+      ? await event.request.blob()
+      : await event.request.arrayBuffer();
+    const hasBody = body instanceof ArrayBuffer ? body.byteLength > 0 : body.size > 0;
+    return fetch(url, { method, headers, body: hasBody ? body : undefined });
   })());
 });
 
