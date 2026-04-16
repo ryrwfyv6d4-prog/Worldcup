@@ -276,7 +276,6 @@ function AddBitForm({ participants, onAdd, onCancel }) {
           ref={fileRef}
           type="file"
           accept="image/*"
-          capture="environment"
           onChange={handleFile}
           style={{ display: 'none' }}
         />
