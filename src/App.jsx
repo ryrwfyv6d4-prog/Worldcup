@@ -187,7 +187,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <span className="header-icon">🏟️</span>
+        <img src="/Worldcup/icon-192.png" alt="Dan's Shed" className="header-icon" style={{width:40,height:40,objectFit:'contain'}} />
         <div className="header-text">
           <h1 className="app-title">
             DAN'S <span className="gold">SHED</span>
