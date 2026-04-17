@@ -71,31 +71,30 @@ const TIER_COLOURS = ['#f59e0b', '#60a5fa', '#34d399', '#f87171', '#a78bfa', '#f
 // Build a draft-night PLAYERS array from current tiered draw results
 function buildDraftNightExport(assignments, tierInfo) {
   if (!tierInfo) return null;
-  const { numTiers, n } = tierInfo;
-  const lines = Object.entries(assignments).map(([name, teams]) => {
+  const numTiers = tierInfo.numTiers;
+  const n = tierInfo.n;
+  const lines = Object.entries(assignments).map(function(entry) {
+    const name = entry[0];
+    const teams = entry[1];
     const tierTeams = {};
-    teams.forEach(team => {
+    teams.forEach(function(team) {
       const idx = TEAMS_BY_RANK.indexOf(team);
       if (idx === -1) {
-        // bonus minnow
         tierTeams.bonus = team;
       } else {
         const t = Math.floor(idx / n) + 1;
-        if (t <= numTiers) tierTeams[`t${t}`] = team;
-        else tierTeams.bonus = team;
+        if (t <= numTiers) { tierTeams['t' + t] = team; }
+        else { tierTeams.bonus = team; }
       }
     });
-    const parts = [`name: '${name}'`];
+    const parts = ["name: '" + name + "'"];
     for (let t = numTiers; t >= 1; t--) {
-      if (tierTeams[`t${t}`]) parts.push(`t${t}: '${tierTeams[`t${t}`]}'`);
+      if (tierTeams['t' + t]) { parts.push('t' + t + ": '" + tierTeams['t' + t] + "'"); }
     }
-    if (tierTeams.bonus) parts.push(`bonusTeam: '${tierTeams.bonus}'`);
-    return `  { ${parts.join(', ')} },`;
+    if (tierTeams.bonus) { parts.push("bonusTeam: '" + tierTeams.bonus + "'"); }
+    return '  { ' + parts.join(', ') + ' },';
   });
-  return `const PLAYERS = [
-${lines.join('
-')}
-];`;
+  return 'const PLAYERS = [\n' + lines.join('\n') + '\n];';
 }
 
 
