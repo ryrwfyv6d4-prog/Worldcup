@@ -68,6 +68,37 @@ function getTierLabel(team, numTiers, n) {
 }
 
 const TIER_COLOURS = ['#f59e0b', '#60a5fa', '#34d399', '#f87171', '#a78bfa', '#fb923c'];
+// Build a draft-night PLAYERS array from current tiered draw results
+function buildDraftNightExport(assignments, tierInfo) {
+  if (!tierInfo) return null;
+  const { numTiers, n } = tierInfo;
+  const lines = Object.entries(assignments).map(([name, teams]) => {
+    const tierTeams = {};
+    teams.forEach(team => {
+      const idx = TEAMS_BY_RANK.indexOf(team);
+      if (idx === -1) {
+        // bonus minnow
+        tierTeams.bonus = team;
+      } else {
+        const t = Math.floor(idx / n) + 1;
+        if (t <= numTiers) tierTeams[`t${t}`] = team;
+        else tierTeams.bonus = team;
+      }
+    });
+    const parts = [`name: '${name}'`];
+    for (let t = numTiers; t >= 1; t--) {
+      if (tierTeams[`t${t}`]) parts.push(`t${t}: '${tierTeams[`t${t}`]}'`);
+    }
+    if (tierTeams.bonus) parts.push(`bonusTeam: '${tierTeams.bonus}'`);
+    return `  { ${parts.join(', ')} },`;
+  });
+  return `const PLAYERS = [
+${lines.join('
+')}
+];`;
+}
+
+
 
 export default function Draw({
   participants,
@@ -84,6 +115,7 @@ export default function Draw({
   const [animating, setAnimating] = useState(false);
   const [expandedCard, setExpandedCard] = useState(null);
   const [tierInfo, setTierInfo] = useState(null); // { numTiers, teamsUsed, teamsDropped }
+  const [exportCopied, setExportCopied] = useState(false);
 
   const hasResults = Object.keys(assignments).length > 0;
   const isLocked = drawLocked && hasResults;
@@ -232,6 +264,24 @@ export default function Draw({
 
       {hasResults && (
         <>
+          {isLocked && tierInfo && (
+            <button
+              className="btn-outline-gold"
+              style={{ width: '100%', marginBottom: 12, fontSize: '0.9rem' }}
+              onClick={() => {
+                const txt = buildDraftNightExport(assignments, tierInfo);
+                if (txt) {
+                  navigator.clipboard.writeText(txt).then(() => {
+                    setExportCopied(true);
+                    setTimeout(() => setExportCopied(false), 2500);
+                  });
+                }
+              }}
+            >
+              {exportCopied ? '✅ Copied to clipboard!' : '🎬 Copy Draft Night export'}
+            </button>
+          )}
+
           {tierInfo && (
             <div className="card" style={{ marginBottom: 12, padding: '10px 14px' }}>
               <p className="hint" style={{ margin: 0 }}>
