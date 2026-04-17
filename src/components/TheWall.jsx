@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
 
 const WALL_KEY = 'dans_shed_wall_v1';
@@ -24,7 +24,7 @@ async function apiDelete(path) {
   if (!res.ok) throw new Error(`${res.status}`);
 }
 
-// Resize image via canvas and return a Blob (avoids large base64 JSON bodies on iOS Safari)
+// Resize image via canvas and return a Blob
 function resizeImageToBlob(file, maxPx = 720, quality = 0.72) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -42,7 +42,6 @@ function resizeImageToBlob(file, maxPx = 720, quality = 0.72) {
       canvas.toBlob(
         (blob) => {
           if (blob) { resolve(blob); return; }
-          // iOS fallback: toBlob returned null, convert via toDataURL
           try {
             const dataUrl = canvas.toDataURL('image/jpeg', quality);
             const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
@@ -69,7 +68,105 @@ function tiltStyle(id) {
   return { transform: `rotate(${tilts[n]}deg)` };
 }
 
-function PhotoCard({ photo, onDelete }) {
+// Lightbox overlay with prev/next arrows and close
+function Lightbox({ photos, startIndex, onClose }) {
+  const [index, setIndex] = useState(startIndex);
+  const photo = photos[index];
+
+  const prev = useCallback(() => setIndex(i => (i - 1 + photos.length) % photos.length), [photos.length]);
+  const next = useCallback(() => setIndex(i => (i + 1) % photos.length), [photos.length]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'ArrowLeft') prev();
+      else if (e.key === 'ArrowRight') next();
+      else if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [prev, next, onClose]);
+
+  // Touch swipe support
+  const touchStart = useRef(null);
+  const onTouchStart = (e) => { touchStart.current = e.touches[0].clientX; };
+  const onTouchEnd = (e) => {
+    if (touchStart.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current;
+    if (dx > 50) prev();
+    else if (dx < -50) next();
+    touchStart.current = null;
+  };
+
+  const date = new Date(photo.ts).toLocaleDateString('en-AU', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  });
+
+  return (
+    <div
+      className="lightbox-overlay"
+      onClick={onClose}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* Close button */}
+      <button
+        className="lightbox-close"
+        onClick={onClose}
+        aria-label="Close"
+      >
+        ✕
+      </button>
+
+      {/* Prev arrow */}
+      {photos.length > 1 && (
+        <button
+          className="lightbox-arrow lightbox-prev"
+          onClick={(e) => { e.stopPropagation(); prev(); }}
+          aria-label="Previous"
+        >
+          ‹
+        </button>
+      )}
+
+      {/* Image */}
+      <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+        <img
+          src={photo.dataUrl || photo.imageUrl}
+          alt={photo.caption}
+          className="lightbox-img"
+        />
+        {(photo.caption || photo.person) && (
+          <div className="lightbox-caption">
+            {photo.caption && <span className="lightbox-caption-text">{photo.caption}</span>}
+            <span className="lightbox-meta">
+              {photo.person && <span>{photo.person}</span>}
+              <span>{date}</span>
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Next arrow */}
+      {photos.length > 1 && (
+        <button
+          className="lightbox-arrow lightbox-next"
+          onClick={(e) => { e.stopPropagation(); next(); }}
+          aria-label="Next"
+        >
+          ›
+        </button>
+      )}
+
+      {/* Counter */}
+      {photos.length > 1 && (
+        <div className="lightbox-counter">{index + 1} / {photos.length}</div>
+      )}
+    </div>
+  );
+}
+
+function PhotoCard({ photo, onDelete, onClick }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const date = new Date(photo.ts).toLocaleDateString('en-AU', {
     day: 'numeric', month: 'short', year: 'numeric',
@@ -77,7 +174,7 @@ function PhotoCard({ photo, onDelete }) {
 
   return (
     <div className="polaroid" style={tiltStyle(photo.id)}>
-      <div className="polaroid-img-wrap">
+      <div className="polaroid-img-wrap" onClick={onClick} style={{ cursor: 'pointer' }}>
         <img src={photo.dataUrl || photo.imageUrl} alt={photo.caption} className="polaroid-img" />
       </div>
       <div className="polaroid-body">
@@ -215,17 +312,15 @@ function AddBitForm({ participants, onAdd, onCancel }) {
 export default function TheWall({ participants }) {
   const useCloud = Boolean(WORKER_URL);
 
-  // Local storage (fallback when no Worker URL)
   const [localPhotos, setLocalPhotos] = useLocalStorage(WALL_KEY, []);
 
-  // Cloud storage state
   const [cloudPhotos, setCloudPhotos] = useState(null);
   const [cloudLoading, setCloudLoading] = useState(useCloud);
   const [cloudError, setCloudError] = useState(null);
 
   const [adding, setAdding] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
 
-  // Load from cloud on mount
   useEffect(() => {
     if (!useCloud) return;
     setCloudLoading(true);
@@ -271,6 +366,8 @@ export default function TheWall({ participants }) {
     } else {
       setLocalPhotos((prev) => prev.filter((p) => p.id !== id));
     }
+    // Close lightbox if open photo was deleted
+    setLightboxIndex(null);
   };
 
   return (
@@ -317,10 +414,23 @@ export default function TheWall({ participants }) {
 
       {!cloudLoading && (
         <div className="wall-grid">
-          {photos.map((photo) => (
-            <PhotoCard key={photo.id} photo={photo} onDelete={handleDelete} />
+          {photos.map((photo, idx) => (
+            <PhotoCard
+              key={photo.id}
+              photo={photo}
+              onDelete={handleDelete}
+              onClick={() => setLightboxIndex(idx)}
+            />
           ))}
         </div>
+      )}
+
+      {lightboxIndex !== null && (
+        <Lightbox
+          photos={photos}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
       )}
     </div>
   );
