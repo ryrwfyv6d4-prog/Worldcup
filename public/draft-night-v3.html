@@ -816,19 +816,40 @@ async function doCountdown() {
 }
 
 async function doFakeoutReveal(p) {
-  // Flip to the fakeout team
   const fakeTeam = p.fakeout;
-  const fakeFlag = FLAGS[fakeTeam] || '🏳️';
-  flipCard(`card-${p.name}-t1`, fakeTeam, fakeFlag, 't1');
-  stageShake(500);
-  flashBg('red', 600);
-  spawnParticles('😱', 12);
+  const fakeFlag = FLAGS[fakeTeam] || '';
+
+  // Hero-size the card first, same as real T1
+  const card = document.getElementById('card-' + p.name + '-t1');
+  if (card) { card.classList.add('hero'); }
+  await wait(80);
+
+  // Flip to fake team
+  flipCard('card-' + p.name + '-t1', fakeTeam, fakeFlag, 't1');
+
+  // Big explosion — red chaos
+  stageShake(700);
+  flashBg('red', 900);
+  spawnParticles('\u{1F631}', 14);
+  spawnParticles('\u{1F4A5}', 10);
+  spawnParticles('\u{1F525}', 8);
+
   clearCommentary();
-  setCommentary(`${fakeTeam.toUpperCase()}`, 'Wait... WHAT.');
-  await wait(2800); // let the room react
+  setCommentary(fakeTeam.toUpperCase(), 'Wait... WHAT.');
+
+  // Hold the big fake card — let the room lose their minds
+  await wait(3500);
 }
 
 async function doFakeoutError(p) {
+  // Shrink the hero card back into grid before overlay covers it
+  const card = document.getElementById('card-' + p.name + '-t1');
+  if (card) {
+    card.classList.add('settling');
+    card.classList.remove('hero');
+    await wait(400);
+    card.classList.remove('settling');
+  }
   document.getElementById('fakeout-overlay').classList.add('active');
   await wait(200);
   document.getElementById('fakeout-overlay').classList.add('flash');
@@ -868,11 +889,13 @@ async function doFlipT1(p) {
 
   // 2. Flip it
   flipCard('card-' + p.name + '-t1', team, flag, 't1');
-  stageShake(600);
-  flashBg('gold', 800);
-  spawnParticles('🎉', 10);
-  spawnParticles('⭐', 8);
-  spawnParticles('🔥', 6);
+  stageShake(800);
+  flashBg('gold', 1000);
+  spawnParticles('\u{1F38A}', 16);
+  spawnParticles('\u2B50', 14);
+  spawnParticles('\u{1F525}', 10);
+  spawnParticles('\u{1F4A5}', 8);
+  spawnParticles('\u2728', 12);
 
   // 3. Show commentary while card is big
   document.getElementById('spotlight-overlay').classList.remove('on');
