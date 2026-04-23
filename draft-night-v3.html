@@ -794,13 +794,10 @@ async function doFlipTier(p, tier) {
 
 async function doSpotlight(p) {
   clearCommentary();
-  setCommentary('THE MOMENT OF TRUTH', `${p.name.toUpperCase()}'s Tier 1 team is about to be revealed...`);
+  setCommentary('THE MOMENT OF TRUTH', p.name.toUpperCase() + "'s Tier 1 team is about to be revealed...");
   setTierLabel(TIER_LABELS.t1);
   document.getElementById('spotlight-overlay').classList.add('on');
-  await wait(600);
-  // Bring just the T1 card to front visually
-  const card = document.getElementById(`card-${p.name}-t1`);
-  if (card) { card.style.position='relative'; card.style.zIndex='60'; }
+  await wait(800);
   await doCountdown();
 }
 
@@ -864,15 +861,19 @@ async function doFakeoutFix(p) {
   document.getElementById('fakeout-overlay').classList.remove('active');
   document.getElementById('spotlight-overlay').classList.add('on');
 
-  // Reset the T1 card back to face-down
-  const card = document.getElementById(`card-${p.name}-t1`);
+  // Unflip the card and wipe the front face so the real team isn't pre-loaded
+  const card = document.getElementById('card-' + p.name + '-t1');
   if (card) {
     const inner = card.querySelector('.card-inner');
     inner.classList.remove('flipped');
+    // Wait for the CSS flip transition to complete before clearing content
+    await wait(700);
+    const front = inner.querySelector('.card-face.card-front');
+    if (front) { front.innerHTML = ''; }
   }
   clearCommentary();
   setCommentary('RECALIBRATING...', 'Stand by for correct assignment.');
-  await wait(1200);
+  await wait(600);
   await doCountdown();
 }
 
