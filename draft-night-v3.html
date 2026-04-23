@@ -314,6 +314,32 @@
   }
   #spotlight-overlay.on { background: rgba(0,0,0,0.82); }
 
+  /* ── HERO CARD — big centred T1 reveal ── */
+  .card-wrap.hero {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(55vw, 320px) !important;
+    height: min(73vw, 430px) !important;
+    z-index: 100 !important;
+    transition: none !important;
+  }
+  .card-wrap.hero .card-team-name {
+    font-size: clamp(1.2rem, 4vw, 2rem) !important;
+  }
+  .card-wrap.hero .card-flag {
+    width: 82% !important;
+  }
+  .card-wrap.hero .card-tier-badge {
+    font-size: 0.9rem !important;
+    padding: 4px 12px !important;
+  }
+  /* Settle animation — from hero back to grid */
+  .card-wrap.settling {
+    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
   /* ── COUNTDOWN ── */
   #countdown-display {
     position: fixed;
@@ -558,7 +584,8 @@ const PLAYERS = [
   { name: 'Phil',   t4: 'Qatar',         t3: 'Paraguay',   t2: 'Uruguay',      t1: 'France'      },
   { name: 'Dan',    t4: 'South Africa',  t3: 'South Korea', t2: 'Colombia',    t1: 'Spain'       },
   { name: 'Badger', t4: 'Bosnia & Herzegovina', t3: 'Egypt', t2: 'Japan',      t1: 'Argentina'   },
-  { name: 'Hearn',  t4: 'Saudi Arabia',  t3: 'Scotland',   t2: 'Mexico',       t1: 'England'     },
+  { name: 'Hearn',   t4: 'Saudi Arabia',  t3: 'Scotland',   t2: 'Mexico',       t1: 'England'     },
+  { name: 'Hendrik', t4: 'Iraq',          t3: 'Turkey',     t2: 'Ecuador',      t1: 'Netherlands', fakeout: 'Germany' },
   { name: 'TJ',     t4: 'Tunisia',       t3: 'Austria',    t2: 'Switzerland',  t1: 'Portugal'    },
   { name: 'Dave',   t4: 'Czech Republic', t3: 'Turkey',    t2: 'Senegal',      t1: 'Brazil'      },
   { name: 'Jake',   t4: 'Jordan',        t3: 'Iran',       t2: 'Ecuador',      t1: 'Netherlands' },
@@ -830,23 +857,39 @@ async function doFakeoutFix(p) {
 
 async function doFlipT1(p) {
   const team = p.t1;
-  const flag = FLAGS[team] || '🏳️';
+  const flag = FLAGS[team] || '';
   const lines = TEAM_LINES[team] || [team.toUpperCase(), 'A Tier 1 team. Respect.'];
 
-  flipCard(`card-${p.name}-t1`, team, flag, 't1');
+  const card = document.getElementById('card-' + p.name + '-t1');
+
+  // 1. Make card hero-sized (fixed, centred, big)
+  if (card) { card.classList.add('hero'); }
+  await wait(80); // let position apply before flip
+
+  // 2. Flip it
+  flipCard('card-' + p.name + '-t1', team, flag, 't1');
   stageShake(600);
   flashBg('gold', 800);
   spawnParticles('🎉', 10);
   spawnParticles('⭐', 8);
   spawnParticles('🔥', 6);
 
+  // 3. Show commentary while card is big
   document.getElementById('spotlight-overlay').classList.remove('on');
-  // Reset z-index
-  const card = document.getElementById(`card-${p.name}-t1`);
-  if (card) { card.style.position=''; card.style.zIndex=''; }
-
   await typeCommentary(lines[0], lines[1]);
-  await wait(300);
+
+  // 4. Hold the big card so the room can take it in
+  await wait(1800);
+
+  // 5. Settle card back into grid
+  if (card) {
+    card.classList.add('settling');
+    card.classList.remove('hero');
+    // After transition finishes, remove settling class
+    await wait(750);
+    card.classList.remove('settling');
+  }
+  await wait(200);
 }
 
 async function doFlipBonus(p) {
