@@ -411,6 +411,7 @@ body::before {
 /* position:fixed breaks preserve-3d in most browsers — force back face hidden */
 .card-wrap.hero .card-inner {
   transform-style: flat !important;
+  transform: none !important;
 }
 .card-wrap.hero .card-back {
   display: none !important;
@@ -418,6 +419,8 @@ body::before {
 .card-wrap.hero .card-front {
   transform: none !important;
   opacity: 1 !important;
+  position: absolute !important;
+  inset: 0 !important;
 }
 .card-wrap.hero .card-team-name {
   font-size: clamp(1.1rem, 3.5vw, 1.8rem) !important;
@@ -431,28 +434,35 @@ body::before {
               left 0.65s cubic-bezier(0.4,0,0.2,1) !important;
 }
 
-/* ── FAKEOUT DISMISSAL ANIMATIONS ── */
-@keyframes card-explode {
-  0%   { transform: translate(-50%,-50%) scale(1) rotate(0deg); opacity: 1; }
-  15%  { transform: translate(-50%,-50%) scale(1.15) rotate(-3deg); opacity: 1; }
-  40%  { transform: translate(-50%,-50%) scale(1.4) rotate(6deg); opacity: 0.6; filter: brightness(3); }
-  70%  { transform: translate(-48%,-60%) scale(0.3) rotate(25deg); opacity: 0.2; filter: brightness(5); }
-  100% { transform: translate(-50%,-50%) scale(0) rotate(45deg); opacity: 0; }
-}
-@keyframes card-smoke {
-  0%   { transform: translate(-50%,-50%) scale(1); opacity: 1; filter: blur(0px) brightness(1); }
-  30%  { transform: translate(-50%,-52%) scale(1.05); opacity: 0.8; filter: blur(1px) brightness(0.7); }
-  60%  { transform: translate(-50%,-58%) scale(1.1); opacity: 0.4; filter: blur(4px) brightness(0.4); }
-  100% { transform: translate(-50%,-68%) scale(1.2); opacity: 0; filter: blur(10px) brightness(0); }
-}
-.card-wrap.dismiss-explode {
-  animation: card-explode 0.65s cubic-bezier(0.4,0,0.2,1) forwards !important;
+/* ── FAKEOUT DISMISSAL — ghost overlay, not card itself ── */
+.fakeout-ghost {
+  position: fixed;
+  z-index: 150;
   pointer-events: none;
+  overflow: hidden;
+  border: 3px solid var(--ink);
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
-.card-wrap.dismiss-smoke {
-  animation: card-smoke 0.9s ease-in forwards !important;
-  pointer-events: none;
+@keyframes ghost-explode {
+  0%   { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(1); }
+  20%  { transform: scale(1.18) rotate(-4deg); opacity: 1; filter: brightness(2.5); }
+  50%  { transform: scale(1.5) rotate(8deg); opacity: 0.5; filter: brightness(4); }
+  75%  { transform: scale(0.4) rotate(28deg); opacity: 0.15; filter: brightness(6); }
+  100% { transform: scale(0) rotate(55deg); opacity: 0; filter: brightness(8); }
 }
+@keyframes ghost-smoke {
+  0%   { transform: translateY(0) scale(1); opacity: 1; filter: blur(0px) brightness(1); }
+  25%  { transform: translateY(-12px) scale(1.04); opacity: 0.85; filter: blur(1px) brightness(0.8); }
+  55%  { transform: translateY(-30px) scale(1.08); opacity: 0.45; filter: blur(5px) brightness(0.4); }
+  100% { transform: translateY(-70px) scale(1.15); opacity: 0; filter: blur(14px) brightness(0); }
+}
+.fakeout-ghost.exploding { animation: ghost-explode 0.7s cubic-bezier(0.4,0,0.2,1) forwards; }
+.fakeout-ghost.smoking   { animation: ghost-smoke 1s ease-in forwards; }
 
 /* ── COUNTDOWN ── */
 #countdown-display {
@@ -1006,15 +1016,33 @@ async function doFakeoutError(p) {
   const dismissal = FAKEOUT_DISMISS[p.name] || 'explode';
 
   if (card) {
-    // Play dramatic dismissal while still in hero position
-    card.classList.add('dismiss-' + dismissal);
-    await wait(dismissal === 'smoke' ? 950 : 700);
-    // Hard-hide then snap out of hero
+    // Snapshot the card's current position and size
+    const rect = card.getBoundingClientRect();
+
+    // Clone card's visible content into a ghost div at the same screen position
+    const ghost = document.createElement('div');
+    ghost.className = 'fakeout-ghost';
+    ghost.style.left   = rect.left + 'px';
+    ghost.style.top    = rect.top  + 'px';
+    ghost.style.width  = rect.width  + 'px';
+    ghost.style.height = rect.height + 'px';
+    // Copy inner content from the front face
+    const front = card.querySelector('.card-face.card-front');
+    if (front) { ghost.innerHTML = front.innerHTML; }
+    document.body.appendChild(ghost);
+
+    // Hide the real card immediately — ghost takes over visually
     card.style.opacity = '0';
     card.classList.remove('hero');
-    card.classList.remove('dismiss-' + dismissal);
     card.style.transition = 'none';
-    await wait(50);
+
+    // Trigger animation on ghost
+    await wait(30); // let ghost paint first
+    ghost.classList.add(dismissal === 'smoke' ? 'smoking' : 'exploding');
+    const animDur = dismissal === 'smoke' ? 1050 : 750;
+    await wait(animDur);
+    ghost.remove();
+
     card.style.transition = '';
     card.style.opacity = '';
   }
