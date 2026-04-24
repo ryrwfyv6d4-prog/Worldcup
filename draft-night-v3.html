@@ -3,482 +3,643 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dan's Shed — Draft Night 2026</title>
+<title>Dan's Shed — World Cup 2026 Draw</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,900;1,700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --gold: #f0c040;
-    --gold-dim: #a07c1a;
-    --red: #c0392b;
-    --navy: #0a0e1a;
-    --navy2: #111828;
-    --green: #27ae60;
-    --text: #e8e0d0;
-    --text-dim: #8a8070;
-  }
+:root {
+  --pitch:   #1a3a1a;
+  --pitch2:  #142e14;
+  --line:    #e8e8e0;
+  --line-dim:#9a9a90;
+  --red:     #cc1111;
+  --white:   #f0ede6;
+  --paper:   #e8e4d8;
+  --stamp:   #1a3a1a;
+  --ink:     #1c1c1c;
+  --ink-dim: #555;
+  --accent:  #d4a017;
+}
 
-  body {
-    background: var(--navy);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    height: 100vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    user-select: none;
-    position: relative;
-  }
+body {
+  background: var(--pitch);
+  color: var(--white);
+  font-family: 'Barlow', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  position: relative;
+}
 
-  /* scanlines */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.06) 2px,
-      rgba(0,0,0,0.06) 4px
-    );
-    pointer-events: none;
-    z-index: 900;
-  }
+/* Subtle pitch stripe texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0px,
+    transparent 60px,
+    rgba(0,0,0,0.06) 60px,
+    rgba(0,0,0,0.06) 120px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
 
-  /* grain */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: -50%;
-    width: 200%;
-    height: 200%;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    opacity: 0.3;
-    z-index: 899;
-    animation: grain 0.5s steps(2) infinite;
-  }
-  @keyframes grain {
-    0%,100% { transform: translate(0,0); }
-    25% { transform: translate(-1%, 1%); }
-    50% { transform: translate(1%, -1%); }
-    75% { transform: translate(-1%, -1%); }
-  }
+/* ── SCREEN MANAGER ── */
+.screen { display: none; width: 100vw; height: 100vh; position: fixed; inset: 0; z-index: 1; }
+.screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
-  /* ── SCREEN MANAGER ── */
-  .screen { display: none; width: 100vw; height: 100vh; position: fixed; inset: 0; }
-  .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+/* ══════════════════════════════════════
+   INTRO SCREEN — printed fixture card
+══════════════════════════════════════ */
+#screen-intro {
+  background: var(--pitch);
+  gap: 0;
+  text-align: center;
+  padding: 40px 20px;
+}
 
-  /* ── INTRO SCREEN ── */
-  #screen-intro {
-    background: radial-gradient(ellipse at center, #1a1228 0%, var(--navy) 70%);
-    gap: 20px;
-    text-align: center;
-    padding: 40px;
-  }
-  .intro-logo { font-size: 5rem; margin-bottom: 8px; }
-  .intro-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(3rem, 9vw, 7rem);
-    color: var(--gold);
-    line-height: 1;
-    letter-spacing: 0.02em;
-    text-shadow: 0 0 40px rgba(240,192,64,0.4);
-  }
-  .intro-sub {
-    font-family: 'Special Elite', cursive;
-    font-size: clamp(1rem, 3vw, 1.5rem);
-    color: var(--text-dim);
-    letter-spacing: 0.1em;
-  }
-  .intro-year {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(1.5rem, 5vw, 3rem);
-    color: var(--gold-dim);
-    letter-spacing: 0.3em;
-  }
-  .intro-btn {
-    margin-top: 32px;
-    padding: 18px 52px;
-    background: var(--gold);
-    color: var(--navy);
-    border: none;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.8rem;
-    letter-spacing: 0.1em;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 0 30px rgba(240,192,64,0.3);
-  }
-  .intro-btn:hover { background: #ffe080; transform: scale(1.03); }
+.ticket {
+  background: var(--paper);
+  color: var(--ink);
+  width: min(480px, 88vw);
+  padding: 40px 36px 32px;
+  position: relative;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.4), 8px 8px 0 rgba(0,0,0,0.15);
+}
+/* Torn edge top */
+.ticket::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 0; right: 0;
+  height: 8px;
+  background: var(--paper);
+  clip-path: polygon(
+    0% 100%, 1.5% 0%, 3% 100%, 4.5% 0%, 6% 100%, 7.5% 0%, 9% 100%,
+    10.5% 0%, 12% 100%, 13.5% 0%, 15% 100%, 16.5% 0%, 18% 100%,
+    19.5% 0%, 21% 100%, 22.5% 0%, 24% 100%, 25.5% 0%, 27% 100%,
+    28.5% 0%, 30% 100%, 31.5% 0%, 33% 100%, 34.5% 0%, 36% 100%,
+    37.5% 0%, 39% 100%, 40.5% 0%, 42% 100%, 43.5% 0%, 45% 100%,
+    46.5% 0%, 48% 100%, 49.5% 0%, 51% 100%, 52.5% 0%, 54% 100%,
+    55.5% 0%, 57% 100%, 58.5% 0%, 60% 100%, 61.5% 0%, 63% 100%,
+    64.5% 0%, 66% 100%, 67.5% 0%, 69% 100%, 70.5% 0%, 72% 100%,
+    73.5% 0%, 75% 100%, 76.5% 0%, 78% 100%, 79.5% 0%, 81% 100%,
+    82.5% 0%, 84% 100%, 85.5% 0%, 87% 100%, 88.5% 0%, 90% 100%,
+    91.5% 0%, 93% 100%, 94.5% 0%, 96% 100%, 97.5% 0%, 99% 100%, 100% 0%, 100% 100%
+  );
+}
+.ticket-header {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(0.65rem, 1.8vw, 0.8rem);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 10px;
+  margin-bottom: 18px;
+}
+.ticket-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(3.2rem, 9vw, 5.5rem);
+  line-height: 0.88;
+  text-transform: uppercase;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+.ticket-title span { color: var(--pitch); display: block; }
+.ticket-sub {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+  letter-spacing: 0.12em;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.ticket-divider {
+  border: none;
+  border-top: 1px dashed #aaa8a0;
+  margin: 16px 0;
+}
+.ticket-info {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 28px;
+}
+/* Red stamp */
+.ticket-stamp {
+  position: absolute;
+  top: 28px; right: 24px;
+  width: 72px; height: 72px;
+  border: 3px solid var(--red);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-14deg);
+  opacity: 0.85;
+}
+.ticket-stamp-inner {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--red);
+  line-height: 1.2;
+}
+.intro-btn {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 1.25rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: var(--pitch);
+  color: var(--white);
+  border: none;
+  padding: 14px 40px;
+  cursor: pointer;
+  transition: background 0.15s;
+  width: 100%;
+}
+.intro-btn:hover { background: #0f260f; }
 
-  /* ── MAIN STAGE ── */
-  #screen-stage {
-    background: var(--navy);
-    flex-direction: column;
-    gap: 0;
-    padding: 20px;
-  }
 
-  #stage { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+/* ══════════════════════════════════════
+   MAIN STAGE
+══════════════════════════════════════ */
+#screen-stage {
+  background: var(--pitch);
+  flex-direction: column;
+  gap: 0;
+  padding: 16px 20px;
+}
 
-  .player-name-banner {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(2.5rem, 7vw, 5rem);
-    color: var(--gold);
-    letter-spacing: 0.05em;
-    text-align: center;
-    text-shadow: 0 0 30px rgba(240,192,64,0.3);
-    min-height: 1.1em;
-    transition: opacity 0.3s;
-  }
+#stage {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 2;
+}
 
-  .tier-label {
-    font-family: 'Special Elite', cursive;
-    font-size: clamp(0.75rem, 2vw, 1rem);
-    color: var(--text-dim);
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    margin-top: -8px;
-  }
+.player-name-banner {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(3rem, 8vw, 6rem);
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--white);
+  letter-spacing: -0.01em;
+  text-align: center;
+  min-height: 1em;
+}
 
-  /* ── CARD GRID ── */
-  .card-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: clamp(8px, 2vw, 16px);
-    justify-content: center;
-    align-items: center;
-    max-width: 900px;
-  }
+.tier-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  font-size: clamp(0.7rem, 1.8vw, 0.9rem);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--line-dim);
+  margin-top: -6px;
+  min-height: 1.2em;
+}
 
-  .card-wrap {
-    perspective: 900px;
-    width: clamp(90px, 18vw, 150px);
-    height: clamp(120px, 24vw, 200px);
-  }
-  .card-inner {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    transform-style: preserve-3d;
-    transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: 10px;
-  }
-  .card-inner.flipped { transform: rotateY(180deg); }
+/* ── CARD GRID ── */
+.card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(6px, 1.5vw, 12px);
+  justify-content: center;
+  align-items: center;
+  max-width: 860px;
+}
 
-  .card-face {
-    position: absolute;
-    inset: 0;
-    border-radius: 10px;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    border: 2px solid;
-    overflow: hidden;
-  }
-  .card-back {
-    background: linear-gradient(145deg, #1e2640, #0d1220);
-    border-color: #2a3550;
-    font-size: 2.5rem;
-  }
-  .card-back::before {
-    content: '⚽';
-    font-size: 2.5rem;
-    opacity: 0.15;
-  }
-  .card-front {
-    transform: rotateY(180deg);
-    background: linear-gradient(145deg, #1e2a1a, #0d180a);
-    border-color: var(--green);
-    flex-direction: column;
-  }
-  .card-front.t1 {
-    background: linear-gradient(145deg, #2a2000, #1a1200);
-    border-color: var(--gold);
-    border-width: 3px;
-    box-shadow: 0 0 20px rgba(240,192,64,0.25);
-  }
-  .card-front.t2 {
-    background: linear-gradient(145deg, #201a2a, #12101a);
-    border-color: #9b59b6;
-  }
-  .card-front.t3 {
-    background: linear-gradient(145deg, #1a2228, #0d1418);
-    border-color: #3498db;
-  }
-  .card-front.t4 {
-    background: linear-gradient(145deg, #1e2018, #0d100a);
-    border-color: #7f8c8d;
-  }
+.card-wrap {
+  perspective: 900px;
+  width: clamp(88px, 17vw, 148px);
+  height: clamp(118px, 23vw, 196px);
+}
+.card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-inner.flipped { transform: rotateY(180deg); }
 
-  .card-tier-badge {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 0.65rem;
-    letter-spacing: 0.15em;
-    padding: 2px 7px;
-    border-radius: 3px;
-    position: absolute;
-    top: 7px;
-    left: 7px;
-  }
-  .t1 .card-tier-badge { background: var(--gold); color: var(--navy); }
-  .t2 .card-tier-badge { background: #9b59b6; color: #fff; }
-  .t3 .card-tier-badge { background: #3498db; color: #fff; }
-  .t4 .card-tier-badge { background: #7f8c8d; color: #fff; }
+.card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  overflow: hidden;
+}
 
-  .card-flag { width: 75%; aspect-ratio: 3/2; border-radius: 3px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.5); }
-  .card-team-name {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(0.7rem, 1.8vw, 1rem);
-    letter-spacing: 0.05em;
-    text-align: center;
-    color: var(--text);
-    padding: 0 6px;
-    line-height: 1.1;
-  }
+/* Card back — plain green like a draw ball cover */
+.card-back {
+  background: var(--pitch2);
+  border: 2px solid rgba(255,255,255,0.12);
+}
+.card-back::after {
+  content: 'FIFA\A2026';
+  white-space: pre;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: rgba(255,255,255,0.1);
+  text-align: center;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
 
-  /* Bonus badge */
-  .card-bonus .card-back { border-color: var(--gold-dim); }
-  .card-bonus .card-back::before { content: '⭐'; }
-  .bonus-badge {
-    position: absolute;
-    top: 7px;
-    right: 7px;
-    font-size: 0.55rem;
-    font-family: 'Bebas Neue', sans-serif;
-    background: var(--gold-dim);
-    color: var(--navy);
-    padding: 2px 5px;
-    border-radius: 3px;
-    letter-spacing: 0.1em;
-  }
+/* Card fronts — white paper style, like an actual draw ticket */
+.card-front {
+  transform: rotateY(180deg);
+  background: var(--paper);
+  border: 2px solid #ccc9be;
+}
+.card-front.t1 {
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  box-shadow: inset 0 0 0 4px var(--paper), inset 0 0 0 5px var(--ink);
+}
+.card-front.t2 { border-color: #888; }
+.card-front.t3 { border-color: #aaa; }
+.card-front.t4 { border-color: #ccc; }
 
-  /* ── COMMENTARY ── */
-  .commentary-wrap {
-    min-height: 100px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 0 20px;
-    max-width: 800px;
-  }
-  .commentary-headline {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(1.8rem, 5vw, 3.5rem);
-    color: var(--gold);
-    letter-spacing: 0.04em;
-    line-height: 1;
-    text-shadow: 0 0 20px rgba(240,192,64,0.3);
-    min-height: 1.1em;
-  }
-  .commentary-sub {
-    font-family: 'Special Elite', cursive;
-    font-size: clamp(0.85rem, 2.2vw, 1.2rem);
-    color: var(--text-dim);
-    margin-top: 6px;
-    min-height: 1.4em;
-  }
+.card-tier-badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  color: var(--ink);
+  opacity: 0.45;
+}
+.t1 .card-tier-badge { opacity: 0.8; font-weight: 900; }
 
-  /* ── ADVANCE HINT ── */
-  .advance-hint {
-    position: fixed;
-    bottom: 20px;
-    font-size: 0.75rem;
-    color: rgba(255,255,255,0.18);
-    font-family: 'Special Elite', cursive;
-    letter-spacing: 0.1em;
-  }
+.card-flag {
+  width: 72%;
+  aspect-ratio: 3/2;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+.card-team-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: clamp(0.65rem, 1.7vw, 0.92rem);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--ink);
+  padding: 0 5px;
+  line-height: 1.1;
+}
+.t1 .card-team-name { font-weight: 900; font-size: clamp(0.75rem, 1.9vw, 1rem); }
 
-  /* ── SPOTLIGHT ── */
-  #spotlight-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0);
-    pointer-events: none;
-    transition: background 1.2s ease;
-    z-index: 50;
-  }
-  #spotlight-overlay.on { background: rgba(0,0,0,0.82); }
+/* Bonus */
+.card-bonus .card-back { border-style: dashed; border-color: rgba(255,255,255,0.2); }
+.bonus-badge {
+  position: absolute;
+  top: 6px; right: 6px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.5rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.4;
+}
 
-  /* ── HERO CARD — big centred T1 reveal ── */
-  .card-wrap.hero {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    width: min(55vw, 320px) !important;
-    height: min(73vw, 430px) !important;
-    z-index: 100 !important;
-    transition: none !important;
-  }
-  .card-wrap.hero .card-team-name {
-    font-size: clamp(1.2rem, 4vw, 2rem) !important;
-  }
-  .card-wrap.hero .card-flag {
-    width: 82% !important;
-  }
-  .card-wrap.hero .card-tier-badge {
-    font-size: 0.9rem !important;
-    padding: 4px 12px !important;
-  }
-  /* Settle animation — from hero back to grid */
-  .card-wrap.settling {
-    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  }
+/* ── COMMENTARY ── */
+.commentary-wrap {
+  min-height: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 20px;
+  max-width: 760px;
+}
+.commentary-headline {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(1.6rem, 4.5vw, 3rem);
+  text-transform: uppercase;
+  color: var(--white);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  min-height: 1em;
+}
+.commentary-sub {
+  font-family: 'Barlow', sans-serif;
+  font-weight: 400;
+  font-size: clamp(0.8rem, 2vw, 1.05rem);
+  color: var(--line-dim);
+  margin-top: 5px;
+  min-height: 1.4em;
+  font-style: italic;
+}
 
-  /* ── COUNTDOWN ── */
-  #countdown-display {
-    position: fixed;
-    inset: 0;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 200;
-    pointer-events: none;
-  }
-  #countdown-display.active { display: flex; }
-  #countdown-num {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(10rem, 25vw, 18rem);
-    color: var(--gold);
-    text-shadow: 0 0 60px rgba(240,192,64,0.6);
-    animation: countdown-pop 0.8s ease-out forwards;
-  }
-  @keyframes countdown-pop {
-    0% { transform: scale(1.6); opacity: 0; }
-    40% { transform: scale(1); opacity: 1; }
-    80% { transform: scale(1); opacity: 1; }
-    100% { transform: scale(0.7); opacity: 0; }
-  }
+/* ── ADVANCE HINT ── */
+.advance-hint {
+  position: fixed;
+  bottom: 16px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.15);
+}
 
-  /* ── FAKEOUT OVERLAY ── */
-  #fakeout-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(150,0,0,0.0);
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 300;
-    gap: 20px;
-    transition: background 0.4s;
-  }
-  #fakeout-overlay.active { display: flex; }
-  #fakeout-overlay.flash { background: rgba(200,0,0,0.55); }
-  #fakeout-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(3rem, 10vw, 8rem);
-    color: #ff2222;
-    text-shadow: 0 0 40px #ff0000;
-    letter-spacing: 0.05em;
-    text-align: center;
-  }
-  #fakeout-msg {
-    font-family: 'Special Elite', cursive;
-    font-size: clamp(1rem, 3vw, 2rem);
-    color: var(--text);
-    text-align: center;
-    max-width: 700px;
-    padding: 0 20px;
-    min-height: 2em;
-  }
+/* ── SPOTLIGHT ── */
+#spotlight-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  pointer-events: none;
+  transition: background 1s ease;
+  z-index: 50;
+}
+#spotlight-overlay.on { background: rgba(0,0,0,0.88); }
 
-  /* ── ANIMATIONS ── */
-  @keyframes stage-shake {
-    0%,100% { transform: translateX(0) rotate(0deg); }
-    15% { transform: translateX(-12px) rotate(-1deg); }
-    30% { transform: translateX(12px) rotate(1deg); }
-    45% { transform: translateX(-8px) rotate(-0.5deg); }
-    60% { transform: translateX(8px) rotate(0.5deg); }
-    75% { transform: translateX(-4px); }
-    90% { transform: translateX(4px); }
-  }
+/* ── HERO CARD ── */
+.card-wrap.hero {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(52vw, 300px) !important;
+  height: min(70vw, 400px) !important;
+  z-index: 100 !important;
+  transition: none !important;
+}
+.card-wrap.hero .card-team-name {
+  font-size: clamp(1.1rem, 3.5vw, 1.8rem) !important;
+}
+.card-wrap.hero .card-flag { width: 80% !important; }
+.card-wrap.hero .card-tier-badge { font-size: 0.8rem !important; }
+.card-wrap.settling {
+  transition: all 0.65s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
 
-  @keyframes flash-gold {
-    0%,100% { background: var(--navy); }
-    50% { background: #3a2800; }
-  }
-  @keyframes flash-red {
-    0%,100% { background: var(--navy); }
-    50% { background: #3a0000; }
-  }
+/* ── COUNTDOWN ── */
+#countdown-display {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  pointer-events: none;
+}
+#countdown-display.active { display: flex; }
+#countdown-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(10rem, 24vw, 17rem);
+  color: var(--white);
+  line-height: 1;
+  animation: countdown-pop 0.85s ease-out forwards;
+}
+@keyframes countdown-pop {
+  0%   { transform: scale(1.8); opacity: 0; }
+  35%  { transform: scale(0.95); opacity: 1; }
+  75%  { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.6); opacity: 0; }
+}
 
-  .pt {
-    position: fixed;
-    font-size: clamp(1.2rem, 3vw, 2.2rem);
-    pointer-events: none;
-    z-index: 800;
-    animation: particle-burst 1.1s ease-out forwards;
-  }
-  @keyframes particle-burst {
-    0% { transform: translate(0,0) scale(1); opacity: 1; }
-    100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
-  }
+/* ── FAKEOUT — broadcast error style ── */
+#fakeout-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  gap: 0;
+}
+#fakeout-overlay.active { display: flex; }
+/* Static bars */
+#fakeout-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,0.03) 0px,
+    rgba(255,255,255,0.03) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  animation: static-roll 0.08s steps(1) infinite;
+  pointer-events: none;
+}
+@keyframes static-roll {
+  0%   { background-position: 0 0; }
+  25%  { background-position: 0 -3px; }
+  50%  { background-position: 0 -6px; }
+  75%  { background-position: 0 -1px; }
+  100% { background-position: 0 0; }
+}
+.fakeout-bar {
+  width: 100%;
+  background: var(--red);
+  padding: 18px 40px;
+  text-align: center;
+}
+#fakeout-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(1.8rem, 5vw, 3.5rem);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--white);
+}
+.fakeout-body {
+  padding: 32px 40px;
+  text-align: center;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#fakeout-msg {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  color: rgba(255,255,255,0.75);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  max-width: 640px;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+.fakeout-ticker {
+  width: 100%;
+  background: var(--white);
+  padding: 8px 40px;
+  overflow: hidden;
+}
+.fakeout-ticker-text {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+  animation: ticker-scroll 8s linear infinite;
+  display: inline-block;
+}
+@keyframes ticker-scroll {
+  0%   { transform: translateX(40vw); }
+  100% { transform: translateX(-100%); }
+}
 
-  /* ── DONE SCREEN ── */
-  #screen-done {
-    background: radial-gradient(ellipse at center, #1a2010 0%, var(--navy) 70%);
-    gap: 24px;
-    text-align: center;
-    padding: 40px;
-  }
-  .done-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(3rem, 9vw, 7rem);
-    color: var(--gold);
-    text-shadow: 0 0 40px rgba(240,192,64,0.4);
-  }
-  .done-sub {
-    font-family: 'Special Elite', cursive;
-    font-size: clamp(1rem, 3vw, 1.6rem);
-    color: var(--text-dim);
-  }
-  .done-restart {
-    margin-top: 20px;
-    padding: 14px 40px;
-    background: transparent;
-    border: 2px solid var(--gold);
-    color: var(--gold);
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.5rem;
-    letter-spacing: 0.1em;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .done-restart:hover { background: var(--gold); color: var(--navy); }
+/* ── STAGE SHAKE ── */
+@keyframes stage-shake {
+  0%,100% { transform: translate(0,0); }
+  15% { transform: translate(-10px, 2px); }
+  30% { transform: translate(10px, -2px); }
+  45% { transform: translate(-7px, 1px); }
+  60% { transform: translate(7px, -1px); }
+  75% { transform: translate(-3px, 0); }
+  90% { transform: translate(3px, 0); }
+}
+
+/* ── FLASH BG ── */
+@keyframes flash-white {
+  0%,100% { background: var(--pitch); }
+  30% { background: #fff; }
+  60% { background: var(--pitch); }
+}
+@keyframes flash-red {
+  0%,100% { background: var(--pitch); }
+  30% { background: #550000; }
+  60% { background: var(--pitch); }
+}
+
+/* ── PARTICLES — simple squares and circles, no emoji ── */
+.pt {
+  position: fixed;
+  pointer-events: none;
+  z-index: 800;
+  animation: particle-burst 1s ease-out forwards;
+  border-radius: 2px;
+}
+@keyframes particle-burst {
+  0%   { transform: translate(0,0) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0) rotate(var(--dr)); opacity: 0; }
+}
+
+/* ── DONE SCREEN ── */
+#screen-done {
+  background: var(--pitch);
+  gap: 0;
+  text-align: center;
+  padding: 40px;
+}
+.done-ticket {
+  background: var(--paper);
+  color: var(--ink);
+  width: min(420px, 85vw);
+  padding: 36px 32px 28px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
+}
+.done-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(2.8rem, 8vw, 5rem);
+  text-transform: uppercase;
+  color: var(--ink);
+  line-height: 0.9;
+  margin-bottom: 12px;
+}
+.done-sub {
+  font-family: 'Barlow', sans-serif;
+  font-weight: 400;
+  font-size: 0.95rem;
+  color: var(--ink-dim);
+  font-style: italic;
+  margin-bottom: 24px;
+}
+.done-restart {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 1.1rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: var(--pitch);
+  color: var(--white);
+  border: none;
+  padding: 12px 32px;
+  cursor: pointer;
+  width: 100%;
+}
 </style>
 </head>
 <body>
 
 <!-- INTRO -->
 <div id="screen-intro" class="screen active">
-  <div class="intro-logo">🏟️</div>
-  <div class="intro-title">DAN'S SHED</div>
-  <div class="intro-year">WORLD CUP 2026</div>
-  <div class="intro-sub">The Official Draft Night Experience</div>
-  <button class="intro-btn" onclick="startShow()">BEGIN THE DRAW</button>
+  <div class="ticket">
+    <div class="ticket-stamp">
+      <div class="ticket-stamp-inner">OFFICIAL<br>DRAW<br>2026</div>
+    </div>
+    <div class="ticket-header">FIFA World Cup 2026 &nbsp;·&nbsp; Dan's Shed Sweepstakes</div>
+    <div class="ticket-title">The<br><span>Draw</span></div>
+    <div class="ticket-sub">Draft Night — Admit All</div>
+    <hr class="ticket-divider">
+    <div class="ticket-info">
+      <span>10 Players</span>
+      <span>48 Nations</span>
+      <span>One Winner</span>
+    </div>
+    <button class="intro-btn" onclick="startShow()">Begin the Draw</button>
+  </div>
 </div>
 
 <!-- STAGE -->
 <div id="screen-stage" class="screen">
   <div id="stage">
-    <div class="player-name-banner" id="player-banner">—</div>
+    <div class="player-name-banner" id="player-banner">&nbsp;</div>
     <div class="tier-label" id="tier-label"></div>
     <div class="card-grid" id="card-grid"></div>
     <div class="commentary-wrap">
@@ -486,196 +647,192 @@
       <div class="commentary-sub" id="commentary-sub"></div>
     </div>
   </div>
-  <div class="advance-hint" id="advance-hint">SPACE or tap to advance</div>
+  <div class="advance-hint" id="advance-hint">Space or tap to advance</div>
 </div>
 
 <!-- DONE -->
 <div id="screen-done" class="screen">
-  <div style="font-size:4rem">🏆</div>
-  <div class="done-title">THE DRAW IS DONE</div>
-  <div class="done-sub">May the best shed win.<br>Good luck. You'll need it.</div>
-  <button class="done-restart" onclick="location.reload()">Run Again</button>
+  <div class="done-ticket">
+    <div class="done-title">Draw<br>Complete</div>
+    <hr class="ticket-divider" style="border-color:#aaa8a0; margin-bottom:16px">
+    <div class="done-sub">May the best shed win.<br>Good luck. You'll need it.</div>
+    <button class="done-restart" onclick="location.reload()">Run Again</button>
+  </div>
 </div>
 
 <!-- overlays -->
 <div id="spotlight-overlay"></div>
 <div id="countdown-display"><div id="countdown-num">3</div></div>
 <div id="fakeout-overlay">
-  <div id="fakeout-title">⚠️ INTELLIGENCE ERROR ⚠️</div>
-  <div id="fakeout-msg"></div>
+  <div class="fakeout-bar">
+    <div id="fakeout-title">BROADCAST ERROR</div>
+  </div>
+  <div class="fakeout-body">
+    <div id="fakeout-msg"></div>
+  </div>
+  <div class="fakeout-ticker">
+    <span class="fakeout-ticker-text" id="fakeout-ticker-text">DRAW SYSTEM FAULT &nbsp;·&nbsp; INCORRECT ASSIGNMENT DETECTED &nbsp;·&nbsp; PLEASE STAND BY &nbsp;·&nbsp; DRAW SYSTEM FAULT &nbsp;·&nbsp; INCORRECT ASSIGNMENT DETECTED &nbsp;·&nbsp; PLEASE STAND BY</span>
+  </div>
 </div>
 
 <script>
 // ─────────────────────────────────────────────
-// DRAW DATA — edit this to match your actual draw
+// SVG FLAG DEFINITIONS
 // ─────────────────────────────────────────────
-
-// SVG flag definitions — simple geometric representations
-// Each returns an SVG string at 60x40 viewBox
-function flag(svg) { return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" style="width:100%;height:100%;display:block;border-radius:3px">${svg}</svg>`; }
-function h3(a,b,c){ return `<rect width="60" height="13.3" y="0" fill="${a}"/><rect width="60" height="13.3" y="13.3" fill="${b}"/><rect width="60" height="13.4" y="26.6" fill="${c}"/>`; }
-function v3(a,b,c){ return `<rect width="20" height="40" x="0" fill="${a}"/><rect width="20" height="40" x="20" fill="${b}"/><rect width="20" height="40" x="40" fill="${c}"/>`; }
-function cross(bg,cc,ch,cw=6,hw=6){ return `<rect width="60" height="40" fill="${bg}"/><rect width="60" height="${cw}" y="${(40-cw)/2}" fill="${cc}"/><rect width="${hw}" height="40" x="${(60-hw)/2}" fill="${ch}"/>`; }
+function flag(svg) { return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" style="width:100%;height:100%;display:block">' + svg + '</svg>'; }
+function h3(a,b,c){ return '<rect width="60" height="13.3" y="0" fill="'+a+'"/><rect width="60" height="13.3" y="13.3" fill="'+b+'"/><rect width="60" height="13.4" y="26.6" fill="'+c+'"/>'; }
+function v3(a,b,c){ return '<rect width="20" height="40" x="0" fill="'+a+'"/><rect width="20" height="40" x="20" fill="'+b+'"/><rect width="20" height="40" x="40" fill="'+c+'"/>'; }
 
 const FLAGS = {
   'France':      flag(v3('#002395','#fff','#ED2939')),
-  'Spain':       flag(`${h3('#AA151B','#F1BF00','#AA151B')}<rect width="10" height="20" x="5" y="10" fill="#AA151B" opacity=".3"/>`),
-  'Argentina':   flag(`${h3('#74ACDF','#fff','#74ACDF')}<circle cx="30" cy="20" r="5" fill="#F6B40E"/>`),
-  'England':     flag(`<rect width="60" height="40" fill="#fff"/><rect width="60" height="8" y="16" fill="#CF142B"/><rect width="8" height="40" x="26" fill="#CF142B"/>`),
-  'Portugal':    flag(`${v3('#006600','#fff','#DA020E')}<rect width="2" height="40" x="20" fill="#006600"/><circle cx="22" cy="20" r="5" fill="#006600"/><circle cx="22" cy="20" r="3.5" fill="#EFC44A"/>`),
-  'Brazil':      flag(`<rect width="60" height="40" fill="#009C3B"/><polygon points="30,4 56,20 30,36 4,20" fill="#FEDF00"/><circle cx="30" cy="20" r="8" fill="#002776"/>`),
+  'Spain':       flag(h3('#AA151B','#F1BF00','#AA151B')),
+  'Argentina':   flag(h3('#74ACDF','#fff','#74ACDF')+'<circle cx="30" cy="20" r="5" fill="#F6B40E"/>'),
+  'England':     flag('<rect width="60" height="40" fill="#fff"/><rect width="60" height="8" y="16" fill="#CF142B"/><rect width="8" height="40" x="26" fill="#CF142B"/>'),
+  'Portugal':    flag(v3('#006600','#fff','#DA020E')+'<circle cx="22" cy="20" r="5" fill="#006600"/><circle cx="22" cy="20" r="3.5" fill="#EFC44A"/>'),
+  'Brazil':      flag('<rect width="60" height="40" fill="#009C3B"/><polygon points="30,4 56,20 30,36 4,20" fill="#FEDF00"/><circle cx="30" cy="20" r="8" fill="#002776"/>'),
   'Netherlands': flag(h3('#AE1C28','#fff','#1E4785')),
-  'Morocco':     flag(`<rect width="60" height="40" fill="#C1272D"/><polygon points="30,13 32.9,21.5 41.6,21.5 34.8,26.5 37.4,35 30,30 22.6,35 25.2,26.5 18.4,21.5 27.1,21.5" fill="none" stroke="#006233" stroke-width="1.5"/>`),
+  'Morocco':     flag('<rect width="60" height="40" fill="#C1272D"/><polygon points="30,13 32.9,21.5 41.6,21.5 34.8,26.5 37.4,35 30,30 22.6,35 25.2,26.5 18.4,21.5 27.1,21.5" fill="none" stroke="#006233" stroke-width="1.5"/>'),
   'Belgium':     flag(v3('#000','#FAE042','#EF3340')),
   'Germany':     flag(h3('#000','#D00','#FFCE00')),
-  'Croatia':     flag(`${h3('#FF0000','#fff','#0093DD')}<rect width="60" height="13.3" y="13.3" fill="#fff"/><rect width="6" height="6" x="0" y="13" fill="#f00"/><rect width="6" height="6" x="6" y="13" fill="#fff"/><rect width="6" height="6" x="12" y="13" fill="#f00"/><rect width="6" height="6" x="3" y="19" fill="#fff"/><rect width="6" height="6" x="9" y="19" fill="#f00"/>`),
+  'Croatia':     flag(h3('#FF0000','#fff','#0093DD')),
   'Colombia':    flag(h3('#FCD116','#003087','#CE1126')),
-  'Uruguay':     flag(`<rect width="60" height="40" fill="#fff"/>${[0,1,2,3,4,5,6,7,8].map(i=>`<rect width="60" height="2.2" y="${i*4.4+2.2}" fill="#75AADB"/>`).join('')}<rect width="30" height="20" fill="#fff"/><circle cx="15" cy="10" r="5" fill="#FCD116"/>`),
-  'USA':         flag(`<rect width="60" height="40" fill="#B22234"/>${[1,3,5,7,9,11].map(i=>`<rect width="60" height="3.1" y="${i*3.1}" fill="#fff"/>`).join('')}<rect width="24" height="21.7" fill="#3C3B6E"/>`),
-  'Mexico':      flag(`${v3('#006847','#fff','#CE1126')}<circle cx="30" cy="20" r="5" fill="#006847" opacity=".5"/>`),
-  'Japan':       flag(`<rect width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="10" fill="#BC002D"/>`),
-  'Senegal':     flag(`${v3('#00853F','#FDEF42','#E31B23')}<polygon points="30,14 31.5,19 36,19 32.5,22 33.8,27 30,24 26.2,27 27.5,22 24,19 28.5,19" fill="#00853F"/>`),
+  'Uruguay':     flag('<rect width="60" height="40" fill="#fff"/>'+[0,1,2,3,4,5,6,7,8].map(function(i){return '<rect width="60" height="2.2" y="'+(i*4.4+2.2)+'" fill="#75AADB"/>';}).join('')+'<rect width="30" height="20" fill="#fff"/><circle cx="15" cy="10" r="5" fill="#FCD116"/>'),
+  'USA':         flag('<rect width="60" height="40" fill="#B22234"/>'+[1,3,5,7,9,11].map(function(i){return '<rect width="60" height="3.1" y="'+(i*3.1)+'" fill="#fff"/>';}).join('')+'<rect width="24" height="21.7" fill="#3C3B6E"/>'),
+  'Mexico':      flag(v3('#006847','#fff','#CE1126')+'<circle cx="30" cy="20" r="5" fill="#006847" opacity=".5"/>'),
+  'Japan':       flag('<rect width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="10" fill="#BC002D"/>'),
+  'Senegal':     flag(v3('#00853F','#FDEF42','#E31B23')+'<polygon points="30,14 31.5,19 36,19 32.5,22 33.8,27 30,24 26.2,27 27.5,22 24,19 28.5,19" fill="#00853F"/>'),
   'Ecuador':     flag(h3('#FFD100','#003DA5','#EF3340')),
-  'Switzerland': flag(`<rect width="60" height="40" fill="#FF0000"/><rect width="8" height="24" x="26" y="8" fill="#fff"/><rect width="24" height="8" x="18" y="16" fill="#fff"/>`),
-  'Norway':      flag(`<rect width="60" height="40" fill="#EF2B2D"/><rect width="60" height="8" y="16" fill="#fff"/><rect width="8" height="40" x="18" fill="#fff"/><rect width="60" height="4" y="18" fill="#002868"/><rect width="4" height="40" x="20" fill="#002868"/>`),
-  'Turkey':      flag(`<rect width="60" height="40" fill="#E30A17"/><circle cx="26" cy="20" r="9" fill="#fff"/><circle cx="29" cy="20" r="7" fill="#E30A17"/><polygon points="40,20 36,17.5 37,21 34,18.5 38,18.5" fill="#fff" transform="rotate(-18,38,20)"/>`),
-  'South Korea': flag(`<rect width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="9" fill="#CD2E3A"/><path d="M30,11 A9,9,0,0,1,30,29 Z" fill="#003478"/>`),
-  'Iran':        flag(`${h3('#239F40','#fff','#DA0000')}<rect width="60" height="2" y="12.6" fill="#239F40"/><rect width="60" height="2" y="25.4" fill="#DA0000"/>`),
+  'Switzerland': flag('<rect width="60" height="40" fill="#FF0000"/><rect width="8" height="24" x="26" y="8" fill="#fff"/><rect width="24" height="8" x="18" y="16" fill="#fff"/>'),
+  'Norway':      flag('<rect width="60" height="40" fill="#EF2B2D"/><rect width="60" height="8" y="16" fill="#fff"/><rect width="8" height="40" x="18" fill="#fff"/><rect width="60" height="4" y="18" fill="#002868"/><rect width="4" height="40" x="20" fill="#002868"/>'),
+  'Turkey':      flag('<rect width="60" height="40" fill="#E30A17"/><circle cx="26" cy="20" r="9" fill="#fff"/><circle cx="29" cy="20" r="7" fill="#E30A17"/>'),
+  'South Korea': flag('<rect width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="9" fill="#CD2E3A"/><path d="M30,11 A9,9,0,0,1,30,29 Z" fill="#003478"/>'),
+  'Iran':        flag(h3('#239F40','#fff','#DA0000')),
   'Austria':     flag(h3('#ED2939','#fff','#ED2939')),
-  'Canada':      flag(`${v3('#FF0000','#fff','#FF0000')}<polygon points="30,10 32,17 39,17 33.5,21.5 35.5,28.5 30,24 24.5,28.5 26.5,21.5 21,17 28,17" fill="#FF0000"/>`),
-  'Algeria':     flag(`${v3('#006233','#fff','#fff')}<circle cx="33" cy="20" r="7" fill="#fff"/><circle cx="35" cy="20" r="7" fill="#006233"/><polygon points="39,14 40,17.5 43,16 41.5,19 45,20 41.5,21 43,24 40,22.5 39,26 38,22.5 35,24 36.5,21 33,20 36.5,19 35,16 38,17.5" fill="#D21034" transform="translate(-4,0) scale(0.6) translate(6.5,13)"/>`),
-  'Australia':   flag(`<rect width="60" height="40" fill="#00008B"/><rect width="30" height="20" fill="#00008B"/><rect width="30" height="4" y="8" fill="#fff"/><rect width="4" height="20" x="13" fill="#fff"/><rect width="30" height="2" y="9" fill="#CC0001"/><rect width="2" height="20" x="14" fill="#CC0001"/><circle cx="43" cy="10" r="3.5" fill="#fff"/><circle cx="53" cy="17" r="3" fill="#fff"/><circle cx="53" cy="27" r="3" fill="#fff"/><circle cx="43" cy="33" r="3" fill="#fff"/><circle cx="37" cy="23" r="2.5" fill="#fff"/>`),
-  'Egypt':       flag(`${h3('#CE1126','#fff','#000')}<circle cx="30" cy="20" r="4" fill="#C09300"/>`),
-  'Scotland':    flag(`<rect width="60" height="40" fill="#003F87"/><line x1="0" y1="0" x2="60" y2="40" stroke="#fff" stroke-width="7"/><line x1="60" y1="0" x2="0" y2="40" stroke="#fff" stroke-width="7"/>`),
-  'Paraguay':    flag(`${h3('#D52B1E','#fff','#009B3A')}<circle cx="30" cy="20" r="5" fill="#fff"/><circle cx="30" cy="20" r="3.5" fill="#009B3A"/>`),
-  'Sweden':      flag(`<rect width="60" height="40" fill="#006AA7"/><rect width="60" height="8" y="16" fill="#FECC02"/><rect width="8" height="40" x="18" fill="#FECC02"/>`),
-  'Tunisia':     flag(`<rect width="60" height="40" fill="#E70013"/><circle cx="30" cy="20" r="11" fill="#fff"/><circle cx="30" cy="20" r="8" fill="#E70013"/><circle cx="27" cy="20" r="6" fill="#fff"/><circle cx="29" cy="20" r="6" fill="#E70013"/>`),
+  'Canada':      flag(v3('#FF0000','#fff','#FF0000')+'<polygon points="30,10 32,17 39,17 33.5,21.5 35.5,28.5 30,24 24.5,28.5 26.5,21.5 21,17 28,17" fill="#FF0000"/>'),
+  'Algeria':     flag(v3('#006233','#fff','#fff')+'<circle cx="36" cy="20" r="7" fill="#fff"/><circle cx="38" cy="20" r="7" fill="#006233"/><polygon points="34,16 35,19 38,19 35.5,21 36.5,24 34,22 31.5,24 32.5,21 30,19 33,19" fill="#D21034"/>'),
+  'Australia':   flag('<rect width="60" height="40" fill="#00008B"/><rect width="30" height="4" y="8" fill="#fff"/><rect width="4" height="20" x="13" fill="#fff"/><rect width="30" height="2" y="9" fill="#CC0001"/><rect width="2" height="20" x="14" fill="#CC0001"/><circle cx="43" cy="10" r="3.5" fill="#fff"/><circle cx="53" cy="17" r="3" fill="#fff"/><circle cx="53" cy="27" r="3" fill="#fff"/><circle cx="43" cy="33" r="3" fill="#fff"/><circle cx="37" cy="23" r="2.5" fill="#fff"/>'),
+  'Egypt':       flag(h3('#CE1126','#fff','#000')+'<circle cx="30" cy="20" r="4" fill="#C09300"/>'),
+  'Scotland':    flag('<rect width="60" height="40" fill="#003F87"/><line x1="0" y1="0" x2="60" y2="40" stroke="#fff" stroke-width="7"/><line x1="60" y1="0" x2="0" y2="40" stroke="#fff" stroke-width="7"/>'),
+  'Paraguay':    flag(h3('#D52B1E','#fff','#009B3A')+'<circle cx="30" cy="20" r="5" fill="#fff"/><circle cx="30" cy="20" r="3.5" fill="#009B3A"/>'),
+  'Sweden':      flag('<rect width="60" height="40" fill="#006AA7"/><rect width="60" height="8" y="16" fill="#FECC02"/><rect width="8" height="40" x="18" fill="#FECC02"/>'),
+  'Tunisia':     flag('<rect width="60" height="40" fill="#E70013"/><circle cx="30" cy="20" r="11" fill="#fff"/><circle cx="30" cy="20" r="8" fill="#E70013"/>'),
   'Ivory Coast': flag(v3('#F77F00','#fff','#009A44')),
-  'Ghana':       flag(`${h3('#006B3F','#FCD116','#EE1C25')}<circle cx="30" cy="20" r="3" fill="#000"/>`),
-  'Saudi Arabia':flag(`<rect width="60" height="40" fill="#006C35"/><rect width="60" height="5" y="35" fill="#fff"/><rect width="60" height="5" fill="#006C35"/>`),
-  'Bosnia & Herzegovina': flag(`<rect width="60" height="40" fill="#003DA5"/><polygon points="15,0 45,40 15,40" fill="#FBBA00"/>${Array.from({length:7},(_,i)=>`<circle cx="${18+i*4}" cy="${4+i*5.5}" r="2" fill="#fff"/>`).join('')}`),
-  'Czech Republic': flag(`<rect width="60" height="40" fill="#D7141A"/><rect width="60" height="20" fill="#fff"/><polygon points="0,0 28,20 0,40" fill="#11457E"/>`),
-  'South Africa':flag(`<polygon points="0,0 0,40 18,20" fill="#007A4D"/><rect width="60" height="12" y="0" fill="#000"/><rect width="60" height="12" y="28" fill="#000"/><rect width="60" height="8" y="2" fill="#DE3831"/><rect width="60" height="8" y="30" fill="#DE3831"/><rect width="60" height="8" y="16" fill="#fff"/><polygon points="0,4 22,20 0,36" fill="#FFB81C"/><rect width="60" height="4" y="18" fill="#007A4D"/>`),
-  'Jordan':      flag(`${h3('#007A3D','#fff','#000')}<polygon points="0,0 20,20 0,40" fill="#CE1126"/><circle cx="12" cy="20" r="3" fill="#fff"/>`),
-  'Qatar':       flag(`<rect width="60" height="40" fill="#8D1B3D"/><rect width="15" height="40" fill="#fff"/><line x1="15" y1="0" x2="25" y2="5" stroke="#8D1B3D" stroke-width="2"/><line x1="15" y1="8" x2="25" y2="13" stroke="#8D1B3D" stroke-width="2"/><line x1="15" y1="16" x2="25" y2="21" stroke="#8D1B3D" stroke-width="2"/><line x1="15" y1="24" x2="25" y2="29" stroke="#8D1B3D" stroke-width="2"/><line x1="15" y1="32" x2="25" y2="37" stroke="#8D1B3D" stroke-width="2"/>`),
-  'Uzbekistan':  flag(`${h3('#1EB53A','#fff','#1EBFAF')}<rect width="60" height="2" y="12.6" fill="#1EB53A"/><rect width="60" height="2" y="25.4" fill="#1EBFAF"/>`),
-  'DR Congo':    flag(`<rect width="60" height="40" fill="#007FFF"/><line x1="0" y1="40" x2="60" y2="0" stroke="#F7D518" stroke-width="6"/><polygon points="0,0 0,25 15,12" fill="#CE1021"/>`),
-  'Iraq':        flag(`${h3('#CE1126','#fff','#000')}<rect width="20" height="13.4" x="20" y="13.3" fill="#007A3D"/>`),
-  'Panama':      flag(`${v3('#fff','#fff','#fff')}<rect width="30" height="20" fill="#DA121A"/><rect width="30" height="20" x="30" y="20" fill="#1B4298"/>`),
-  'Cape Verde':  flag(`<rect width="60" height="40" fill="#003893"/><rect width="60" height="8" y="20" fill="#CF2027"/><rect width="60" height="3" y="18.5" fill="#fff"/><rect width="60" height="3" y="28.5" fill="#fff"/>${Array.from({length:10},(_,i)=>`<circle cx="${12+i*4}" cy="${24}" r="2" fill="#F7D116"/>`).join('')}`),
-  'Haiti':       flag(`${h3('#00209F','#D21034','#D21034')}<rect width="60" height="20" fill="#00209F"/><rect width="14" height="12" x="23" y="14" fill="#fff" opacity=".9"/>`),
-  'Curaçao':    flag(`${h3('#003DA5','#003DA5','#F9E814')}<circle cx="15" cy="13" r="2.5" fill="#fff"/><circle cx="22" cy="10" r="2.5" fill="#fff"/>`),
-  'New Zealand': flag(`<rect width="60" height="40" fill="#00247D"/><rect width="30" height="20" fill="#00247D"/><rect width="30" height="4" y="8" fill="#fff"/><rect width="4" height="20" x="13" fill="#fff"/><rect width="30" height="2" y="9" fill="#CC0001"/><rect width="2" height="20" x="14" fill="#CC0001"/><polygon points="40,6 41.5,11 46,11 42.5,14 44,19 40,16 36,19 37.5,14 34,11 38.5,11" fill="#CC0001"/><polygon points="52,12 53,15 56,15 53.5,17 54.5,20 52,18.5 49.5,20 50.5,17 48,15 51,15" fill="#CC0001"/><polygon points="46,22 47,25 50,25 47.5,27 48.5,30 46,28.5 43.5,30 44.5,27 42,25 45,25" fill="#CC0001"/><polygon points="38,28 39,31 42,31 39.5,33 40.5,36 38,34.5 35.5,36 36.5,33 34,31 37,31" fill="#CC0001"/>`),
-  'Israel':      flag(`<rect width="60" height="40" fill="#fff"/><rect width="60" height="5" y="7" fill="#0038B8"/><rect width="60" height="5" y="28" fill="#0038B8"/><polygon points="30,13 33.5,19 37,25 30,25 23,25 26.5,19" fill="none" stroke="#0038B8" stroke-width="1.5"/><polygon points="30,27 26.5,21 23,15 30,15 37,15 33.5,21" fill="none" stroke="#0038B8" stroke-width="1.5"/>`),
+  'Ghana':       flag(h3('#006B3F','#FCD116','#EE1C25')+'<circle cx="30" cy="20" r="3" fill="#000"/>'),
+  'Saudi Arabia':flag('<rect width="60" height="40" fill="#006C35"/><rect width="44" height="14" x="8" y="13" fill="#006C35"/>'),
+  'Bosnia & Herzegovina': flag('<rect width="60" height="40" fill="#003DA5"/><polygon points="15,0 45,40 15,40" fill="#FBBA00"/>'),
+  'Czech Republic': flag('<rect width="60" height="40" fill="#D7141A"/><rect width="60" height="20" fill="#fff"/><polygon points="0,0 28,20 0,40" fill="#11457E"/>'),
+  'South Africa':flag('<rect width="60" height="40" fill="#007A4D"/><polygon points="0,4 22,20 0,36" fill="#FFB81C"/><rect width="60" height="8" y="0" fill="#000"/><rect width="60" height="8" y="32" fill="#000"/><rect width="60" height="6" y="1" fill="#DE3831"/><rect width="60" height="6" y="33" fill="#DE3831"/><rect width="60" height="6" y="17" fill="#fff"/><rect width="60" height="4" y="18" fill="#007A4D"/>'),
+  'Jordan':      flag(h3('#007A3D','#fff','#000')+'<polygon points="0,0 20,20 0,40" fill="#CE1126"/><circle cx="12" cy="20" r="3" fill="#fff"/>'),
+  'Qatar':       flag('<rect width="60" height="40" fill="#8D1B3D"/><rect width="15" height="40" fill="#fff"/>'),
+  'Uzbekistan':  flag(h3('#1EB53A','#fff','#1EBFAF')),
+  'DR Congo':    flag('<rect width="60" height="40" fill="#007FFF"/><line x1="0" y1="40" x2="60" y2="0" stroke="#F7D518" stroke-width="6"/><polygon points="0,0 0,25 15,12" fill="#CE1021"/>'),
+  'Iraq':        flag(h3('#CE1126','#fff','#000')+'<rect width="20" height="13.4" x="20" y="13.3" fill="#007A3D"/>'),
+  'Panama':      flag('<rect width="30" height="20" fill="#DA121A"/><rect width="30" height="20" x="30" y="20" fill="#1B4298"/><rect width="30" height="20" y="20" fill="#fff"/><rect width="30" height="20" x="30" fill="#fff"/>'),
+  'Cape Verde':  flag('<rect width="60" height="40" fill="#003893"/><rect width="60" height="8" y="20" fill="#CF2027"/><rect width="60" height="3" y="18.5" fill="#fff"/>'),
+  'Haiti':       flag(h3('#00209F','#D21034','#D21034')+'<rect width="60" height="20" fill="#00209F"/>'),
+  'Curacoa':     flag(h3('#003DA5','#003DA5','#F9E814')+'<circle cx="15" cy="13" r="2.5" fill="#fff"/><circle cx="22" cy="10" r="2.5" fill="#fff"/>'),
+  'New Zealand': flag('<rect width="60" height="40" fill="#00247D"/><rect width="30" height="4" y="8" fill="#fff"/><rect width="4" height="20" x="13" fill="#fff"/><rect width="30" height="2" y="9" fill="#CC0001"/><rect width="2" height="20" x="14" fill="#CC0001"/>'),
+  'Israel':      flag('<rect width="60" height="40" fill="#fff"/><rect width="60" height="5" y="7" fill="#0038B8"/><rect width="60" height="5" y="28" fill="#0038B8"/><polygon points="30,13 33.5,19 37,25 30,25 23,25 26.5,19" fill="none" stroke="#0038B8" stroke-width="1.5"/><polygon points="30,27 26.5,21 23,15 30,15 37,15 33.5,21" fill="none" stroke="#0038B8" stroke-width="1.5"/>'),
 };
 
-// ── CONFIGURE YOUR DRAW RESULTS HERE ──
-// Replace with actual draw results. Order is T4, T3, T2, T1 per player.
-// bonusTeam is optional (5th team for lucky players)
+// ─────────────────────────────────────────────
+// DRAW DATA
+// ─────────────────────────────────────────────
+
+const TIER_LABELS = { t1: 'Tier 1', t2: 'Tier 2', t3: 'Tier 3', t4: 'Tier 4' };
+
+const TEAM_LINES = {
+  France:      ['France',        'World No.1. Mbappé country. Absolute weapon.'],
+  Spain:       ['Spain',         'Five-star football. Will make it look easy until they don\'t.'],
+  Argentina:   ['Argentina',     'World champions. Back to finish the job.'],
+  England:     ['England',       'It\'s not coming home. But it might. It won\'t. Maybe.'],
+  Portugal:    ['Portugal',      'Ronaldo\'s last dance. A nation behind one man\'s final curtain call.'],
+  Brazil:      ['Brazil',        'Five-time champions. Zero chill. Maximum drama guaranteed.'],
+  Netherlands: ['Netherlands',   'Orange machine rebuilt. De Jong, Dumfries, dangerous.'],
+  Morocco:     ['Morocco',       'Sent Portugal home in 2022. Nobody is safe.'],
+  Belgium:     ['Belgium',       'The golden generation. They said it was over. They are back.'],
+  Germany:     ['Germany',       'Four World Cups. A point to prove. Very much here.'],
+  Croatia:     ['Croatia',       'Modric never dies. He\'s 38. He\'s still doing it.'],
+  Colombia:    ['Colombia',      'James. Díaz. Dangerous. Very dangerous.'],
+  Uruguay:     ['Uruguay',       'They will bite, kick, and grind out results. Charming.'],
+  USA:         ['USA',           'Hosting it. Motivated. Pulisic on form. Real threat.'],
+  Mexico:      ['Mexico',        'Never past the quarters. That changes now. Allegedly.'],
+  Japan:       ['Japan',         'Beat Germany and Spain in 2022. Will do it again.'],
+  Senegal:     ['Senegal',       'Organised chaos. Tactically excellent. Africa\'s finest.'],
+  Ecuador:     ['Ecuador',       'Don\'t overlook them. People always overlook them.'],
+  Switzerland: ['Switzerland',   'Never win it. Never go out early. Infuriatingly reliable.'],
+  Norway:      ['Norway',        'Erling Haaland at a World Cup. That\'s it. That\'s the draw.'],
+  Turkey:      ['Turkey',        'Chaotic. Unpredictable. Could go out in groups or win it.'],
+  'South Korea':['South Korea',  'Son\'s swansong. Heung-Min at his peak. Genuinely dangerous.'],
+  Iran:        ['Iran',          'More organised than you think. Harder to beat than you\'d expect.'],
+  Austria:     ['Austria',       'Underrated every single time. This is the year they stop being.'],
+  Canada:      ['Canada',        'Alphonso Davies at full speed is not your problem to have.'],
+  Algeria:     ['Algeria',       'AFCON winners. Tournament pedigree. Don\'t dismiss.'],
+  Australia:   ['Australia',     'They qualified again. Nobody thought they would.'],
+  Egypt:       ['Egypt',         'Mohamed Salah has never played at a World Cup. He\'s here now.'],
+  Scotland:    ['Scotland',      'First World Cup in 28 years. Irrational hope fully justified.'],
+  Paraguay:    ['Paraguay',      'South American grit. Counter-attack football. Awkward opponents.'],
+  Sweden:      ['Sweden',        'Post-Zlatan era. Still organised. Still solid. Still Sweden.'],
+  Tunisia:     ['Tunisia',       'Will make your life extremely difficult. Every single game.'],
+  'Ivory Coast':['Ivory Coast',  'Good technical players. African quality. Real threat.'],
+  Ghana:       ['Ghana',         'The atmosphere when they score. Pure class.'],
+  'Saudi Arabia':['Saudi Arabia','They beat Argentina. They will never let you forget it.'],
+  'Bosnia & Herzegovina':['Bosnia','Balkan chaos. Every game is an emotional event.'],
+  'Czech Republic':['Czech Republic','Solid European side. Professional. Will get their points.'],
+  'South Africa':['South Africa','Hosts in 2010. Back again. The continent will be with them.'],
+  Jordan:      ['Jordan',        'Jordan at a World Cup. First time ever. Incredible.'],
+  Qatar:       ['Qatar',         'Zero group stage wins as 2022 host. That\'s the bar. Step over it.'],
+  Uzbekistan:  ['Uzbekistan',    'Central Asian football on the world stage. Delightful.'],
+  'DR Congo':  ['DR Congo',      'Congolese talent has always been there. World Cup debut.'],
+  Iraq:        ['Iraq',          'Football as proof of resilience. Iraq at the World Cup.'],
+  Panama:      ['Panama',        'Compact. Proud. Will make it hard. Every game.'],
+  'Cape Verde':['Cape Verde',    'Atlantic island nation. Unlimited respect. Swim.'],
+  Haiti:       ['Haiti',         'Could score three. Could concede seven. Subscribe immediately.'],
+  'Curacoa':   ['Curacoa',       '150,000 people. A World Cup place. Greatest underdog story.'],
+  'New Zealand':['New Zealand',  'New Zealand at football. Committed entirely. Respect.'],
+  Israel:      ['Israel',        '...how did this get in here.'],
+};
+
 const PLAYERS = [
   {
     name: 'Mcivor',
     t4: 'New Zealand',
     t3: 'Algeria',
     t2: 'Norway',
-    t1: 'Belgium',        // Real T1
-    fakeout: 'Israel',    // ← shown first before the real reveal
+    t1: 'Belgium',
+    fakeout: 'Israel',
   },
-  { name: 'Phil',   t4: 'Qatar',         t3: 'Paraguay',   t2: 'Uruguay',      t1: 'France'      },
-  { name: 'Dan',    t4: 'South Africa',  t3: 'South Korea', t2: 'Colombia',    t1: 'Spain'       },
-  { name: 'Badger', t4: 'Bosnia & Herzegovina', t3: 'Egypt', t2: 'Japan',      t1: 'Argentina'   },
-  { name: 'Hearn',   t4: 'Saudi Arabia',  t3: 'Scotland',   t2: 'Mexico',       t1: 'England'     },
-  { name: 'Hendrik', t4: 'Iraq',          t3: 'Turkey',     t2: 'Ecuador',      t1: 'Netherlands', fakeout: 'Germany' },
-  { name: 'TJ',     t4: 'Tunisia',       t3: 'Austria',    t2: 'Switzerland',  t1: 'Portugal'    },
-  { name: 'Dave',   t4: 'Czech Republic', t3: 'Turkey',    t2: 'Senegal',      t1: 'Brazil'      },
-  { name: 'Jake',   t4: 'Jordan',        t3: 'Iran',       t2: 'Ecuador',      t1: 'Netherlands' },
-  { name: 'Macri',  t4: 'Cape Verde',    t3: 'Canada',     t2: 'Croatia',      t1: 'Morocco'     },
-  { name: 'Piga',   t4: 'Ghana',         t3: 'Australia',  t2: 'Germany',      t1: 'Germany', bonusTeam: 'Ivory Coast' },
+  { name: 'Phil',    t4: 'Qatar',         t3: 'Paraguay',    t2: 'Uruguay',     t1: 'France'       },
+  { name: 'Dan',     t4: 'South Africa',  t3: 'South Korea', t2: 'Colombia',    t1: 'Spain'        },
+  { name: 'Badger',  t4: 'Bosnia & Herzegovina', t3: 'Egypt', t2: 'Japan',      t1: 'Argentina'    },
+  { name: 'Hearn',   t4: 'Saudi Arabia',  t3: 'Scotland',    t2: 'Mexico',      t1: 'England'      },
+  { name: 'Hendrik', t4: 'Iraq',          t3: 'Turkey',      t2: 'Ecuador',     t1: 'Netherlands', fakeout: 'Germany' },
+  { name: 'TJ',      t4: 'Tunisia',       t3: 'Austria',     t2: 'Switzerland', t1: 'Portugal'     },
+  { name: 'Dave',    t4: 'Czech Republic',t3: 'Turkey',      t2: 'Senegal',     t1: 'Brazil'       },
+  { name: 'Jake',    t4: 'Jordan',        t3: 'Iran',        t2: 'Ecuador',     t1: 'Netherlands'  },
+  { name: 'Macri',   t4: 'Cape Verde',    t3: 'Canada',      t2: 'Croatia',     t1: 'Morocco'      },
+  { name: 'Piga',    t4: 'Ghana',         t3: 'Australia',   t2: 'Germany',     t1: 'Germany',     bonusTeam: 'Ivory Coast' },
 ];
 
-// ── PER-TEAM COMMENTARY ──
-const TEAM_LINES = {
-  // T1 Elite
-  France:      ['THE WORLD NO.1',         'Les Bleus. Mbappé country. Absolute weapon.'],
-  Spain:       ['TIKI-TAKA GODS',          'Five-star football. Will make it look easy until they don\'t.'],
-  Argentina:   ['DEFENDING CHAMPIONS',     'World champions. Messi\'s heirs. Back to finish the job.'],
-  England:     ['IT\'S COMING HOME',       'It\'s not coming home. But it might. It won\'t. Maybe.'],
-  Portugal:    ['RONALDO\'S LAST DANCE',   'A nation. A tournament. One man\'s final curtain call.'],
-  Brazil:      ['SAMBA OR SHAME',          'Five-time champions. Zero chill. Maximum drama guaranteed.'],
-  Netherlands: ['TOTAL FOOTBALL RETURNS',  'Orange machine rebuilt. De Jong, Dumfries, dangerous.'],
-  Morocco:     ['THE GREAT DISRUPTORS',    'Sent Portugal home in 2022. Nobody is safe.'],
-  Belgium:     ['THE GOLDEN GENERATION',   'They said it was over. They are back. Do not sleep on them.'],
-  Germany:     ['DER PANZER RELOADED',     'Four World Cups. A point to prove. Very much here.'],
-  // T2 Contenders
-  Croatia:     ['MODRIC NEVER DIES',       'He\'s 38. He\'s still doing it. It\'s extraordinary.'],
-  Colombia:    ['SOUTH AMERICAN DARK HORSE','James. Díaz. Dangerous. Very dangerous.'],
-  Uruguay:     ['GARRA CHARRÚA',           'They will bite, kick, and grind out results. Charming.'],
-  USA:         ['HOME ADVANTAGE',          'Hosting it. Motivated. Pulisic on form. Threat.'],
-  Mexico:      ['EL TRI ON HOME SOIL',     'Never past the quarters. That changes now. Allegedly.'],
-  Japan:       ['THE SAMURAI SHOCK',       'Beat Germany and Spain in 2022. Will do it again.'],
-  Senegal:     ['AFRICA\'S FINEST',        'Kouyaté. Sarr. Organised chaos. Tactically excellent.'],
-  Ecuador:     ['QUIET ACHIEVERS',         'Don\'t overlook them. People always overlook them.'],
-  Switzerland: ['SWITZERLAND ALWAYS QUALIFIES', 'Never win it. Never get knocked out early. Reliable.'],
-  Norway:      ['HAALAND\'S MISSION',      'Erling Haaland at a World Cup. That\'s it. That\'s the draw.'],
-  // T3 Dark Horses
-  Turkey:      ['THE WILD CARD',           'Chaotic. Unpredictable. Could go out in groups or win the thing.'],
-  'South Korea': ['SON\'S SWANSONG',       'Heung-Min Son in his prime. Genuinely dangerous.'],
-  Iran:        ['DISCIPLINED AND DANGEROUS','More organised than you think. Harder to beat than you\'d expect.'],
-  Austria:     ['DARK HORSES',             'Underrated every single time. This is the year they stop being.'],
-  Canada:      ['DAVIES ON A MISSION',     'Alphonso Davies at full speed is not your problem to have.'],
-  Algeria:     ['MAHREZ AND FRIENDS',      'AFCON winners. Tournament experience. Don\'t dismiss.'],
-  Australia:   ['THE SOCCEROOS',           'They qualified again. Nobody thought they would. They did.'],
-  Egypt:       ['SALAH\'S SHOT',           'Mohamed Salah has never played at a World Cup. He\'s here now.'],
-  Scotland:    ['FIRST WORLD CUP IN 28 YEARS', 'First appearance since 1998. Irrational hope fully justified.'],
-  Paraguay:    ['ROUGH AND READY',         'South American grit. Counter-attack football. Awkward opponents.'],
-  Sweden:      ['ZLATAN\'S LEGACY',        'Post-Zlatan era. Still organised. Still solid. Still Sweden.'],
-  Tunisia:     ['NORTH AFRICAN PRIDE',     'Organised. Defensive. Will make your life extremely difficult.'],
-  'Ivory Coast': ['ELEPHANTS ON THE MARCH','African quality. Good technical players. Real threat.'],
-  Ghana:       ['THE BLACK STARS',         'The atmosphere when they score. Class.'],
-  'Saudi Arabia': ['THEY BEAT ARGENTINA', 'They beat Argentina once. They will never let you forget it.'],
-  'Bosnia & Herzegovina': ['BALKAN CHAOS', 'Every game is an emotional event. Football as therapy.'],
-  'Czech Republic': ['THE CZECHS',         'Solid European side. Professional. Will get their points.'],
-  'South Africa': ['BAFANA BAFANA',        'Hosts in 2010. Back again. The continent will be with them.'],
-  Jordan:      ['GENUINELY HISTORIC',      'Jordan at a World Cup. First time ever. Incredible.'],
-  Qatar:       ['WON NOTHING. HOSTED EVERYTHING.', 'Zero group stage wins as host in 2022. That\'s the bar. Step over it.'],
-  // T4 Minnows
-  Uzbekistan:  ['THE SURPRISE PACKAGE',    'Central Asian football on the world stage. Genuinely delightful.'],
-  'DR Congo':  ['LEOPARDS UNLEASHED',      'Congolese talent has always been there. World Cup debut.'],
-  Iraq:        ['MESOPOTAMIA RISES',       'Iraq at the World Cup. Football as proof of resilience.'],
-  Panama:      ['LOS CANALEROS',           'Qualified again. Compact. Proud. Will make it hard.'],
-  'Cape Verde': ['THE BLUE SHARKS',        'Atlantic island nation. Tier 4. Unlimited respect. Swim.'],
-  Haiti:       ['CHAOS FOOTBALL',          'Could score three. Could concede seven. Subscribe immediately.'],
-  'Curaçao':   ['SMALLEST NATION EVER TO QUALIFY', '150,000 people. A World Cup. The greatest underdog story told.'],
-  'New Zealand': ['THE ALL WHITES',        'New Zealand at football. Committed entirely. Respect the journey.'],
-  Israel:      ['ERROR: TEAM NOT FOUND',   '...how did this get in here.'],
-};
-
-// Tier labels
-const TIER_LABELS = { t1: 'TIER 1 — ELITE', t2: 'TIER 2 — CONTENDER', t3: 'TIER 3 — DARK HORSE', t4: 'TIER 4 — MINNOW' };
-
 // ─────────────────────────────────────────────
-// SHOW STATE MACHINE
+// STATE MACHINE
 // ─────────────────────────────────────────────
-
-// Steps: for each player we build a sequence of actions
-// action types: show_player, deal_cards, flip_t4, flip_t3, flip_t2, spotlight_t1, flip_t1, done
-
 let steps = [];
 let stepIdx = 0;
 let busy = false;
 
 function buildSteps() {
   steps = [];
-  PLAYERS.forEach((p, pi) => {
+  PLAYERS.forEach(function(p) {
     steps.push({ type: 'show_player', player: p });
     steps.push({ type: 'deal_cards',  player: p });
-    steps.push({ type: 'flip_tier', player: p, tier: 't4' });
-    steps.push({ type: 'flip_tier', player: p, tier: 't3' });
-    steps.push({ type: 'flip_tier', player: p, tier: 't2' });
+    steps.push({ type: 'flip_tier',   player: p, tier: 't4' });
+    steps.push({ type: 'flip_tier',   player: p, tier: 't3' });
+    steps.push({ type: 'flip_tier',   player: p, tier: 't2' });
     if (p.fakeout) {
       steps.push({ type: 'spotlight_then_flip', player: p, isFakeout: true });
-      steps.push({ type: 'fakeout_reveal', player: p });
-      steps.push({ type: 'fakeout_error',  player: p });
+      steps.push({ type: 'fakeout_reveal',      player: p });
+      steps.push({ type: 'fakeout_error',       player: p });
       steps.push({ type: 'fakeout_fix_then_flip', player: p });
     } else {
       steps.push({ type: 'spotlight_then_flip', player: p, isFakeout: false });
@@ -707,41 +864,18 @@ function advance() {
 async function runStep() {
   const step = steps[stepIdx];
   if (!step) return;
-
   busy = true;
-
   switch (step.type) {
-    case 'show_player':
-      await doShowPlayer(step.player);
-      break;
-    case 'deal_cards':
-      await doDealCards(step.player);
-      break;
-    case 'flip_tier':
-      await doFlipTier(step.player, step.tier);
-      break;
-    case 'spotlight_then_flip':
-      await doSpotlight(step.player);
-      await doFlipT1(step.player);
-      break;
-    case 'fakeout_reveal':
-      await doFakeoutReveal(step.player);
-      break;
-    case 'fakeout_error':
-      await doFakeoutError(step.player);
-      break;
-    case 'fakeout_fix_then_flip':
-      await doFakeoutFix(step.player);
-      await doFlipT1(step.player);
-      break;
-    case 'flip_bonus':
-      await doFlipBonus(step.player);
-      break;
-    case 'done':
-      showScreen('screen-done');
-      break;
+    case 'show_player':             await doShowPlayer(step.player); break;
+    case 'deal_cards':              await doDealCards(step.player); break;
+    case 'flip_tier':               await doFlipTier(step.player, step.tier); break;
+    case 'spotlight_then_flip':     await doSpotlight(step.player); await doFlipT1(step.player); break;
+    case 'fakeout_reveal':          await doFakeoutReveal(step.player); break;
+    case 'fakeout_error':           await doFakeoutError(step.player); break;
+    case 'fakeout_fix_then_flip':   await doFakeoutFix(step.player); await doFlipT1(step.player); break;
+    case 'flip_bonus':              await doFlipBonus(step.player); break;
+    case 'done':                    showScreen('screen-done'); break;
   }
-
   busy = false;
 }
 
@@ -754,47 +888,46 @@ async function doShowPlayer(p) {
   setPlayerBanner(p.name.toUpperCase());
   setTierLabel('');
   document.getElementById('card-grid').innerHTML = '';
-  flashBg('gold', 350);
-  await wait(300);
+  flashBg('white', 250);
+  await wait(280);
 }
 
 async function doDealCards(p) {
   const grid = document.getElementById('card-grid');
   grid.innerHTML = '';
   const tiers = ['t4','t3','t2','t1'];
-  for (const t of tiers) {
-    const wrap = makeCardBack(t, p.fakeout && t === 't1');
-    wrap.id = `card-${p.name}-${t}`;
+  for (let i = 0; i < tiers.length; i++) {
+    const wrap = makeCardBack(tiers[i]);
+    wrap.id = 'card-' + p.name + '-' + tiers[i];
     grid.appendChild(wrap);
-    await wait(180);
+    await wait(160);
   }
   if (p.bonusTeam) {
-    const wrap = makeCardBack('bonus', false);
-    wrap.id = `card-${p.name}-bonus`;
+    const wrap = makeCardBack('bonus');
+    wrap.id = 'card-' + p.name + '-bonus';
     grid.appendChild(wrap);
-    await wait(180);
+    await wait(160);
   }
 }
 
 async function doFlipTier(p, tier) {
   const team = p[tier];
-  const flag = FLAGS[team] || '🏳️';
-  const lines = TEAM_LINES[team] || [team.toUpperCase(), 'On the world stage.'];
+  const f = FLAGS[team] || flag('<rect width="60" height="40" fill="#666"/>');
+  const lines = TEAM_LINES[team] || [team, 'On the world stage.'];
   setTierLabel(TIER_LABELS[tier]);
-
-  drumroll(0.3);
-  await wait(300);
-  flipCard(`card-${p.name}-${tier}`, team, flag, tier);
-  await wait(400);
-  stageShake(300);
-  spawnParticles(tier === 't4' ? '⚽' : tier === 't3' ? '🌟' : '💫', tier === 't4' ? 6 : 8);
+  drumroll(0.25);
+  await wait(280);
+  flipCard('card-' + p.name + '-' + tier, team, f, tier);
+  await wait(350);
+  stageShake(280);
+  spawnConfetti(tier === 't1' ? 20 : 8);
   await typeCommentary(lines[0], lines[1]);
-  await wait(200);
+  await wait(180);
 }
 
 async function doSpotlight(p) {
   clearCommentary();
-  setCommentary('THE MOMENT OF TRUTH', p.name.toUpperCase() + "'s Tier 1 team is about to be revealed...");
+  setCommentary('Tier 1', p.name.toUpperCase() + ' — the big one.');
   setTierLabel(TIER_LABELS.t1);
   document.getElementById('spotlight-overlay').classList.add('on');
   await wait(800);
@@ -802,44 +935,33 @@ async function doSpotlight(p) {
 }
 
 async function doCountdown() {
-  for (const n of ['3','2','1']) {
+  for (let i = 0; i < 3; i++) {
+    const n = 3 - i;
     const el = document.getElementById('countdown-num');
     el.textContent = n;
     document.getElementById('countdown-display').classList.add('active');
-    await wait(900);
+    await wait(880);
     document.getElementById('countdown-display').classList.remove('active');
-    await wait(100);
+    await wait(120);
   }
 }
 
 async function doFakeoutReveal(p) {
   const fakeTeam = p.fakeout;
-  const fakeFlag = FLAGS[fakeTeam] || '';
-
-  // Hero-size the card first, same as real T1
+  const fakeFlag = FLAGS[fakeTeam] || flag('<rect width="60" height="40" fill="#666"/>');
   const card = document.getElementById('card-' + p.name + '-t1');
   if (card) { card.classList.add('hero'); }
   await wait(80);
-
-  // Flip to fake team
   flipCard('card-' + p.name + '-t1', fakeTeam, fakeFlag, 't1');
-
-  // Big explosion — red chaos
-  stageShake(700);
-  flashBg('red', 900);
-  spawnParticles('\u{1F631}', 14);
-  spawnParticles('\u{1F4A5}', 10);
-  spawnParticles('\u{1F525}', 8);
-
+  stageShake(600);
+  flashBg('red', 800);
+  spawnConfetti(16);
   clearCommentary();
-  setCommentary(fakeTeam.toUpperCase(), 'Wait... WHAT.');
-
-  // Hold the big fake card — let the room lose their minds
+  setCommentary(fakeTeam, 'Wait. What.');
   await wait(3500);
 }
 
 async function doFakeoutError(p) {
-  // Shrink the hero card back into grid before overlay covers it
   const card = document.getElementById('card-' + p.name + '-t1');
   if (card) {
     card.classList.add('settling');
@@ -848,69 +970,46 @@ async function doFakeoutError(p) {
     card.classList.remove('settling');
   }
   document.getElementById('fakeout-overlay').classList.add('active');
-  await wait(200);
-  document.getElementById('fakeout-overlay').classList.add('flash');
   await wait(300);
-  document.getElementById('fakeout-overlay').classList.remove('flash');
-
-  await typeEl('fakeout-msg', '⚠️  DRAW DATABASE CORRUPTION DETECTED  ⚠️\n\nIntelligence sources confirm incorrect team assignment.\nConducting emergency re-draw for ' + p.name.toUpperCase() + '...');
-  await wait(2000);
+  await typeEl('fakeout-msg', 'INCORRECT ASSIGNMENT DETECTED\n\nEmergency re-draw in progress\nfor ' + p.name.toUpperCase() + '...');
+  await wait(2200);
 }
 
 async function doFakeoutFix(p) {
   document.getElementById('fakeout-overlay').classList.remove('active');
   document.getElementById('spotlight-overlay').classList.add('on');
-
-  // Unflip the card and wipe the front face so the real team isn't pre-loaded
   const card = document.getElementById('card-' + p.name + '-t1');
   if (card) {
     const inner = card.querySelector('.card-inner');
     inner.classList.remove('flipped');
-    // Wait for the CSS flip transition to complete before clearing content
     await wait(700);
     const front = inner.querySelector('.card-face.card-front');
     if (front) { front.innerHTML = ''; }
   }
   clearCommentary();
-  setCommentary('RECALIBRATING...', 'Stand by for correct assignment.');
+  setCommentary('Re-draw', 'Stand by.');
   await wait(600);
   await doCountdown();
 }
 
 async function doFlipT1(p) {
   const team = p.t1;
-  const flag = FLAGS[team] || '';
-  const lines = TEAM_LINES[team] || [team.toUpperCase(), 'A Tier 1 team. Respect.'];
-
+  const f = FLAGS[team] || flag('<rect width="60" height="40" fill="#666"/>');
+  const lines = TEAM_LINES[team] || [team, 'A Tier 1 nation.'];
   const card = document.getElementById('card-' + p.name + '-t1');
-
-  // 1. Make card hero-sized (fixed, centred, big)
   if (card) { card.classList.add('hero'); }
-  await wait(80); // let position apply before flip
-
-  // 2. Flip it
-  flipCard('card-' + p.name + '-t1', team, flag, 't1');
-  stageShake(800);
-  flashBg('gold', 1000);
-  spawnParticles('\u{1F38A}', 16);
-  spawnParticles('\u2B50', 14);
-  spawnParticles('\u{1F525}', 10);
-  spawnParticles('\u{1F4A5}', 8);
-  spawnParticles('\u2728', 12);
-
-  // 3. Show commentary while card is big
+  await wait(80);
+  flipCard('card-' + p.name + '-t1', team, f, 't1');
+  stageShake(700);
+  flashBg('white', 900);
+  spawnConfetti(32);
   document.getElementById('spotlight-overlay').classList.remove('on');
   await typeCommentary(lines[0], lines[1]);
-
-  // 4. Hold the big card so the room can take it in
-  await wait(1800);
-
-  // 5. Settle card back into grid
+  await wait(2000);
   if (card) {
     card.classList.add('settling');
     card.classList.remove('hero');
-    // After transition finishes, remove settling class
-    await wait(750);
+    await wait(700);
     card.classList.remove('settling');
   }
   await wait(200);
@@ -918,21 +1017,21 @@ async function doFlipT1(p) {
 
 async function doFlipBonus(p) {
   const team = p.bonusTeam;
-  const flag = FLAGS[team] || '🏳️';
-  setTierLabel('BONUS TEAM ⭐');
-  drumroll(0.2);
-  await wait(300);
-  flipCard(`card-${p.name}-bonus`, team, flag, 'bonus');
-  spawnParticles('⭐', 8);
-  await typeCommentary('BONUS TEAM INCOMING', `${team} — surprise fifth entry into the sweep.`);
-  await wait(200);
+  const f = FLAGS[team] || flag('<rect width="60" height="40" fill="#666"/>');
+  setTierLabel('Bonus');
+  drumroll(0.18);
+  await wait(280);
+  flipCard('card-' + p.name + '-bonus', team, f, 'bonus');
+  spawnConfetti(10);
+  await typeCommentary(team, 'Bonus team — surprise fifth entry.');
+  await wait(180);
 }
 
 // ─────────────────────────────────────────────
 // DOM HELPERS
 // ─────────────────────────────────────────────
 
-function makeCardBack(tier, isFakeout) {
+function makeCardBack(tier) {
   const wrap = document.createElement('div');
   wrap.className = 'card-wrap' + (tier === 'bonus' ? ' card-bonus' : '');
   const inner = document.createElement('div');
@@ -946,22 +1045,20 @@ function makeCardBack(tier, isFakeout) {
     back.appendChild(b);
   }
   inner.appendChild(back);
-  // placeholder front
   const front = document.createElement('div');
-  front.className = `card-face card-front ${tier === 'bonus' ? 't4' : tier}`;
+  front.className = 'card-face card-front ' + (tier === 'bonus' ? 't4' : tier);
   inner.appendChild(front);
   wrap.appendChild(inner);
   return wrap;
 }
 
-function flipCard(id, team, flag, tier) {
+function flipCard(id, team, f, tier) {
   const wrap = document.getElementById(id);
   if (!wrap) return;
   const inner = wrap.querySelector('.card-inner');
-  // Build the front face
   const front = inner.querySelector('.card-face.card-front');
   front.innerHTML = '';
-  front.className = `card-face card-front ${tier === 'bonus' ? 't4' : tier}`;
+  front.className = 'card-face card-front ' + (tier === 'bonus' ? 't4' : tier);
 
   const badge = document.createElement('div');
   badge.className = 'card-tier-badge';
@@ -970,7 +1067,7 @@ function flipCard(id, team, flag, tier) {
 
   const flagEl = document.createElement('div');
   flagEl.className = 'card-flag';
-  flagEl.innerHTML = flag;
+  flagEl.innerHTML = f;
   front.appendChild(flagEl);
 
   const nameEl = document.createElement('div');
@@ -981,98 +1078,98 @@ function flipCard(id, team, flag, tier) {
   inner.classList.add('flipped');
 }
 
-function setPlayerBanner(name) {
-  document.getElementById('player-banner').textContent = name;
+function setPlayerBanner(name) { document.getElementById('player-banner').textContent = name; }
+function setTierLabel(txt)     { document.getElementById('tier-label').textContent = txt; }
+function setCommentary(h, s)   { document.getElementById('commentary-headline').textContent = h; document.getElementById('commentary-sub').textContent = s; }
+function clearCommentary()     { document.getElementById('commentary-headline').textContent = ''; document.getElementById('commentary-sub').textContent = ''; }
+
+async function typeCommentary(h, s) {
+  await typeEl('commentary-headline', h, 22);
+  await typeEl('commentary-sub', s, 14);
 }
 
-function setTierLabel(txt) {
-  document.getElementById('tier-label').textContent = txt;
-}
-
-function setCommentary(headline, sub) {
-  document.getElementById('commentary-headline').textContent = headline;
-  document.getElementById('commentary-sub').textContent = sub;
-}
-
-function clearCommentary() {
-  document.getElementById('commentary-headline').textContent = '';
-  document.getElementById('commentary-sub').textContent = '';
-}
-
-async function typeCommentary(headline, sub) {
-  await typeEl('commentary-headline', headline, 28);
-  await typeEl('commentary-sub', sub, 18);
-}
-
-function typeEl(id, text, speed = 22) {
-  return new Promise(resolve => {
+function typeEl(id, text, speed) {
+  if (speed === undefined) speed = 22;
+  return new Promise(function(resolve) {
     const el = document.getElementById(id);
     el.textContent = '';
     let i = 0;
-    const tick = () => {
+    function tick() {
       if (i < text.length) {
         el.textContent += text[i++];
-        setTimeout(tick, speed + Math.random() * speed * 0.5);
-      } else {
-        resolve();
-      }
-    };
+        setTimeout(tick, speed + Math.random() * speed * 0.4);
+      } else { resolve(); }
+    }
     tick();
   });
 }
 
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById(id).classList.add('active');
 }
 
 function flashBg(colour, dur) {
-  document.body.style.animation = `flash-${colour === 'gold' ? 'gold' : 'red'} ${dur}ms ease-in-out`;
-  setTimeout(() => document.body.style.animation = '', dur);
+  var anim = colour === 'white' ? 'flash-white' : 'flash-red';
+  document.body.style.animation = anim + ' ' + dur + 'ms ease-in-out';
+  setTimeout(function(){ document.body.style.animation = ''; }, dur);
 }
 
 function stageShake(dur) {
-  const s = document.getElementById('stage');
-  s.style.animation = `stage-shake ${dur}ms ease-in-out`;
-  setTimeout(() => s.style.animation = '', dur);
+  var s = document.getElementById('stage');
+  s.style.animation = 'stage-shake ' + dur + 'ms ease-in-out';
+  setTimeout(function(){ s.style.animation = ''; }, dur);
 }
 
-function spawnParticles(emoji, n) {
-  for (let i = 0; i < n; i++) {
-    setTimeout(() => {
-      const el = document.createElement('div');
-      el.className = 'pt';
-      el.textContent = emoji;
-      el.style.left = (8 + Math.random() * 84) + 'vw';
-      el.style.top  = (8 + Math.random() * 84) + 'vh';
-      el.style.setProperty('--dx', (Math.random() - 0.5) * 500 + 'px');
-      el.style.setProperty('--dy', (Math.random() - 0.5) * 500 + 'px');
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 1200);
-    }, i * 60);
+// Coloured square/rect confetti — no emoji
+var CONF_COLOURS = ['#fff','#e8e4d8','#cc1111','#1a3a1a','#d4a017','#003DA5','#EF2B2D'];
+function spawnConfetti(n) {
+  for (var i = 0; i < n; i++) {
+    (function(delay) {
+      setTimeout(function() {
+        var el = document.createElement('div');
+        el.className = 'pt';
+        var w = 6 + Math.random() * 8;
+        var h = 4 + Math.random() * 10;
+        el.style.width  = w + 'px';
+        el.style.height = h + 'px';
+        el.style.background = CONF_COLOURS[Math.floor(Math.random() * CONF_COLOURS.length)];
+        el.style.left = (5 + Math.random() * 90) + 'vw';
+        el.style.top  = (5 + Math.random() * 80) + 'vh';
+        el.style.setProperty('--dx', (Math.random() - 0.5) * 480 + 'px');
+        el.style.setProperty('--dy', (Math.random() - 0.5) * 480 + 'px');
+        el.style.setProperty('--dr', (Math.random() * 720 - 360) + 'deg');
+        el.style.borderRadius = Math.random() > 0.5 ? '50%' : '1px';
+        document.body.appendChild(el);
+        setTimeout(function(){ el.remove(); }, 1100);
+      }, delay);
+    })(i * 45);
   }
 }
 
-function drumroll(vol = 0.3) {
+function drumroll(vol) {
+  if (vol === undefined) vol = 0.25;
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const g = ctx.createGain();
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var g = ctx.createGain();
     g.gain.value = vol;
     g.connect(ctx.destination);
-    for (let i = 0; i < 12; i++) {
-      setTimeout(() => {
-        const o = ctx.createOscillator();
-        o.type = 'triangle';
-        o.frequency.value = 90 + Math.random() * 20;
-        o.connect(g);
-        o.start();
-        o.stop(ctx.currentTime + 0.04);
-      }, i * 25);
+    for (var i = 0; i < 14; i++) {
+      (function(idx) {
+        setTimeout(function() {
+          var o = ctx.createOscillator();
+          o.type = 'triangle';
+          o.frequency.value = 80 + Math.random() * 30;
+          o.connect(g);
+          o.start();
+          o.stop(ctx.currentTime + 0.035);
+        }, idx * 22);
+      })(i);
     }
   } catch(e) {}
 }
 
-function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+function wait(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
 </script>
 </body>
 </html>
