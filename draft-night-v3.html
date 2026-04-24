@@ -408,6 +408,17 @@ body::before {
   z-index: 100 !important;
   transition: none !important;
 }
+/* position:fixed breaks preserve-3d in most browsers — force back face hidden */
+.card-wrap.hero .card-inner {
+  transform-style: flat !important;
+}
+.card-wrap.hero .card-back {
+  display: none !important;
+}
+.card-wrap.hero .card-front {
+  transform: none !important;
+  opacity: 1 !important;
+}
 .card-wrap.hero .card-team-name {
   font-size: clamp(1.1rem, 3.5vw, 1.8rem) !important;
 }
@@ -418,6 +429,29 @@ body::before {
               height 0.65s cubic-bezier(0.4,0,0.2,1),
               top 0.65s cubic-bezier(0.4,0,0.2,1),
               left 0.65s cubic-bezier(0.4,0,0.2,1) !important;
+}
+
+/* ── FAKEOUT DISMISSAL ANIMATIONS ── */
+@keyframes card-explode {
+  0%   { transform: translate(-50%,-50%) scale(1) rotate(0deg); opacity: 1; }
+  15%  { transform: translate(-50%,-50%) scale(1.15) rotate(-3deg); opacity: 1; }
+  40%  { transform: translate(-50%,-50%) scale(1.4) rotate(6deg); opacity: 0.6; filter: brightness(3); }
+  70%  { transform: translate(-48%,-60%) scale(0.3) rotate(25deg); opacity: 0.2; filter: brightness(5); }
+  100% { transform: translate(-50%,-50%) scale(0) rotate(45deg); opacity: 0; }
+}
+@keyframes card-smoke {
+  0%   { transform: translate(-50%,-50%) scale(1); opacity: 1; filter: blur(0px) brightness(1); }
+  30%  { transform: translate(-50%,-52%) scale(1.05); opacity: 0.8; filter: blur(1px) brightness(0.7); }
+  60%  { transform: translate(-50%,-58%) scale(1.1); opacity: 0.4; filter: blur(4px) brightness(0.4); }
+  100% { transform: translate(-50%,-68%) scale(1.2); opacity: 0; filter: blur(10px) brightness(0); }
+}
+.card-wrap.dismiss-explode {
+  animation: card-explode 0.65s cubic-bezier(0.4,0,0.2,1) forwards !important;
+  pointer-events: none;
+}
+.card-wrap.dismiss-smoke {
+  animation: card-smoke 0.9s ease-in forwards !important;
+  pointer-events: none;
 }
 
 /* ── COUNTDOWN ── */
@@ -961,14 +995,30 @@ async function doFakeoutReveal(p) {
   await wait(3500);
 }
 
+// Per-player fakeout card dismissal style
+const FAKEOUT_DISMISS = {
+  'Mcivor':  'explode',
+  'Hendrik': 'smoke',
+};
+
 async function doFakeoutError(p) {
   const card = document.getElementById('card-' + p.name + '-t1');
+  const dismissal = FAKEOUT_DISMISS[p.name] || 'explode';
+
   if (card) {
+    // Play dramatic dismissal while still in hero position
+    card.classList.add('dismiss-' + dismissal);
+    await wait(dismissal === 'smoke' ? 950 : 700);
+    // Hard-hide then snap out of hero
+    card.style.opacity = '0';
     card.classList.remove('hero');
+    card.classList.remove('dismiss-' + dismissal);
     card.style.transition = 'none';
     await wait(50);
     card.style.transition = '';
+    card.style.opacity = '';
   }
+
   document.getElementById('fakeout-overlay').classList.add('active');
   await wait(300);
   await typeEl('fakeout-msg', 'INCORRECT ASSIGNMENT DETECTED\n\nEmergency re-draw in progress\nfor ' + p.name.toUpperCase() + '...');
