@@ -830,12 +830,11 @@ function buildSteps() {
     steps.push({ type: 'flip_tier',   player: p, tier: 't3' });
     steps.push({ type: 'flip_tier',   player: p, tier: 't2' });
     if (p.fakeout) {
-      steps.push({ type: 'spotlight_then_flip', player: p, isFakeout: true });
-      steps.push({ type: 'fakeout_reveal',      player: p });
-      steps.push({ type: 'fakeout_error',       player: p });
-      steps.push({ type: 'fakeout_fix_then_flip', player: p });
+      steps.push({ type: 'spotlight_then_fakeout',  player: p });
+      steps.push({ type: 'fakeout_error',            player: p });
+      steps.push({ type: 'fakeout_fix_then_flip',    player: p });
     } else {
-      steps.push({ type: 'spotlight_then_flip', player: p, isFakeout: false });
+      steps.push({ type: 'spotlight_then_flip', player: p });
     }
     if (p.bonusTeam) {
       steps.push({ type: 'flip_bonus', player: p });
@@ -869,8 +868,8 @@ async function runStep() {
     case 'show_player':             await doShowPlayer(step.player); break;
     case 'deal_cards':              await doDealCards(step.player); break;
     case 'flip_tier':               await doFlipTier(step.player, step.tier); break;
+    case 'spotlight_then_fakeout':  await doSpotlight(step.player); await doFakeoutReveal(step.player); break;
     case 'spotlight_then_flip':     await doSpotlight(step.player); await doFlipT1(step.player); break;
-    case 'fakeout_reveal':          await doFakeoutReveal(step.player); break;
     case 'fakeout_error':           await doFakeoutError(step.player); break;
     case 'fakeout_fix_then_flip':   await doFakeoutFix(step.player); await doFlipT1(step.player); break;
     case 'flip_bonus':              await doFlipBonus(step.player); break;
