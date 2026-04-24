@@ -414,7 +414,10 @@ body::before {
 .card-wrap.hero .card-flag { width: 80% !important; }
 .card-wrap.hero .card-tier-badge { font-size: 0.8rem !important; }
 .card-wrap.settling {
-  transition: all 0.65s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: width 0.65s cubic-bezier(0.4,0,0.2,1),
+              height 0.65s cubic-bezier(0.4,0,0.2,1),
+              top 0.65s cubic-bezier(0.4,0,0.2,1),
+              left 0.65s cubic-bezier(0.4,0,0.2,1) !important;
 }
 
 /* ── COUNTDOWN ── */
@@ -963,10 +966,10 @@ async function doFakeoutReveal(p) {
 async function doFakeoutError(p) {
   const card = document.getElementById('card-' + p.name + '-t1');
   if (card) {
-    card.classList.add('settling');
     card.classList.remove('hero');
-    await wait(400);
-    card.classList.remove('settling');
+    card.style.transition = 'none';
+    await wait(50);
+    card.style.transition = '';
   }
   document.getElementById('fakeout-overlay').classList.add('active');
   await wait(300);
@@ -1004,14 +1007,15 @@ async function doFlipT1(p) {
   spawnConfetti(32);
   document.getElementById('spotlight-overlay').classList.remove('on');
   await typeCommentary(lines[0], lines[1]);
-  await wait(2000);
+  await wait(2200);
   if (card) {
-    card.classList.add('settling');
+    // Snap back into grid - remove hero without animation to avoid position:fixed transition bugs
     card.classList.remove('hero');
-    await wait(700);
-    card.classList.remove('settling');
+    card.style.transition = 'none';
+    await wait(50);
+    card.style.transition = '';
   }
-  await wait(200);
+  await wait(150);
 }
 
 async function doFlipBonus(p) {
