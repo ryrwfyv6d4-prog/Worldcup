@@ -1068,15 +1068,25 @@ async function doFakeoutFix(p) {
   document.getElementById('spotlight-overlay').classList.add('on');
   const card = document.getElementById('card-' + p.name + '-t1');
   if (card) {
+    // Clear ALL inline styles left by the fakeout animation
+    card.style.opacity    = '';
+    card.style.filter     = '';
+    card.style.transform  = '';
+    card.style.transition = 'none';
+    await wait(30);
+    card.style.transition = '';
+
+    // Unflip so it shows as face-down for the real reveal
     const inner = card.querySelector('.card-inner');
     inner.classList.remove('flipped');
-    await wait(700);
+    await wait(600);
+    // Clear front face content so real team isn't pre-visible
     const front = inner.querySelector('.card-face.card-front');
     if (front) { front.innerHTML = ''; }
   }
   clearCommentary();
   setCommentary('Re-draw', 'Stand by.');
-  await wait(600);
+  await wait(500);
   await doCountdown();
 }
 
