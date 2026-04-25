@@ -403,8 +403,8 @@ body::before {
   top: 50% !important;
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
-  width: min(52vw, 300px) !important;
-  height: min(70vw, 400px) !important;
+  width: min(62vw, 340px) !important;
+  height: min(83vw, 455px) !important;
   z-index: 100 !important;
   transition: none !important;
 }
@@ -434,35 +434,19 @@ body::before {
               left 0.65s cubic-bezier(0.4,0,0.2,1) !important;
 }
 
-/* ── FAKEOUT DISMISSAL — ghost overlay, not card itself ── */
-.fakeout-ghost {
+/* ── FAKEOUT DISMISSAL — canvas particle system ── */
+#fakeout-canvas {
   position: fixed;
-  z-index: 150;
+  inset: 0;
+  pointer-events: none;
+  z-index: 600;
+}
+.tile-fragment {
+  position: fixed;
+  z-index: 500;
   pointer-events: none;
   overflow: hidden;
-  border: 3px solid var(--ink);
-  background: var(--paper);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
 }
-@keyframes ghost-explode {
-  0%   { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(1); }
-  20%  { transform: scale(1.18) rotate(-4deg); opacity: 1; filter: brightness(2.5); }
-  50%  { transform: scale(1.5) rotate(8deg); opacity: 0.5; filter: brightness(4); }
-  75%  { transform: scale(0.4) rotate(28deg); opacity: 0.15; filter: brightness(6); }
-  100% { transform: scale(0) rotate(55deg); opacity: 0; filter: brightness(8); }
-}
-@keyframes ghost-smoke {
-  0%   { transform: translateY(0) scale(1); opacity: 1; filter: blur(0px) brightness(1); }
-  25%  { transform: translateY(-12px) scale(1.04); opacity: 0.85; filter: blur(1px) brightness(0.8); }
-  55%  { transform: translateY(-30px) scale(1.08); opacity: 0.45; filter: blur(5px) brightness(0.4); }
-  100% { transform: translateY(-70px) scale(1.15); opacity: 0; filter: blur(14px) brightness(0); }
-}
-.fakeout-ghost.exploding { animation: ghost-explode 0.7s cubic-bezier(0.4,0,0.2,1) forwards; }
-.fakeout-ghost.smoking   { animation: ghost-smoke 1s ease-in forwards; }
 
 /* ── COUNTDOWN ── */
 #countdown-display {
@@ -710,6 +694,8 @@ body::before {
 <!-- overlays -->
 <div id="spotlight-overlay"></div>
 <div id="countdown-display"><div id="countdown-num">3</div></div>
+<canvas id="fakeout-canvas"></canvas>
+<div id="flash" style="position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:400"></div>
 <div id="fakeout-overlay">
   <div class="fakeout-bar">
     <div id="fakeout-title">BROADCAST ERROR</div>
@@ -1016,35 +1002,59 @@ async function doFakeoutError(p) {
   const dismissal = FAKEOUT_DISMISS[p.name] || 'explode';
 
   if (card) {
-    // Snapshot the card's current position and size
     const rect = card.getBoundingClientRect();
 
-    // Clone card's visible content into a ghost div at the same screen position
-    const ghost = document.createElement('div');
-    ghost.className = 'fakeout-ghost';
-    ghost.style.left   = rect.left + 'px';
-    ghost.style.top    = rect.top  + 'px';
-    ghost.style.width  = rect.width  + 'px';
-    ghost.style.height = rect.height + 'px';
-    // Copy inner content from the front face
-    const front = card.querySelector('.card-face.card-front');
-    if (front) { ghost.innerHTML = front.innerHTML; }
-    document.body.appendChild(ghost);
+    if (dismissal === 'explode') {
+      // Card shudders briefly then tiles explode outward
+      var shudderStart = performance.now();
+      var shudderDur = 180;
+      await new Promise(function(resolve) {
+        (function shudder() {
+          var n = performance.now();
+          var prog = (n - shudderStart) / shudderDur;
+          if (prog < 1) {
+            var d = (1 - prog) * 16;
+            card.style.transform = 'translate(' + (Math.random()*d*2-d) + 'px,' + (Math.random()*d*2-d) + 'px) rotate(' + (Math.random()*10-5) + 'deg)';
+            requestAnimationFrame(shudder);
+          } else {
+            card.style.opacity = '0';
+            card.style.transform = '';
+            card.classList.remove('hero');
+            card.style.transition = 'none';
+            resolve();
+          }
+        })();
+      });
+      spawnExplosionTiles(rect, card);
+      canvasExplode(rect);
+      await wait(1400);
 
-    // Hide the real card immediately — ghost takes over visually
-    card.style.opacity = '0';
-    card.classList.remove('hero');
-    card.style.transition = 'none';
-
-    // Trigger animation on ghost
-    await wait(30); // let ghost paint first
-    ghost.classList.add(dismissal === 'smoke' ? 'smoking' : 'exploding');
-    const animDur = dismissal === 'smoke' ? 1050 : 750;
-    await wait(animDur);
-    ghost.remove();
+    } else {
+      // Smoke: card darkens while smoke rises, then fades
+      card.classList.remove('hero');
+      card.style.transition = 'none';
+      var smokeStart = performance.now();
+      var smokeDur = 2400;
+      canvasSmoke(rect);
+      await new Promise(function(resolve) {
+        (function fadeCard() {
+          var n = performance.now();
+          var t = Math.min((n - smokeStart) / smokeDur, 1);
+          var brightness = 1 - t * 0.9;
+          var opacity    = t < 0.4 ? 1 : 1 - ((t - 0.4) / 0.6);
+          card.style.filter  = 'brightness(' + brightness + ')';
+          card.style.opacity = opacity.toString();
+          if (t < 1) { requestAnimationFrame(fadeCard); }
+          else {
+            card.style.opacity = '0';
+            card.style.filter  = '';
+            resolve();
+          }
+        })();
+      });
+    }
 
     card.style.transition = '';
-    card.style.opacity = '';
   }
 
   document.getElementById('fakeout-overlay').classList.add('active');
@@ -1249,6 +1259,243 @@ function drumroll(vol) {
 }
 
 function wait(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
+
+// ═══════════════════════════════════════════════
+// CANVAS PARTICLE ENGINE — fakeout dismissals
+// ═══════════════════════════════════════════════
+(function() {
+  var cvs = document.getElementById('fakeout-canvas');
+  var ctx2;
+  var particles2 = [];
+  var running2 = false;
+
+  function init() {
+    cvs.width  = window.innerWidth;
+    cvs.height = window.innerHeight;
+    ctx2 = cvs.getContext('2d');
+  }
+  init();
+  window.addEventListener('resize', init);
+
+  function r(a,b) { return a + Math.random()*(b-a); }
+  function ri(a,b) { return Math.floor(r(a,b)); }
+  function eOut(t) { return 1 - Math.pow(1-t,3); }
+
+  function loop2(now) {
+    ctx2.clearRect(0,0,cvs.width,cvs.height);
+    var alive = false;
+    for (var i = particles2.length-1; i >= 0; i--) {
+      var p = particles2[i];
+      if (now < p.birth) { alive = true; continue; }
+      var age = now - p.birth;
+      if (age >= p.life) { particles2.splice(i,1); continue; }
+      alive = true;
+      drawP(p, age);
+    }
+    if (alive) { requestAnimationFrame(loop2); }
+    else { running2 = false; ctx2.clearRect(0,0,cvs.width,cvs.height); }
+  }
+
+  function startEngine() {
+    if (!running2) { running2 = true; requestAnimationFrame(loop2); }
+  }
+
+  function drawP(p, age) {
+    var t = age / p.life;
+    var dt = age / 1000;
+
+    if (p.type === 'ring') {
+      var rad = p.maxR * eOut(t);
+      var alpha = Math.pow(1-t,1.5) * 0.85;
+      ctx2.beginPath();
+      ctx2.arc(p.x, p.y, rad, 0, Math.PI*2);
+      ctx2.strokeStyle = 'rgba(255,'+p.g+',0,'+alpha+')';
+      ctx2.lineWidth = (1-t)*14+1;
+      ctx2.stroke();
+      return;
+    }
+    if (p.type === 'fire') {
+      var x = p.x + p.vx*dt;
+      var y = p.y + p.vy*dt + 0.5*p.grav*dt*dt;
+      var sz = p.size*(1-t*0.4);
+      var alpha = t < 0.2 ? 1 : 1-(t-0.2)/0.8;
+      var g = ctx2.createRadialGradient(x,y,0,x,y,sz*2.8);
+      g.addColorStop(0,   'rgba(255,250,180,'+alpha+')');
+      g.addColorStop(0.2, 'rgba(255,160,20,'+(alpha*0.95)+')');
+      g.addColorStop(0.55,'rgba(220,40,0,'+(alpha*0.7)+')');
+      g.addColorStop(1,   'rgba(120,10,0,0)');
+      ctx2.beginPath();
+      ctx2.arc(x,y,sz*2.8,0,Math.PI*2);
+      ctx2.fillStyle = g;
+      ctx2.fill();
+      return;
+    }
+    if (p.type === 'spark') {
+      var x  = p.x + p.vx*dt;
+      var y  = p.y + p.vy*dt + 0.5*p.grav*dt*dt;
+      var dt2 = Math.max(0,(age-16)/1000);
+      var px2 = p.x + p.vx*dt2;
+      var py2 = p.y + p.vy*dt2 + 0.5*p.grav*dt2*dt2;
+      var alpha = t < 0.4 ? 1 : 1-(t-0.4)/0.6;
+      ctx2.beginPath(); ctx2.moveTo(px2,py2); ctx2.lineTo(x,y);
+      ctx2.strokeStyle = 'rgba(255,220,100,'+alpha+')';
+      ctx2.lineWidth = p.size*(1-t*0.5);
+      ctx2.lineCap = 'round'; ctx2.stroke();
+      ctx2.beginPath(); ctx2.arc(x,y,p.size*0.9*(1-t*0.4),0,Math.PI*2);
+      ctx2.fillStyle = 'rgba(255,255,200,'+alpha+')'; ctx2.fill();
+      return;
+    }
+    if (p.type === 'debris') {
+      var x   = p.x + p.vx*dt;
+      var y   = p.y + p.vy*dt + 0.5*p.grav*dt*dt;
+      var rot = p.rot0 + p.rotV*dt;
+      var alpha = t < 0.25 ? 1 : 1-(t-0.25)/0.75;
+      ctx2.save(); ctx2.translate(x,y); ctx2.rotate(rot);
+      ctx2.globalAlpha = alpha; ctx2.fillStyle = p.color;
+      ctx2.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx2.globalAlpha = 1; ctx2.restore();
+      return;
+    }
+    if (p.type === 'puff') {
+      var x  = p.x + p.vx*dt + Math.sin(p.wob+dt*p.wobSpd)*p.wobAmt;
+      var y  = p.y + p.vy*dt;
+      var sz = p.size + p.grow*t;
+      var alpha = t < 0.12 ? (t/0.12)*p.maxA : (1-(t-0.12)/0.88)*p.maxA;
+      var gv = p.gray;
+      var g = ctx2.createRadialGradient(x,y,0,x,y,sz);
+      g.addColorStop(0,   'rgba('+Math.max(0,gv-30)+','+Math.max(0,gv-30)+','+Math.max(0,gv-30)+','+alpha+')');
+      g.addColorStop(0.5, 'rgba('+gv+','+gv+','+gv+','+(alpha*0.7)+')');
+      g.addColorStop(1,   'rgba('+gv+','+gv+','+gv+',0)');
+      ctx2.beginPath(); ctx2.arc(x,y,sz,0,Math.PI*2);
+      ctx2.fillStyle = g; ctx2.fill();
+      return;
+    }
+  }
+
+  // Tile fragment helper
+  function spawnTiles(rect, cardEl) {
+    var COLS=5, ROWS=6;
+    var tw=rect.width/COLS, th=rect.height/ROWS;
+    var tiles=[];
+    for (var row=0; row<ROWS; row++) {
+      for (var col=0; col<COLS; col++) {
+        var tile = document.createElement('div');
+        tile.className = 'tile-fragment';
+        tile.style.width  = tw+'px';
+        tile.style.height = th+'px';
+        tile.style.left   = (rect.left+col*tw)+'px';
+        tile.style.top    = (rect.top+row*th)+'px';
+        tile.innerHTML    = '<div style="width:'+rect.width+'px;height:'+rect.height+'px;position:absolute;top:-'+(row*th)+'px;left:-'+(col*tw)+'px">'+cardEl.innerHTML+'</div>';
+        tile.style.background = '#e8e4d8';
+        document.body.appendChild(tile);
+        tiles.push(tile);
+        var angle = Math.atan2(row-ROWS/2+r(-0.8,0.8), col-COLS/2+r(-0.8,0.8));
+        var spd   = r(200,500);
+        var dx    = Math.cos(angle)*spd;
+        var dy    = Math.sin(angle)*spd - r(50,180);
+        var rotV  = r(-700,700);
+        var delay = r(0,100);
+        var dur   = r(500,950);
+        animFragment(tile,dx,dy,rotV,delay,dur);
+      }
+    }
+    setTimeout(function(){ tiles.forEach(function(t){t.remove();}); }, 1200);
+  }
+
+  function animFragment(tile,dx,dy,rotV,delay,dur) {
+    var x0=parseFloat(tile.style.left), y0=parseFloat(tile.style.top);
+    setTimeout(function(){
+      var start=null;
+      function step(ts){
+        if(!start) start=ts;
+        var p=Math.min((ts-start)/dur,1);
+        var e=1-Math.pow(1-p,2.5);
+        tile.style.left    = (x0+dx*e)+'px';
+        tile.style.top     = (y0+dy*e+0.5*280*Math.pow(p,2)*(dur/1000))+'px';
+        tile.style.opacity = (1-p*p).toString();
+        tile.style.transform = 'rotate('+(rotV*p*(dur/1000))+'deg)';
+        if(p<1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }, delay);
+  }
+
+  // PUBLIC: explosion
+  window.canvasExplode = function(rect) {
+    var cx = rect.left + rect.width/2;
+    var cy = rect.top  + rect.height/2;
+    var now = performance.now();
+
+    // Flash
+    var flash = document.getElementById('flash');
+    if (!flash) { flash = document.createElement('div'); flash.id='flash'; flash.style.cssText='position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:400'; document.body.appendChild(flash); }
+    flash.style.transition='none'; flash.style.opacity='1';
+    setTimeout(function(){ flash.style.transition='opacity 0.4s ease-out'; flash.style.opacity='0'; },55);
+
+    // Card shudder handled by caller — here we do tiles + particles
+    var t0 = now+60;
+
+    // Shockwave rings
+    particles2.push({type:'ring',x:cx,y:cy,maxR:Math.max(rect.width,rect.height)*1.7,g:180,birth:t0,    life:430});
+    particles2.push({type:'ring',x:cx,y:cy,maxR:Math.max(rect.width,rect.height)*2.4,g:60, birth:t0+90, life:550});
+
+    // Fire
+    for (var i=0;i<100;i++){
+      var a=r(0,Math.PI*2), spd=r(40,420);
+      particles2.push({type:'fire',x:cx+r(-28,28),y:cy+r(-28,28),vx:Math.cos(a)*spd*r(0.4,1),vy:Math.sin(a)*spd-r(10,140),size:r(10,34),grav:r(100,280),birth:t0+r(0,120),life:r(250,700)});
+    }
+    // Sparks
+    for (var i=0;i<60;i++){
+      var a=r(0,Math.PI*2), spd=r(160,580);
+      particles2.push({type:'spark',x:cx,y:cy,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-r(60,220),size:r(1.5,3.5),grav:r(260,440),birth:t0+r(0,80),life:r(400,1000)});
+    }
+    // Debris
+    var dc=['#e8e4d8','#d0ccc0','#c8c4b8','#1c1c1c','#a0a090'];
+    for (var i=0;i<28;i++){
+      var a=r(0,Math.PI*2), spd=r(100,340);
+      particles2.push({type:'debris',x:cx+r(-35,35),y:cy+r(-35,35),vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-r(30,150),w:r(6,24),h:r(4,16),grav:r(180,380),rot0:r(0,Math.PI*2),rotV:r(-9,9),color:dc[ri(0,dc.length)],birth:t0+r(0,80),life:r(500,950)});
+    }
+    // Post-explosion smoke
+    for (var i=0;i<20;i++){
+      particles2.push({type:'puff',x:cx+r(-rect.width*0.38,rect.width*0.38),y:cy+r(-rect.height*0.2,rect.height*0.32),vx:r(-18,18),vy:r(-25,-80),size:r(12,30),grow:r(22,55),wob:r(0,Math.PI*2),wobSpd:r(1.5,3),wobAmt:r(5,20),gray:ri(40,100),maxA:r(0.28,0.48),birth:t0+r(150,520),life:r(700,1150)});
+    }
+
+    startEngine();
+  };
+
+  // PUBLIC: smoke
+  window.canvasSmoke = function(rect) {
+    var now = performance.now();
+    var totalDur = 2400;
+    var emitUntil = now + totalDur * 0.82;
+
+    function emitBatch(batchNow) {
+      if (batchNow > emitUntil) return;
+      var progress = (batchNow - now) / totalDur;
+      var count = Math.floor(3 + progress * 7);
+      for (var i=0; i<count; i++) {
+        var ex = rect.left + r(rect.width*0.08, rect.width*0.92);
+        var ey = rect.top  + r(rect.height*0.08, rect.height*0.92);
+        particles2.push({
+          type:'puff', x:ex, y:ey,
+          vx:r(-20,20), vy:r(-60,-150),
+          size:r(8,22), grow:r(35,90),
+          wob:r(0,Math.PI*2), wobSpd:r(0.8,2.5), wobAmt:r(10,32),
+          gray:ri(150,230), maxA:r(0.15,0.35),
+          birth:batchNow+r(0,55), life:r(1000,1800)
+        });
+      }
+      setTimeout(function(){ emitBatch(performance.now()); }, 55);
+    }
+
+    emitBatch(now);
+    startEngine();
+  };
+
+  // PUBLIC: spawnTiles (called from doFakeoutError)
+  window.spawnExplosionTiles = spawnTiles;
+})();
+
 </script>
 </body>
 </html>
