@@ -101,6 +101,70 @@ export default {
         return json({ ok: true });
       }
 
+
+      // GET /notices — list all notices, newest first
+      if (request.method === 'GET' && path === '/notices') {
+        const list = await env.WALL.list({ prefix: 'notices/' });
+        const jsonObjects = list.objects.filter((obj) => obj.key.endsWith('.json'));
+        const notices = await Promise.all(
+          jsonObjects.map(async (obj) => {
+            const item = await env.WALL.get(obj.key);
+            return item ? JSON.parse(await item.text()) : null;
+          })
+        );
+        return json(notices.filter(Boolean).sort((a, b) => b.ts - a.ts));
+      }
+
+      // POST /notices — multipart/form-data (title + body + author + optional image)
+      if (request.method === 'POST' && path === '/notices') {
+        const formData = await request.formData();
+        const title  = formData.get('title')  || '';
+        const body   = formData.get('body')   || '';
+        const author = formData.get('author') || '';
+        const image  = formData.get('image');
+        const id = Date.now();
+        const notice = { id, ts: id, title, body, author, hasImage: false };
+
+        if (image && image.size > 0) {
+          const contentType = image.type || 'image/jpeg';
+          await env.WALL.put(`notices/${id}.img`, await image.arrayBuffer(), {
+            httpMetadata: { contentType },
+          });
+          notice.hasImage = true;
+        }
+
+        await env.WALL.put(`notices/${id}.json`, JSON.stringify(notice), {
+          httpMetadata: { contentType: 'application/json' },
+        });
+        return json(notice, 201);
+      }
+
+      // GET /notices/:id/image
+      const noticeImageMatch = path.match(/^\/notices\/(\d+)\/image$/);
+      if (request.method === 'GET' && noticeImageMatch) {
+        const item = await env.WALL.get(`notices/${noticeImageMatch[1]}.img`);
+        if (!item) return json({ error: 'Not found' }, 404);
+        const imageData = await item.arrayBuffer();
+        return new Response(imageData, {
+          headers: {
+            ...CORS_HEADERS,
+            'Content-Type': item.httpMetadata?.contentType || 'image/jpeg',
+            'Cache-Control': 'public, max-age=31536000, immutable',
+          },
+        });
+      }
+
+      // DELETE /notices/:id
+      const noticeDeleteMatch = path.match(/^\/notices\/(\d+)$/);
+      if (request.method === 'DELETE' && noticeDeleteMatch) {
+        const id = noticeDeleteMatch[1];
+        await Promise.all([
+          env.WALL.delete(`notices/${id}.json`),
+          env.WALL.delete(`notices/${id}.img`),
+        ]);
+        return json({ ok: true });
+      }
+
       return json({ error: 'Not found' }, 404);
     } catch (e) {
       return json({ error: e.message }, 500);
