@@ -4,6 +4,7 @@ export default function Navigation({ tab, setTab }) {
     { id: 'fixtures', label: 'Fixtures', icon: '📅' },
     { id: 'wall', label: 'Wall', icon: '📸' },
     { id: 'draw', label: 'Draw', icon: '🎲' },
+    { id: 'noticeboard', label: 'Board', icon: '📋' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
   ];
 
