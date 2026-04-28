@@ -6,6 +6,7 @@ import Fixtures from './components/Fixtures.jsx';
 import Settings from './components/Settings.jsx';
 import TeamDetail from './components/TeamDetail.jsx';
 import TheWall from './components/TheWall.jsx';
+import NoticeBoard from './components/NoticeBoard.jsx';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { useFixtures } from './hooks/useFixtures.js';
 
@@ -139,6 +140,9 @@ export default function App() {
             )}
             {tab === 'wall' && (
               <TheWall participants={participants} />
+            )}
+            {tab === 'noticeboard' && (
+              <NoticeBoard participants={participants} />
             )}
             {tab === 'settings' && (
               <Settings
