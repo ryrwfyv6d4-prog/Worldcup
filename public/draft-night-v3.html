@@ -882,7 +882,7 @@ const PLAYERS = [
   },
   { name: 'Phil',    t4: 'Qatar',         t3: 'Paraguay',    t2: 'Uruguay',     t1: 'France'       },
   { name: 'Dan',     t4: 'South Africa',  t3: 'South Korea', t2: 'Colombia',    t1: 'Spain'        },
-  { name: 'Badger',  t4: 'Bosnia & Herzegovina', t3: 'Egypt', t2: 'Japan',      t1: 'Argentina'    },
+  { name: 'Badger',  t4: 'Bosnia & Herzegovina', t3: 'Egypt', t2: 'Japan',      t1: 'Argentina',   fakeout: 'Australia' },
   { name: 'Hearn',   t4: 'Saudi Arabia',  t3: 'Scotland',    t2: 'Mexico',      t1: 'England'      },
   { name: 'Hendrik', t4: 'Iraq',          t3: 'Turkey',      t2: 'Ecuador',     t1: 'Netherlands', fakeout: 'Germany' },
   { name: 'TJ',      t4: 'Tunisia',       t3: 'Austria',     t2: 'Switzerland', t1: 'Portugal'     },
@@ -1044,6 +1044,7 @@ async function doFakeoutReveal(p) {
 const FAKEOUT_DISMISS = {
   'Mcivor':  'explode',
   'Hendrik': 'smoke',
+  'Badger':  'land_stolen',
 };
 
 async function doFakeoutError(p) {
@@ -1078,6 +1079,68 @@ async function doFakeoutError(p) {
       canvasExplode(rect);
       await wait(1400);
 
+    } else if (dismissal === 'land_stolen') {
+      // Union Jack creeps across the card from the left, annexing it
+      var flagEl = card.querySelector('.card-flag');
+      var annexOverlay = document.createElement('div');
+      annexOverlay.style.cssText = 'position:absolute;top:0;left:0;width:0%;height:100%;overflow:hidden;z-index:10;transition:width 2.2s cubic-bezier(0.3,0,0.6,1);';
+      annexOverlay.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" style="width:' + rect.width + 'px;height:100%;display:block;position:absolute;top:0;left:0">'
+        // Blue background
+        + '<rect width="60" height="40" fill="#012169"/>'
+        // White diagonals
+        + '<line x1="0" y1="0" x2="60" y2="40" stroke="#fff" stroke-width="8"/>'
+        + '<line x1="60" y1="0" x2="0" y2="40" stroke="#fff" stroke-width="8"/>'
+        // Red diagonals
+        + '<line x1="0" y1="0" x2="60" y2="40" stroke="#C8102E" stroke-width="4.5"/>'
+        + '<line x1="60" y1="0" x2="0" y2="40" stroke="#C8102E" stroke-width="4.5"/>'
+        // White cross
+        + '<rect width="60" height="12" y="14" fill="#fff"/>'
+        + '<rect width="12" height="40" x="24" fill="#fff"/>'
+        // Red cross
+        + '<rect width="60" height="8" y="16" fill="#C8102E"/>'
+        + '<rect width="8" height="40" x="26" fill="#C8102E"/>'
+        + '</svg>';
+
+      // Add a marching dotted border on the right edge
+      var marchBorder = document.createElement('div');
+      marchBorder.id = 'annex-border';
+      marchBorder.style.cssText = 'position:absolute;top:0;right:0;width:3px;height:100%;background:repeating-linear-gradient(180deg,#C8102E 0px,#C8102E 6px,#fff 6px,#fff 12px);animation:march-border 0.4s linear infinite;z-index:11;';
+      annexOverlay.appendChild(marchBorder);
+
+      card.style.position = 'relative';
+      card.appendChild(annexOverlay);
+
+      // Add marching border keyframe if not already there
+      if (!document.getElementById('annex-style')) {
+        var st = document.createElement('style');
+        st.id = 'annex-style';
+        st.textContent = '@keyframes march-border { 0%{background-position:0 0} 100%{background-position:0 24px} }';
+        document.head.appendChild(st);
+      }
+
+      // Commentary shift mid-annexation
+      await wait(400);
+      setCommentary('TERRA NULLIUS', 'Nice land. Ours now.');
+
+      // Trigger the CSS transition
+      await new Promise(function(r) { requestAnimationFrame(function() { requestAnimationFrame(r); }); });
+      annexOverlay.style.width = '100%';
+
+      await wait(2400);
+
+      // Brief pause with full flag covered, then fade card
+      await new Promise(function(resolve) {
+        var start = performance.now();
+        var dur = 600;
+        (function fade() {
+          var t = Math.min((performance.now() - start) / dur, 1);
+          card.style.opacity = (1 - t).toString();
+          if (t < 1) { requestAnimationFrame(fade); }
+          else { card.style.opacity = '0'; resolve(); }
+        })();
+      });
+      card.classList.remove('hero');
+
     } else {
       // Smoke: card darkens while smoke rises, then fades
       card.classList.remove('hero');
@@ -1106,9 +1169,13 @@ async function doFakeoutError(p) {
     card.style.transition = '';
   }
 
+  var fakeoutMsg = {
+    'Badger': 'TERRITORIAL DISPUTE DETECTED\n\nAustralia has been claimed by the Crown\nRe-assigning to legitimate owner...',
+  };
+
   document.getElementById('fakeout-overlay').classList.add('active');
   await wait(300);
-  await typeEl('fakeout-msg', 'INCORRECT ASSIGNMENT DETECTED\n\nEmergency re-draw in progress\nfor ' + p.name.toUpperCase() + '...');
+  await typeEl('fakeout-msg', fakeoutMsg[p.name] || ('INCORRECT ASSIGNMENT DETECTED\n\nEmergency re-draw in progress\nfor ' + p.name.toUpperCase() + '...'));
   await wait(2200);
 }
 
@@ -1117,8 +1184,14 @@ async function doFakeoutFix(p) {
   document.getElementById('spotlight-overlay').classList.add('on');
   const card = document.getElementById('card-' + p.name + '-t1');
   if (card) {
-    // Nuke ALL inline styles in one shot — no partial resets
+    // Remove any extra children appended by animations (e.g. annexOverlay for land_stolen)
+    Array.from(card.children).forEach(function(child) {
+      if (!child.classList.contains('card-inner')) child.remove();
+    });
+
+    // Nuke ALL inline styles in one shot
     card.removeAttribute('style');
+
     // Force a repaint before touching anything else
     await new Promise(function(r) { requestAnimationFrame(function() { requestAnimationFrame(r); }); });
 
