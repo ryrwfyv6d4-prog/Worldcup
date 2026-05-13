@@ -710,7 +710,7 @@ body::before {
 
 <!-- overlays -->
 <!-- PLANE GAG -->
-<svg id="plane-gag" width="120" height="60" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg">
+<svg id="plane-gag" width="360" height="180" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg">
   <g id="plane-body">
     <!-- fuselage -->
     <ellipse cx="60" cy="30" rx="48" ry="10" fill="#ddd"/>
@@ -1168,10 +1168,11 @@ async function doUsaPlaneGag(cardId) {
 
   const plane = document.getElementById('plane-gag');
 
-  // Position plane to fly at card height, ending centred on the card
-  const planeW = 120;
+  // Plane is now 360x180 rendered
+  const planeW = 360;
+  const planeH = 180;
   const targetX = cx - planeW / 2;
-  const targetY = cy - 30;
+  const targetY = cy - planeH / 2;
 
   plane.style.setProperty('--plane-y', targetY + 'px');
   plane.style.setProperty('--plane-tx', targetX + 'px');
