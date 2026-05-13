@@ -375,6 +375,23 @@ body::before {
   font-style: italic;
 }
 
+/* ── PLANE GAG ── */
+#plane-gag {
+  position: fixed;
+  top: 0; left: 0;
+  pointer-events: none;
+  z-index: 600;
+  display: none;
+}
+#plane-gag.active { display: block; }
+
+@keyframes plane-fly {
+  0%   { transform: translate(110vw, var(--plane-y)) scaleX(-1) rotate(0deg); opacity: 1; }
+  70%  { transform: translate(var(--plane-tx), var(--plane-y)) scaleX(-1) rotate(0deg); opacity: 1; }
+  72%  { transform: translate(var(--plane-tx), var(--plane-y)) scaleX(-1) rotate(0deg); opacity: 0; }
+  100% { transform: translate(var(--plane-tx), var(--plane-y)) scaleX(-1) rotate(0deg); opacity: 0; }
+}
+
 /* ── ADVANCE HINT ── */
 .advance-hint {
   position: fixed;
@@ -692,6 +709,30 @@ body::before {
 </div>
 
 <!-- overlays -->
+<!-- PLANE GAG -->
+<svg id="plane-gag" width="120" height="60" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg">
+  <g id="plane-body">
+    <!-- fuselage -->
+    <ellipse cx="60" cy="30" rx="48" ry="10" fill="#ddd"/>
+    <!-- nose -->
+    <polygon points="108,30 120,28 120,32" fill="#bbb"/>
+    <!-- tail fin -->
+    <polygon points="12,30 4,14 22,25" fill="#ccc"/>
+    <polygon points="12,30 4,46 22,35" fill="#ccc"/>
+    <!-- wing -->
+    <polygon points="55,30 80,30 65,8 50,22" fill="#ccc"/>
+    <polygon points="55,30 80,30 65,52 50,38" fill="#ccc"/>
+    <!-- windows -->
+    <circle cx="80" cy="28" r="3" fill="#87CEEB" opacity="0.9"/>
+    <circle cx="70" cy="27" r="3" fill="#87CEEB" opacity="0.9"/>
+    <circle cx="60" cy="27" r="3" fill="#87CEEB" opacity="0.9"/>
+    <!-- US flag stripe on tail -->
+    <rect x="4" y="19" width="18" height="3" fill="#B22234"/>
+    <rect x="4" y="25" width="18" height="3" fill="#B22234"/>
+    <rect x="4" y="16" width="10" height="8" fill="#3C3B6E"/>
+  </g>
+</svg>
+
 <div id="spotlight-overlay"></div>
 <div id="countdown-display"><div id="countdown-num">3</div></div>
 <canvas id="fakeout-canvas"></canvas>
@@ -953,6 +994,10 @@ async function doFlipTier(p, tier) {
   spawnConfetti(tier === 't1' ? 20 : 8);
   await typeCommentary(lines[0], lines[1]);
   await wait(180);
+  // USA plane gag — fires for whoever draws USA, any tier
+  if (team === 'USA') {
+    await doUsaPlaneGag('card-' + p.name + '-' + tier);
+  }
 }
 
 async function doSpotlight(p) {
@@ -1112,6 +1157,45 @@ async function doFlipT1(p) {
     card.style.transition = '';
   }
   await wait(150);
+}
+
+async function doUsaPlaneGag(cardId) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  const rect = card.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top  + rect.height / 2;
+
+  const plane = document.getElementById('plane-gag');
+
+  // Position plane to fly at card height, ending centred on the card
+  const planeW = 120;
+  const targetX = cx - planeW / 2;
+  const targetY = cy - 30;
+
+  plane.style.setProperty('--plane-y', targetY + 'px');
+  plane.style.setProperty('--plane-tx', targetX + 'px');
+  plane.style.animation = 'none';
+  plane.classList.add('active');
+
+  // Force reflow then kick off animation
+  plane.getBoundingClientRect();
+  plane.style.animation = 'plane-fly 1.8s cubic-bezier(0.4,0,0.8,1) forwards';
+
+  // Wait until impact moment (~70% through = 1260ms) then explode
+  await wait(1260);
+  plane.classList.remove('active');
+  plane.style.animation = 'none';
+
+  // Explosion on the card
+  canvasExplode(rect);
+  stageShake(400);
+  flashBg('white', 500);
+
+  // Brief smoke lingers
+  await wait(600);
+  canvasSmoke(rect);
+  await wait(900);
 }
 
 async function doFlipBonus(p) {
