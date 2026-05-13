@@ -57,6 +57,7 @@ body::before {
 /* ── SCREEN MANAGER ── */
 .screen { display: none; width: 100vw; height: 100vh; position: fixed; inset: 0; z-index: 1; }
 .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#screen-stage { z-index: 60; } /* must be above spotlight-overlay (z-index 50) so hero card clears it */
 
 /* ══════════════════════════════════════
    INTRO SCREEN — printed fixture card
@@ -424,6 +425,8 @@ body::before {
   height: min(83vw, 455px) !important;
   z-index: 100 !important;
   transition: none !important;
+  opacity: 1 !important;
+  filter: none !important;
 }
 /* position:fixed breaks preserve-3d in most browsers — force back face hidden */
 .card-wrap.hero .card-inner {
@@ -472,8 +475,9 @@ body::before {
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 200;
+  z-index: 700;
   pointer-events: none;
+  background: rgba(0,0,0,0.55);
 }
 #countdown-display.active { display: flex; }
 #countdown-num {
@@ -1113,20 +1117,20 @@ async function doFakeoutFix(p) {
   document.getElementById('spotlight-overlay').classList.add('on');
   const card = document.getElementById('card-' + p.name + '-t1');
   if (card) {
-    // Clear ALL inline styles left by the fakeout animation
-    card.style.opacity    = '';
-    card.style.filter     = '';
-    card.style.transform  = '';
-    card.style.transition = 'none';
-    await wait(30);
-    card.style.transition = '';
+    // Nuke ALL inline styles in one shot — no partial resets
+    card.removeAttribute('style');
+    // Force a repaint before touching anything else
+    await new Promise(function(r) { requestAnimationFrame(function() { requestAnimationFrame(r); }); });
 
     // Unflip so it shows as face-down for the real reveal
     const inner = card.querySelector('.card-inner');
-    inner.classList.remove('flipped');
+    if (inner) {
+      inner.removeAttribute('style');
+      inner.classList.remove('flipped');
+    }
     await wait(600);
     // Clear front face content so real team isn't pre-visible
-    const front = inner.querySelector('.card-face.card-front');
+    const front = card.querySelector('.card-face.card-front');
     if (front) { front.innerHTML = ''; }
   }
   clearCommentary();
