@@ -671,15 +671,15 @@ body::before {
 .usa-stripe {
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 36px;
+  height: 80px;
   background: linear-gradient(180deg,
-    #B22234 0px,  #B22234 12px,
-    #fff    12px, #fff    24px,
-    #3C3B6E 24px, #3C3B6E 36px
+    #B22234 0px,   #B22234 26px,
+    #fff    26px,  #fff    53px,
+    #3C3B6E 53px,  #3C3B6E 80px
   );
   z-index: 9999;
   pointer-events: none;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  box-shadow: 0 3px 16px rgba(0,0,0,0.6);
 }
 
 .eagle-left, .eagle-right {
@@ -688,7 +688,7 @@ body::before {
   width: clamp(300px, 32vw, 460px);
   opacity: 0.35;
   pointer-events: none;
-  z-index: 1;
+  z-index: 9998;
   filter: grayscale(10%);
 }
 .eagle-left  { left: -20px;  transform: scaleX(-1); }
@@ -702,7 +702,7 @@ body::before {
   width: clamp(180px, 20vw, 280px);
   opacity: 0.40;
   pointer-events: none;
-  z-index: 1;
+  z-index: 9998;
   filter: grayscale(5%);
 }
 
