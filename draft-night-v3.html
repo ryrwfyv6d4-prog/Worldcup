@@ -1657,28 +1657,36 @@ function wait(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
   };
 
   // PUBLIC: smoke
-  window.canvasSmoke = function(rect) {
+  window.canvasSmoke = function(rect, fullScreen) {
     var now = performance.now();
-    var totalDur = 2400;
-    var emitUntil = now + totalDur * 0.82;
+    var totalDur = fullScreen ? 4200 : 2400;
+    var emitUntil = now + totalDur * 0.88;
+
+    // For full-screen mode use the whole viewport
+    var areaLeft   = fullScreen ? 0 : rect.left + rect.width*0.08;
+    var areaRight  = fullScreen ? window.innerWidth : rect.left + rect.width*0.92;
+    var areaTop    = fullScreen ? 0 : rect.top + rect.height*0.08;
+    var areaBottom = fullScreen ? window.innerHeight : rect.top + rect.height*0.92;
 
     function emitBatch(batchNow) {
       if (batchNow > emitUntil) return;
       var progress = (batchNow - now) / totalDur;
-      var count = Math.floor(3 + progress * 7);
+      var count = fullScreen ? Math.floor(12 + progress * 28) : Math.floor(3 + progress * 7);
       for (var i=0; i<count; i++) {
-        var ex = rect.left + r(rect.width*0.08, rect.width*0.92);
-        var ey = rect.top  + r(rect.height*0.08, rect.height*0.92);
+        var ex = r(areaLeft, areaRight);
+        var ey = r(areaTop * 0.3, areaBottom);
         particles2.push({
           type:'puff', x:ex, y:ey,
-          vx:r(-20,20), vy:r(-60,-150),
-          size:r(8,22), grow:r(35,90),
-          wob:r(0,Math.PI*2), wobSpd:r(0.8,2.5), wobAmt:r(10,32),
-          gray:ri(150,230), maxA:r(0.15,0.35),
-          birth:batchNow+r(0,55), life:r(1000,1800)
+          vx: r(-35, 35),
+          vy: fullScreen ? r(-120, -280) : r(-60,-150),
+          size: fullScreen ? r(40, 120) : r(8,22),
+          grow: fullScreen ? r(120, 300) : r(35,90),
+          wob:r(0,Math.PI*2), wobSpd:r(0.5,2), wobAmt: fullScreen ? r(20,60) : r(10,32),
+          gray:ri(120,220), maxA: fullScreen ? r(0.22,0.55) : r(0.15,0.35),
+          birth:batchNow+r(0,80), life: fullScreen ? r(2000,3800) : r(1000,1800)
         });
       }
-      setTimeout(function(){ emitBatch(performance.now()); }, 55);
+      setTimeout(function(){ emitBatch(performance.now()); }, 45);
     }
 
     emitBatch(now);
