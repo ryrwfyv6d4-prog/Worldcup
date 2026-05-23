@@ -60,6 +60,58 @@ body::before {
 #screen-stage { z-index: 60; } /* must be above spotlight-overlay (z-index 50) so hero card clears it */
 
 /* ══════════════════════════════════════
+   LAND ACKNOWLEDGEMENT SCREEN
+══════════════════════════════════════ */
+#screen-acknowledge {
+  background: #0d0d0d;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 32px;
+  gap: 0;
+}
+.ack-flag {
+  font-size: 72px;
+  margin-bottom: 24px;
+  animation: ack-fadein 1.2s ease both;
+}
+.ack-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(11px, 2.2vw, 14px);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #e9c46a;
+  margin-bottom: 18px;
+  animation: ack-fadein 1.4s ease both;
+}
+.ack-body {
+  font-family: 'Barlow', sans-serif;
+  font-size: clamp(15px, 3.2vw, 22px);
+  line-height: 1.75;
+  color: #f0ede6;
+  max-width: 700px;
+  animation: ack-fadein 1.8s ease both;
+}
+.ack-body em {
+  font-style: normal;
+  color: #e9c46a;
+  font-weight: 600;
+}
+.ack-skip {
+  margin-top: 36px;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #555;
+  animation: ack-fadein 3s ease both;
+}
+@keyframes ack-fadein {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════
    INTRO SCREEN — printed fixture card
 ══════════════════════════════════════ */
 #screen-intro {
@@ -677,7 +729,23 @@ body::before {
 <body>
 
 <!-- INTRO -->
-<div id="screen-intro" class="screen active">
+<div id="screen-acknowledge" class="screen active">
+  <div class="ack-flag">🇨🇳</div>
+  <div class="ack-title">Land Acknowledgement</div>
+  <div class="ack-body">
+    We acknowledge that this shed, this suburb, and indeed this entire continent
+    are located on the land of the <em>Chinese people</em>,
+    and we pay our respects to <em>Dan</em> and his ancestors —
+    past, present, and emerging —
+    who have cared for this land, these snacks, and this fold-out table
+    since time immemorial.<br><br>
+    We recognise that sovereignty was never ceded.<br>
+    <em>Dan owns this. Dan has always owned this.</em>
+  </div>
+  <div class="ack-skip">Tap anywhere to continue</div>
+</div>
+
+<div id="screen-intro" class="screen">
   <div class="ticket">
     <div class="ticket-stamp">
       <div class="ticket-stamp-inner">OFFICIAL<br>DRAW<br>2026</div>
@@ -928,6 +996,19 @@ function startShow() {
   document.getElementById('screen-stage').addEventListener('click', onTap);
   runStep();
 }
+
+// Land acknowledgement — tap or auto-advance after 8s
+(function() {
+  var ack = document.getElementById('screen-acknowledge');
+  var intro = document.getElementById('screen-intro');
+  function advanceAck() {
+    ack.classList.remove('active');
+    intro.classList.add('active');
+    ack.removeEventListener('click', advanceAck);
+  }
+  ack.addEventListener('click', advanceAck);
+  setTimeout(advanceAck, 8000);
+})();
 
 function onKey(e) { if (e.code === 'Space' || e.code === 'ArrowRight') { e.preventDefault(); advance(); } }
 function onTap(e) { if (!e.target.closest('button')) advance(); }
