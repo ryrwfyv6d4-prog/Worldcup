@@ -1153,7 +1153,7 @@ function onTap(e) { if (!e.target.closest('button')) advance(); }
 function advance() {
   if (busy) return;
   stepIdx++;
-  if (stepIdx < steps.length) runStep();
+  runStep();
 }
 
 async function runStep() {
