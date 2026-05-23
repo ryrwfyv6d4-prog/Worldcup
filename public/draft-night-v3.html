@@ -1095,20 +1095,12 @@ function buildSummaryTable() {
       var td = document.createElement('td');
       td.className = cls || 'team-cell';
       if (!teamKey) { td.textContent = '—'; return td; }
-      var info = TEAM_INFO[teamKey];
+      var info = TEAM_LINES[teamKey];
       var wrap = document.createElement('span');
       wrap.className = 'flag-wrap';
-      if (info) {
-        var tmp = document.createElement('div');
-        tmp.innerHTML = info[1]; // SVG
-        var svg = tmp.firstChild;
-        if (svg) wrap.appendChild(svg);
-        var name = document.createElement('span');
-        name.textContent = info[0];
-        wrap.appendChild(name);
-      } else {
-        wrap.textContent = teamKey;
-      }
+      var name = document.createElement('span');
+      name.textContent = info ? info[0] : teamKey;
+      wrap.appendChild(name);
       td.appendChild(wrap);
       return td;
     }
