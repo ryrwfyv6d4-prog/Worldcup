@@ -675,54 +675,132 @@ body::before {
 }
 
 /* ── DONE SCREEN ── */
+
+
+
+
+
+
+
+
+/* ══════════════════════════════════════
+   DRAW COMPLETE — summary screen
+══════════════════════════════════════ */
 #screen-done {
   background: var(--pitch);
-  gap: 0;
-  text-align: center;
-  padding: 40px;
+  padding: 24px 16px;
+  overflow-y: auto;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 32px;
 }
-.done-ticket {
-  background: var(--paper);
-  color: var(--ink);
-  width: min(420px, 85vw);
-  padding: 36px 32px 28px;
-  box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
+.done-wrap {
+  width: min(900px, 96vw);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.done-header {
+  text-align: center;
 }
 .done-title {
   font-family: 'Barlow Condensed', sans-serif;
   font-weight: 900;
-  font-size: clamp(2.8rem, 8vw, 5rem);
+  font-size: clamp(2rem, 6vw, 3.5rem);
   text-transform: uppercase;
-  color: var(--ink);
-  line-height: 0.9;
-  margin-bottom: 12px;
+  color: var(--white);
+  line-height: 1;
+  letter-spacing: 0.04em;
 }
 .done-sub {
   font-family: 'Barlow', sans-serif;
-  font-weight: 400;
-  font-size: 0.95rem;
-  color: var(--ink-dim);
-  font-style: italic;
-  margin-bottom: 24px;
+  font-size: 0.85rem;
+  color: var(--line-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+.done-table-wrap {
+  overflow-x: auto;
+}
+.done-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Barlow', sans-serif;
+  font-size: clamp(12px, 2vw, 15px);
+}
+.done-table thead th {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: clamp(10px, 1.6vw, 13px);
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--accent);
+  color: var(--accent);
+  text-align: left;
+  white-space: nowrap;
+}
+.done-table thead th.tier-head { text-align: center; }
+.done-table thead th.bonus-head { text-align: center; color: var(--line-dim); }
+.done-table tbody tr {
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.done-table tbody tr:last-child { border-bottom: none; }
+.done-table td {
+  padding: 9px 10px;
+  vertical-align: middle;
+}
+.done-table td.player-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: clamp(13px, 2.2vw, 16px);
+  letter-spacing: 0.06em;
+  color: var(--white);
+  white-space: nowrap;
+}
+.done-table td.team-cell {
+  text-align: center;
+  white-space: nowrap;
+  color: var(--white);
+}
+.done-table td.team-cell .flag-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.done-table td.team-cell .flag-wrap svg {
+  width: 28px;
+  height: 19px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.done-table td.bonus-cell {
+  text-align: center;
+  color: var(--line-dim);
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+.done-table td.bonus-cell .flag-wrap svg {
+  width: 22px;
+  height: 15px;
 }
 .done-restart {
   font-family: 'Barlow Condensed', sans-serif;
   font-weight: 900;
-  font-size: 1.1rem;
+  font-size: 1rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  background: var(--pitch);
-  color: var(--white);
-  border: none;
-  padding: 12px 32px;
+  background: transparent;
+  color: var(--line-dim);
+  border: 1px solid var(--line-dim);
+  padding: 10px 28px;
   cursor: pointer;
-  width: 100%;
+  align-self: center;
+  margin-bottom: 16px;
 }
-
-
-
-
-
+.done-restart:hover { color: var(--white); border-color: var(--white); }
 
 </style>
 </head>
@@ -779,10 +857,26 @@ body::before {
 
 <!-- DONE -->
 <div id="screen-done" class="screen">
-  <div class="done-ticket">
-    <div class="done-title">Draw<br>Complete</div>
-    <hr class="ticket-divider" style="border-color:#aaa8a0; margin-bottom:16px">
-    <div class="done-sub">May the best shed win.<br>Good luck. You'll need it.</div>
+  <div class="done-wrap">
+    <div class="done-header">
+      <div class="done-title">Draw Complete</div>
+      <div class="done-sub">FIFA World Cup 2026 &nbsp;&middot;&nbsp; Dan's Shed Sweepstakes</div>
+    </div>
+    <div class="done-table-wrap">
+      <table class="done-table" id="summary-table">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th class="tier-head">T1</th>
+            <th class="tier-head">T2</th>
+            <th class="tier-head">T3</th>
+            <th class="tier-head">T4</th>
+            <th class="bonus-head">Bonus</th>
+          </tr>
+        </thead>
+        <tbody id="summary-tbody"></tbody>
+      </table>
+    </div>
     <button class="done-restart" onclick="location.reload()">Run Again</button>
   </div>
 </div>
@@ -897,53 +991,53 @@ const TIER_LABELS = { t1: 'Tier 1', t2: 'Tier 2', t3: 'Tier 3', t4: 'Tier 4' };
 
 const TEAM_LINES = {
   France:      ['France',        'World No.1. Mbappé country. Absolute weapon.'],
-  Spain:       ['Spain',         'Five-star football. Will make it look easy until they don\'t.'],
-  Argentina:   ['Argentina',     'World champions. Back to finish the job.'],
-  England:     ['England',       'It\'s not coming home. But it might. It won\'t. Maybe.'],
-  Portugal:    ['Portugal',      'Ronaldo\'s last dance. A nation behind one man\'s final curtain call.'],
-  Brazil:      ['Brazil',        'Five-time champions. Zero chill. Maximum drama guaranteed.'],
-  Netherlands: ['Netherlands',   'Orange machine rebuilt. De Jong, Dumfries, dangerous.'],
-  Morocco:     ['Morocco',       'Sent Portugal home in 2022. Nobody is safe.'],
-  Belgium:     ['Belgium',       'The golden generation. They said it was over. They are back.'],
-  Germany:     ['Germany',       'Four World Cups. A point to prove. Very much here.'],
-  Croatia:     ['Croatia',       'Modric never dies. He\'s 38. He\'s still doing it.'],
-  Colombia:    ['Colombia',      'James. Díaz. Dangerous. Very dangerous.'],
-  Uruguay:     ['Uruguay',       'They will bite, kick, and grind out results. Charming.'],
-  USA:         ['USA',           'Hosting it. Motivated. Pulisic on form. Real threat.'],
-  Mexico:      ['Mexico',        'Never past the quarters. That changes now. Allegedly.'],
-  Japan:       ['Japan',         'Beat Germany and Spain in 2022. Will do it again.'],
-  Senegal:     ['Senegal',       'Organised chaos. Tactically excellent. Africa\'s finest.'],
-  Ecuador:     ['Ecuador',       'Don\'t overlook them. People always overlook them.'],
-  Switzerland: ['Switzerland',   'Never win it. Never go out early. Infuriatingly reliable.'],
-  Norway:      ['Norway',        'Erling Haaland at a World Cup. That\'s it. That\'s the draw.'],
-  Turkey:      ['Turkey',        'Chaotic. Unpredictable. Could go out in groups or win it.'],
-  'South Korea':['South Korea',  'Son\'s swansong. Heung-Min at his peak. Genuinely dangerous.'],
-  Iran:        ['Iran',          'More organised than you think. Harder to beat than you\'d expect.'],
-  Austria:     ['Austria',       'Underrated every single time. This is the year they stop being.'],
-  Canada:      ['Canada',        'Alphonso Davies at full speed is not your problem to have.'],
-  Algeria:     ['Algeria',       'AFCON winners. Tournament pedigree. Don\'t dismiss.'],
-  Australia:   ['Australia',     'They qualified again. Nobody thought they would.'],
-  Egypt:       ['Egypt',         'Mohamed Salah has never played at a World Cup. He\'s here now.'],
-  Scotland:    ['Scotland',      'First World Cup in 28 years. Irrational hope fully justified.'],
-  Paraguay:    ['Paraguay',      'South American grit. Counter-attack football. Awkward opponents.'],
-  Sweden:      ['Sweden',        'Post-Zlatan era. Still organised. Still solid. Still Sweden.'],
-  Tunisia:     ['Tunisia',       'Will make your life extremely difficult. Every single game.'],
-  'Ivory Coast':['Ivory Coast',  'Good technical players. African quality. Real threat.'],
-  Ghana:       ['Ghana',         'The atmosphere when they score. Pure class.'],
-  'Saudi Arabia':['Saudi Arabia','They beat Argentina. They will never let you forget it.'],
-  'Bosnia & Herzegovina':['Bosnia','Balkan chaos. Every game is an emotional event.'],
-  'Czech Republic':['Czech Republic','Solid European side. Professional. Will get their points.'],
-  'South Africa':['South Africa','Hosts in 2010. Back again. The continent will be with them.'],
-  Jordan:      ['Jordan',        'Jordan at a World Cup. First time ever. Incredible.'],
-  Qatar:       ['Qatar',         'Zero group stage wins as 2022 host. That\'s the bar. Step over it.'],
-  Uzbekistan:  ['Uzbekistan',    'Central Asian football on the world stage. Delightful.'],
-  'DR Congo':  ['DR Congo',      'Congolese talent has always been there. World Cup debut.'],
-  Iraq:        ['Iraq',          'Football as proof of resilience. Iraq at the World Cup.'],
-  Panama:      ['Panama',        'Compact. Proud. Will make it hard. Every game.'],
-  'Cape Verde':['Cape Verde',    'Atlantic island nation. Unlimited respect. Swim.'],
-  Haiti:       ['Haiti',         'Could score three. Could concede seven. Subscribe immediately.'],
-  'Curacoa':   ['Curacoa',       '150,000 people. A World Cup place. Greatest underdog story.'],
-  'New Zealand':['New Zealand',  'New Zealand at football. Committed entirely. Respect.'],
+  Spain:       ['Spain',         'Considered by many to be a football team. This has not been disproven.'],
+  Argentina:   ['Argentina',     'Won the World Cup in 2022. Messi cried. Everyone cried. Even people who don\'t watch football cried, though they\'re not entirely sure why.'],
+  England:     ['England',       'Have not won since 1966, which was a long time ago. They remain optimistic, which is the saddest thing about them.'],
+  Portugal:    ['Portugal',      'Cristiano Ronaldo has scored more international goals than any man in history, which is something he will tell you if you give him even a small opening.'],
+  Brazil:      ['Brazil',        'Five World Cups. Statistically, the most likely team to do a little dance after scoring, which is something the rest of the world has complicated feelings about.'],
+  Netherlands: ['Netherlands',   'Bright orange kit. Hard to miss on the pitch. Have used this to their advantage.'],
+  Morocco:     ['Morocco',       'Reached the semi-finals in 2022, which nobody predicted, including Morocco.'],
+  Belgium:     ['Belgium',       'For about ten years, Belgium had what experts called the golden generation. It is unclear what generation they have now.'],
+  Germany:     ['Germany',       'Very organised. Very efficient. Very German, if you will, though of course you shouldn\'t.'],
+  Croatia:     ['Croatia',       'Luka Modrić is 38 years old and still playing at the highest level. Scientists have been notified.'],
+  Colombia:    ['Colombia',      'James Rodríguez once scored a goal so good that FIFA gave him an award specifically for it. He accepted.'],
+  Uruguay:     ['Uruguay',       'Small country. Big attitude. Have bitten at least one person at a previous tournament, which is not nothing.'],
+  USA:         ['USA',           'Hosting the tournament, which guarantees them an automatic place, strong merchandise sales, and a documentary on Netflix regardless of how they perform.'],
+  Mexico:      ['Mexico',        'Have reached the round of sixteen at seven consecutive World Cups and then lost. Consistency is a form of excellence.'],
+  Japan:       ['Japan',         'Beat Germany and Spain in 2022. Both of those countries have had time to think about this. They have not enjoyed the thinking.'],
+  Senegal:     ['Senegal',       'Won the Africa Cup of Nations. Organised. Physical. Technically sound. A complete football team, which is more than can be said for several others on this list.'],
+  Ecuador:     ['Ecuador',       'Located in South America, which is a very competitive region to qualify from. They did it anyway.'],
+  Switzerland: ['Switzerland',   'Have never won a major tournament. Have never been embarrassed at one either. This is a policy decision.'],
+  Norway:      ['Norway',        'Erling Haaland scores approximately one goal every forty minutes of football he plays. He will be playing football at this tournament.'],
+  Turkey:      ['Turkey',        'Could genuinely win the whole thing. Could also go out in the group stage. Both outcomes would surprise no one and yet somehow everyone.'],
+  'South Korea':['South Korea',  'Son Heung-min has given everything to this shirt. The shirt has not always returned the favour. He keeps showing up anyway.'],
+  Iran:        ['Iran',          'More organised than their reputation suggests, which admittedly is not a very high bar, but they have cleared it comfortably.'],
+  Austria:     ['Austria',       'David Alaba plays for Austria, which is something Austrian people mention more than you might expect.'],
+  Canada:      ['Canada',        'Alphonso Davies grew up in a refugee camp and is now considered one of the fastest humans alive. Football is occasionally a good story.'],
+  Algeria:     ['Algeria',       'Won the Africa Cup of Nations in 2019. A nation of 45 million people deeply invested in this. Best of luck to them and also to their opponents, who will need it.'],
+  Australia:   ['Australia',     'Qualified again through what can only be described as sheer bloody-mindedness. Respect is the word. Respect.'],
+  Egypt:       ['Egypt',         'Mohamed Salah has never played at a World Cup until now. He has been saving something up. It is unclear what. It may be enormous.'],
+  Scotland:    ['Scotland',      'Back at a World Cup for the first time in 28 years. The fans have prepared emotionally for all outcomes, which is to say they have prepared for one.'],
+  Paraguay:    ['Paraguay',      'Have a style of play that is technically legal in all respects. Opponents find this frustrating.'],
+  Sweden:      ['Sweden',        'Zlatan Ibrahimović once said Sweden without Zlatan is not Sweden. He has retired. We will now find out if he was right.'],
+  Tunisia:     ['Tunisia',       'Will make this as hard as possible for whoever draws them. This is not a threat. It is a commitment.'],
+  'Ivory Coast':['Ivory Coast',  'Technically gifted. Physically imposing. Tactically sound. Will somehow still find a way to make you nervous if you support them.'],
+  Ghana:       ['Ghana',         'Have a history of dramatic exits from tournaments, which their fans experience as both a curse and a personality trait.'],
+  'Saudi Arabia':['Saudi Arabia','Beat Argentina 2-1 in 2022. Argentina went on to win the World Cup. Saudi Arabia went on to buy several football clubs. Everyone made decisions.'],
+  'Bosnia & Herzegovina':['Bosnia','The country\'s name is difficult to say quickly, which opposing commentators have used as an excuse to underestimate them. They do not underestimate themselves.'],
+  'Czech Republic':['Czech Republic','Good, solid, reliable European football. The beige cardigan of international football, and I mean that with complete sincerity.'],
+  'South Africa':['South Africa','Hosted the 2010 World Cup and introduced the vuvuzela to the world. The world has not fully forgiven them, but it has moved on.'],
+  Jordan:      ['Jordan',        'First ever World Cup qualification. A country of ten million people who will be watching every minute of every game. Good for them. Genuinely.'],
+  Qatar:       ['Qatar',         'Hosted in 2022 and did not win a single group stage game. This is their chance to put that right. They have had two years to think about it.'],
+  Uzbekistan:  ['Uzbekistan',    'Central Asian football on the global stage. Sixty years ago this was unthinkable. Now it is happening. The world is large and contains surprises.'],
+  'DR Congo':  ['DR Congo',      'Making their World Cup debut. 100 million people behind them. Some debuts go well. Some don\'t. This one will be watched.'],
+  Iraq:        ['Iraq',          'The fact that Iraq is playing football at a World Cup is, depending on your perspective, either completely normal or quietly extraordinary. It is the latter.'],
+  Panama:      ['Panama',        'Will defend. Will work. Will run. Will make you earn every single thing. Have no interest in making it easy for you.'],
+  'Cape Verde':['Cape Verde',    'An archipelago nation off the coast of West Africa with a population of 600,000 people at a World Cup. The sport occasionally does something right.'],
+  Haiti:       ['Haiti',         'Chaotic, passionate, unpredictable, and technically capable of beating anyone on a good day. The calendar does not say which day that will be.'],
+  'Curacoa':   ['Curacoa',       'An island of 150,000 people. At a World Cup. This sentence should be read slowly and with appropriate gravity.'],
+  'New Zealand':['New Zealand',  'New Zealand\'s football team is called the All Whites, which is a name that made more sense before the All Blacks became one of the most famous sporting brands on earth. They are here regardless.'],
   Israel:      ['Israel',        '...how did this get in here.'],
 };
 
@@ -989,6 +1083,49 @@ function buildSteps() {
   steps.push({ type: 'done' });
 }
 
+
+// Populate summary table when draw completes
+function buildSummaryTable() {
+  var tbody = document.getElementById('summary-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  PLAYERS.forEach(function(p) {
+    var tr = document.createElement('tr');
+    function teamCell(teamKey, cls) {
+      var td = document.createElement('td');
+      td.className = cls || 'team-cell';
+      if (!teamKey) { td.textContent = '—'; return td; }
+      var info = TEAM_INFO[teamKey];
+      var wrap = document.createElement('span');
+      wrap.className = 'flag-wrap';
+      if (info) {
+        var tmp = document.createElement('div');
+        tmp.innerHTML = info[1]; // SVG
+        var svg = tmp.firstChild;
+        if (svg) wrap.appendChild(svg);
+        var name = document.createElement('span');
+        name.textContent = info[0];
+        wrap.appendChild(name);
+      } else {
+        wrap.textContent = teamKey;
+      }
+      td.appendChild(wrap);
+      return td;
+    }
+    var nameTd = document.createElement('td');
+    nameTd.className = 'player-name';
+    nameTd.textContent = p.name;
+    tr.appendChild(nameTd);
+    tr.appendChild(teamCell(p.t1));
+    tr.appendChild(teamCell(p.t2));
+    tr.appendChild(teamCell(p.t3));
+    tr.appendChild(teamCell(p.t4));
+    var bonusTd = teamCell(p.bonusTeam, 'bonus-cell');
+    tr.appendChild(bonusTd);
+    tbody.appendChild(tr);
+  });
+}
+
 function startShow() {
   buildSteps();
   showScreen('screen-stage');
@@ -1031,7 +1168,7 @@ async function runStep() {
     case 'spotlight_then_flip':            await doSpotlight(step.player); await doFlipT1(step.player); break;
     case 'fakeout_error_fix_then_flip':    await doFakeoutError(step.player); await doFakeoutFix(step.player); await doFlipT1(step.player); break;
     case 'flip_bonus':                     await doFlipBonus(step.player); break;
-    case 'done':                           showScreen('screen-done'); break;
+    case 'done':                           buildSummaryTable(); showScreen('screen-done'); break;
   }
   busy = false;
 }
@@ -1193,7 +1330,7 @@ async function doFakeoutError(p) {
       await new Promise(function(r) { requestAnimationFrame(function() { requestAnimationFrame(r); }); });
       annexOverlay.style.width = '100%';
 
-      await wait(2400);
+      await wait(4000);
 
       // Brief pause with full flag covered, then fade card
       await new Promise(function(resolve) {
@@ -1272,7 +1409,7 @@ async function doFakeoutError(p) {
   document.getElementById('fakeout-overlay').classList.add('active');
   await wait(300);
   await typeEl('fakeout-msg', fakeoutMsg[p.name] || ('INCORRECT ASSIGNMENT DETECTED\n\nEmergency re-draw in progress\nfor ' + p.name.toUpperCase() + '...'));
-  await wait(2200);
+  await wait(p.name === 'Badger' ? 5500 : 2200);
 
   // Reset to defaults
   imgEl.style.display = 'none';
