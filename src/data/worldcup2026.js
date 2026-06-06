@@ -29,8 +29,8 @@ export const TEAMS_BY_RANK = [
     'Turkey','South Korea','Iran','Austria','Canada','Algeria','Australia','Egypt','Scotland','Paraguay',
     // Rank 31-40: Qualifiers
     'Sweden','Tunisia','Ivory Coast','Ghana','Saudi Arabia','Bosnia & Herzegovina','Czech Republic','South Africa','Jordan','Qatar',
-    // Rank 41-48: Minnows
-    'Uzbekistan','DR Congo','Iraq','Panama','Cape Verde','Haiti','Curaçao','New Zealand',
+    // Rank 41-44: Minnows (44 teams in draw pool — 4 unowned teams play but score for no one)
+    'Uzbekistan','DR Congo','Iraq','Panama',
   ];
 
 const flagMap = {
