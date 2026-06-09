@@ -126,6 +126,43 @@ function NextMatch({ fixtures, onSelectTeam }) {
   );
 }
 
+function YourNextMatch({ fixtures, currentUser, assignments, drawType, onSelectTeam }) {
+  const myTeams = useMemo(() => (
+    currentUser && currentUser !== '__guest__'
+      ? getTeamsForParticipant(currentUser, assignments, drawType)
+      : []
+  ), [currentUser, assignments, drawType]);
+
+  const next = useMemo(() => {
+    if (!myTeams.length) return null;
+    const now = Date.now();
+    return fixtures
+      .filter((f) => f.status !== 'FINISHED' && f.utcDate)
+      .map((f) => ({ ...f, ts: new Date(f.utcDate).getTime() }))
+      .filter((f) => !isNaN(f.ts) && f.ts > now - 2 * 60 * 60 * 1000)
+      .filter((f) =>
+        myTeams.includes(normaliseTeamName(f.homeTeam.name)) ||
+        myTeams.includes(normaliseTeamName(f.awayTeam.name))
+      )
+      .sort((a, b) => a.ts - b.ts)[0];
+  }, [fixtures, myTeams]);
+
+  if (!next) return null;
+  const home = normaliseTeamName(next.homeTeam.name);
+  const away = normaliseTeamName(next.awayTeam.name);
+  const mine = myTeams.includes(home) ? home : away;
+
+  return (
+    <div className="your-next">
+      <div className="your-next-label">⭐ Your next match</div>
+      <button className="team-btn your-next-teams" onClick={() => onSelectTeam(mine)}>
+        {getFlag(home)} {home} <span className="next-match-vs">vs</span> {getFlag(away)} {away}
+      </button>
+      <div className="your-next-meta">{formatDateAEST(next.ts)} · {formatTimeAEST(next.ts)} AEST</div>
+    </div>
+  );
+}
+
 export default function Leaderboard({
   assignments, drawType, fixtures, apiError, lastFetched, onSelectTeam,
   currentUser, lbReactions = {}, onLbReact,
@@ -136,6 +173,15 @@ export default function Leaderboard({
     () => buildLeaderboard(assignments, drawType, fixtures),
     [assignments, drawType, fixtures]
   );
+
+  // Standings as of start of today (Brisbane) — powers "+pts today" and movement arrows
+  const prevStats = useMemo(() => {
+    const prevFixtures = fixtures.filter((f) => f.status === 'FINISHED' && !isMatchToday(f.utcDate));
+    const prevBoard = buildLeaderboard(assignments, drawType, prevFixtures);
+    const map = {};
+    prevBoard.forEach((e, i) => { map[e.name] = { rank: i, total: e.total }; });
+    return map;
+  }, [assignments, drawType, fixtures]);
 
   const hasAssignments = Object.keys(assignments).length > 0;
   const hasResults = fixtures.some((f) => f.status === 'FINISHED');
@@ -171,24 +217,34 @@ export default function Leaderboard({
       </div>
 
       <NextMatch fixtures={fixtures} onSelectTeam={onSelectTeam} />
+      <YourNextMatch fixtures={fixtures} currentUser={currentUser} assignments={assignments} drawType={drawType} onSelectTeam={onSelectTeam} />
       <TodayMatches fixtures={fixtures} assignments={assignments} drawType={drawType} />
 
       <div className="leaderboard">
         {board.map((entry, i) => {
           const reactions = lbReactions[entry.name] || {};
           const isExpanded = expanded === entry.name;
+          const prev = prevStats[entry.name];
+          const todayPts = prev ? entry.total - prev.total : entry.total;
+          const delta = prev ? prev.rank - i : 0;
+          const isMe = currentUser && currentUser === entry.name;
           return (
             <div
               key={entry.name}
-              className="lb-row"
+              className={`lb-row ${isMe ? 'me' : ''}`}
               onClick={() => setExpanded(isExpanded ? null : entry.name)}
             >
               <div className="lb-main">
                 <span className="lb-rank">
                   {i < 3 ? MEDALS[i] : <span className="lb-num">{i + 1}</span>}
                 </span>
+                {hasResults && (
+                  delta > 0 ? <span className="lb-delta up">▲{delta}</span>
+                  : delta < 0 ? <span className="lb-delta down">▼{-delta}</span>
+                  : <span className="lb-delta flat">–</span>
+                )}
                 <div className="lb-info">
-                  <span className="lb-name">{entry.name}</span>
+                  <span className="lb-name">{entry.name}{isMe && <span className="you-tag"> you</span>}</span>
                   <span className="lb-teams">
                     {entry.teams.slice(0, 2).map((t) => (
                       <button
@@ -204,7 +260,10 @@ export default function Leaderboard({
                     )}
                   </span>
                 </div>
-                <span className="lb-pts">{entry.total}<small>pts</small></span>
+                <span className="lb-pts">
+                  {entry.total}<small>pts</small>
+                  {todayPts > 0 && <span className="lb-today">+{todayPts} today</span>}
+                </span>
               </div>
 
               {isExpanded && (
@@ -307,3 +366,4 @@ export default function Leaderboard({
     </div>
   );
 }
+
