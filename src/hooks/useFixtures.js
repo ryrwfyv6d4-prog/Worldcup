@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 const DATA_URL =
   'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
-const CACHE_KEY = 'wc_fixtures_cache_v4';
+const CACHE_KEY = 'wc_fixtures_cache_v5';
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 // Map openfootball round names → internal stage codes
@@ -80,21 +80,33 @@ export function useFixtures(apiKey) { // apiKey kept for API compat but unused
 
       const normalised = matches
         .filter((m) => {
-          // Skip placeholder knockout matches (team1/team2 are codes like "2A")
-          const isPlaceholder = /^\d+[A-L]/.test(m.team1) || m.team1.includes('/');
-          return !isPlaceholder;
+          // Skip placeholder knockout matches: "2A" group codes, "W73"/"L101" match refs, "A/B/C" lists
+          const isPlaceholder = (t) => /^\d+[A-L]/.test(t) || /^[WL]\d+$/.test(t) || t.includes('/');
+          return !isPlaceholder(m.team1) && !isPlaceholder(m.team2);
         })
         .map((m, i) => {
           const stage = roundToStage(m.round);
           const utcDate = toUtcDate(m.date, m.time);
 
-          const homeScore = m.score1 !== undefined && m.score1 !== null ? Number(m.score1) : null;
-          const awayScore = m.score2 !== undefined && m.score2 !== null ? Number(m.score2) : null;
+          // openfootball score format: { ht:[h,a], ft:[h,a], et:[h,a], p:[h,a] }
+          const sc = m.score || {};
+          const ftArr = Array.isArray(sc.ft) ? sc.ft : null;
+          const etArr = Array.isArray(sc.et) ? sc.et : null;
+          const pArr = Array.isArray(sc.p) ? sc.p : null;
+          // Legacy flat fields as fallback
+          const legacyHome = m.score1 !== undefined && m.score1 !== null ? Number(m.score1) : null;
+          const legacyAway = m.score2 !== undefined && m.score2 !== null ? Number(m.score2) : null;
+
+          const finalArr = etArr || ftArr;
+          const homeScore = finalArr ? Number(finalArr[0]) : legacyHome;
+          const awayScore = finalArr ? Number(finalArr[1]) : legacyAway;
           const finished = homeScore !== null && awayScore !== null;
 
           let winner = null;
           if (finished) {
-            if (homeScore > awayScore) winner = 'HOME_TEAM';
+            if (pArr) {
+              winner = Number(pArr[0]) > Number(pArr[1]) ? 'HOME_TEAM' : 'AWAY_TEAM';
+            } else if (homeScore > awayScore) winner = 'HOME_TEAM';
             else if (awayScore > homeScore) winner = 'AWAY_TEAM';
             else winner = 'DRAW';
           }
@@ -120,7 +132,7 @@ export function useFixtures(apiKey) { // apiKey kept for API compat but unused
             status,
             homeTeam: { name: m.team1, crest: null, tla: '' },
             awayTeam: { name: m.team2, crest: null, tla: '' },
-            score: { home: homeScore, away: awayScore, winner },
+            score: { home: homeScore, away: awayScore, winner, penalties: pArr ? { home: Number(pArr[0]), away: Number(pArr[1]) } : null },
             matchday: m.round,
             venue: m.ground || null,
           };
