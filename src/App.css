@@ -1596,3 +1596,94 @@ h1, h2, h3, .app-title, .app-year, .lb-name, .lb-pts,
   .install-step { color: var(--text); }
 }
 
+
+
+/* === Match-day upgrades === */
+.lb-row.me {
+  border: 1px solid var(--gold);
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+.you-tag {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--navy);
+  background: var(--gold);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.lb-delta {
+  font-size: 0.68rem;
+  font-weight: 800;
+  min-width: 24px;
+  text-align: center;
+  margin-right: 2px;
+}
+.lb-delta.up { color: #2ECC71; }
+.lb-delta.down { color: var(--live-red); }
+.lb-delta.flat { color: var(--navy-lighter); }
+.lb-pts { display: flex; flex-direction: column; align-items: flex-end; }
+.lb-today {
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: #2ECC71;
+  white-space: nowrap;
+}
+.your-next {
+  background: linear-gradient(135deg, var(--navy-light), var(--navy));
+  border: 1px solid var(--gold);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.your-next-label {
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.your-next-teams {
+  color: var(--text-on-dark, #fff);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.your-next-meta { font-size: 0.72rem; color: var(--navy-lighter); margin-top: 3px; }
+.owner-tag.me { color: var(--gold); font-weight: 800; }
+.group-tables { padding: 0; overflow: hidden; margin-bottom: 12px; }
+.group-tables-toggle {
+  width: 100%;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: inherit;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+.group-tables-grid { padding: 0 12px 12px; }
+.group-table { margin-bottom: 14px; }
+.group-table-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.group-table table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.group-table th { font-size: 0.62rem; text-transform: uppercase; opacity: 0.6; padding: 2px 4px; text-align: left; }
+.group-table td { padding: 4px; border-top: 1px solid var(--navy-light); }
+.group-table .num { text-align: center; width: 26px; }
+.group-table .pts { font-weight: 800; }
+.group-table tr.qualifying td:first-child { border-left: 3px solid #2ECC71; }
+.group-table tr.mine { background: var(--gold-glow); }
+.group-table .owner-tag { font-size: 0.64rem; opacity: 0.7; }
