@@ -246,6 +246,7 @@ export default function App() {
                 assignments={assignments}
                 drawType={drawType}
                 onSelectTeam={handleSelectTeam}
+                currentUser={resolvedUser}
               />
             )}
             {tab === 'wall' && (
@@ -276,3 +277,4 @@ export default function App() {
     </div>
   );
 }
+
