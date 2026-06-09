@@ -18,7 +18,86 @@ const STATUS_BADGE = {
 };
 const PAGE_SIZE = 15;
 
-function MatchCard({ match, ownerMap, onSelectTeam }) {
+function GroupTables({ fixtures, ownerMap, currentUser, onSelectTeam }) {
+  const [open, setOpen] = useState(false);
+
+  const tables = useMemo(() => {
+    const groups = {};
+    for (const m of fixtures) {
+      if (m.stage !== 'GROUP_STAGE' || !m.group) continue;
+      const home = normaliseTeamName(m.homeTeam.name);
+      const away = normaliseTeamName(m.awayTeam.name);
+      if (!groups[m.group]) groups[m.group] = {};
+      for (const t of [home, away]) {
+        if (!groups[m.group][t]) groups[m.group][t] = { team: t, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+      }
+      if (m.status !== 'FINISHED') continue;
+      const h = groups[m.group][home];
+      const a = groups[m.group][away];
+      h.p++; a.p++;
+      h.gf += m.score.home; h.ga += m.score.away;
+      a.gf += m.score.away; a.ga += m.score.home;
+      if (m.score.winner === 'HOME_TEAM') { h.w++; h.pts += 3; a.l++; }
+      else if (m.score.winner === 'AWAY_TEAM') { a.w++; a.pts += 3; h.l++; }
+      else { h.d++; a.d++; h.pts++; a.pts++; }
+    }
+    return Object.keys(groups).sort().map((g) => ({
+      group: g,
+      rows: Object.values(groups[g]).sort((x, y) =>
+        y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf || x.team.localeCompare(y.team)
+      ),
+    }));
+  }, [fixtures]);
+
+  if (tables.length === 0) return null;
+
+  return (
+    <div className="card group-tables">
+      <button className="group-tables-toggle" onClick={() => setOpen(!open)}>
+        📊 Group Tables <span className="chev">{open ? '▾' : '▸'}</span>
+      </button>
+      {open && (
+        <div className="group-tables-grid">
+          {tables.map(({ group, rows }) => (
+            <div key={group} className="group-table">
+              <div className="group-table-title">Group {group}</div>
+              <table>
+                <thead>
+                  <tr><th></th><th className="num">P</th><th className="num">W</th><th className="num">D</th><th className="num">L</th><th className="num">GD</th><th className="num">Pts</th></tr>
+                </thead>
+                <tbody>
+                  {rows.map((r, i) => {
+                    const owner = ownerMap[r.team];
+                    const isMine = currentUser && owner === currentUser;
+                    return (
+                      <tr key={r.team} className={`${i < 2 ? 'qualifying' : ''} ${isMine ? 'mine' : ''}`}>
+                        <td>
+                          <button className="team-btn" onClick={() => onSelectTeam(r.team)}>
+                            {getFlag(r.team)} {r.team}
+                          </button>
+                          {owner && <span className={`owner-tag ${isMine ? 'me' : ''}`}> {owner}</span>}
+                        </td>
+                        <td className="num">{r.p}</td>
+                        <td className="num">{r.w}</td>
+                        <td className="num">{r.d}</td>
+                        <td className="num">{r.l}</td>
+                        <td className="num">{r.gf - r.ga}</td>
+                        <td className="num pts">{r.pts}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ))}
+          <p className="hint" style={{ marginTop: 4 }}>Top 2 qualify automatically; best 3rd-placed teams may also advance.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MatchCard({ match, ownerMap, currentUser, onSelectTeam }) {
   const home = normaliseTeamName(match.homeTeam.name);
   const away = normaliseTeamName(match.awayTeam.name);
   const { label, cls } = STATUS_BADGE[match.status] || { label: match.status, cls: 'badge-upcoming' };
@@ -40,7 +119,7 @@ function MatchCard({ match, ownerMap, onSelectTeam }) {
             <span className="flag">{getFlag(home)}</span>
             <div className="team-col">
               <span className="team-name">{home || match.homeTeam.name}</span>
-              {homeOwner && <span className="owner-tag">({homeOwner})</span>}
+              {homeOwner && <span className={`owner-tag ${currentUser === homeOwner ? 'me' : ''}`}>({homeOwner})</span>}
             </div>
           </button>
         </div>
@@ -58,7 +137,7 @@ function MatchCard({ match, ownerMap, onSelectTeam }) {
             <span className="flag">{getFlag(away)}</span>
             <div className="team-col" style={{ alignItems: 'flex-end' }}>
               <span className="team-name">{away || match.awayTeam.name}</span>
-              {awayOwner && <span className="owner-tag">({awayOwner})</span>}
+              {awayOwner && <span className={`owner-tag ${currentUser === awayOwner ? 'me' : ''}`}>({awayOwner})</span>}
             </div>
           </button>
         </div>
@@ -67,7 +146,7 @@ function MatchCard({ match, ownerMap, onSelectTeam }) {
   );
 }
 
-export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType, onSelectTeam }) {
+export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType, onSelectTeam, currentUser }) {
   const [stageFilter, setStageFilter] = useState('ALL');
   const [showFinished, setShowFinished] = useState(true);
   const [search, setSearch] = useState('');
@@ -170,6 +249,10 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         </div>
       )}
 
+      {fixtures.length > 0 && (
+        <GroupTables fixtures={fixtures} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} />
+      )}
+
       {fixtures.length === 0 && !loading && (
         <div className="empty-state">
           <div className="empty-icon">📅</div>
@@ -195,7 +278,7 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         <div key={day} className="day-group">
           <div className="day-header">{day}</div>
           {matches.map((m) => (
-            <MatchCard key={m.id} match={m} ownerMap={ownerMap} onSelectTeam={onSelectTeam} />
+            <MatchCard key={m.id} match={m} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} />
           ))}
         </div>
       ))}
@@ -208,3 +291,4 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
     </div>
   );
 }
+
