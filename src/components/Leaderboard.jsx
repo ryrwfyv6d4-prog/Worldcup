@@ -3,6 +3,7 @@ import { buildLeaderboard } from '../utils/scoring.js';
 import { SCORING, SCORING_LABELS, getFlag } from '../data/worldcup2026.js';
 import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
 import ActivityFeed from './ActivityFeed.jsx';
+import MatchSheet from './MatchSheet.jsx';
 import { formatTimeAEST, formatDateAEST } from '../utils/time.js';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -35,7 +36,7 @@ function isMatchToday(utcDate) {
   return matchDay === today;
 }
 
-function TodayMatches({ fixtures, assignments, drawType }) {
+function TodayMatches({ fixtures, assignments, drawType, onOpenMatch }) {
   const todayFixtures = useMemo(() => (
     fixtures.filter((f) => isMatchToday(f.utcDate))
   ), [fixtures]);
@@ -58,7 +59,7 @@ function TodayMatches({ fixtures, assignments, drawType }) {
           const as_ = f.score?.away ?? 0;
 
           return (
-            <div key={f.id} className={`today-card ${isLive ? 'live' : ''}`}>
+            <div key={f.id} className={`today-card ${isLive ? 'live' : ''}`} onClick={() => onOpenMatch && onOpenMatch(f)}>
               <div className={`mc-status ${isLive ? 'live' : 'upcoming'}`}>
                 {isLive && <span className="today-live-dot" />}
                 {isLive ? 'LIVE' : isDone ? 'FULL TIME' : formatTimeAEST(f.utcDate) + ' AEST'}
@@ -358,6 +359,7 @@ export default function Leaderboard({
   currentUser, lbReactions = {}, onLbReact,
 }) {
   const [expanded, setExpanded] = useState(null);
+  const [openMatch, setOpenMatch] = useState(null);
 
   const board = useMemo(
     () => buildLeaderboard(assignments, drawType, fixtures),
@@ -381,7 +383,7 @@ export default function Leaderboard({
       <div className="page">
         <div className="page-header"><h2>The Polls</h2></div>
         <NextMatch fixtures={fixtures} onSelectTeam={onSelectTeam} />
-        <TodayMatches fixtures={fixtures} assignments={assignments} drawType={drawType} />
+        <TodayMatches fixtures={fixtures} assignments={assignments} drawType={drawType} onOpenMatch={setOpenMatch} />
         <div className="empty-state">
           <div className="empty-icon">🏆</div>
           <p>No draw yet — head to the Draw tab to set up your sweep.</p>
@@ -407,7 +409,7 @@ export default function Leaderboard({
       </div>
 
       <HeroCard board={board} currentUser={currentUser} fixtures={fixtures} prevStats={prevStats} hasResults={hasResults} />
-      <TodayMatches fixtures={fixtures} assignments={assignments} drawType={drawType} />
+      <TodayMatches fixtures={fixtures} assignments={assignments} drawType={drawType} onOpenMatch={setOpenMatch} />
       <YourNextMatch fixtures={fixtures} currentUser={currentUser} assignments={assignments} drawType={drawType} onSelectTeam={onSelectTeam} />
       <NextMatch fixtures={fixtures} onSelectTeam={onSelectTeam} />
 
@@ -543,6 +545,16 @@ export default function Leaderboard({
         drawType={drawType}
         onSelectTeam={onSelectTeam}
       />
+
+      {openMatch && (
+        <MatchSheet
+          match={openMatch}
+          assignments={assignments}
+          drawType={drawType}
+          onClose={() => setOpenMatch(null)}
+          onSelectTeam={onSelectTeam}
+        />
+      )}
 
       <div className="card mt">
         <h3 className="section-title">Scoring System</h3>

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import MatchSheet from './MatchSheet.jsx';
 import { getFlag } from '../data/worldcup2026.js';
 import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
 import { formatTimeAEST, formatDateAEST } from '../utils/time.js';
@@ -97,7 +98,7 @@ function GroupTables({ fixtures, ownerMap, currentUser, onSelectTeam }) {
   );
 }
 
-function MatchCard({ match, ownerMap, currentUser, onSelectTeam }) {
+function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) {
   const home = normaliseTeamName(match.homeTeam.name);
   const away = normaliseTeamName(match.awayTeam.name);
   const { label, cls } = STATUS_BADGE[match.status] || { label: match.status, cls: 'badge-upcoming' };
@@ -108,14 +109,14 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam }) {
   const hasOwner = !!(homeOwner || awayOwner);
 
   return (
-    <div className={`match-card ${isLive ? 'live' : ''} ${hasOwner && !isLive ? 'has-owner' : ''}`}>
+    <div className={`match-card ${isLive ? 'live' : ''} ${hasOwner && !isLive ? 'has-owner' : ''}`} onClick={() => onOpenMatch(match)}>
       <div className="match-date">
         {formatTimeAEST(match.utcDate)} AEST
         {match.group && <span className="match-group">{match.group.replace('GROUP_', 'Group ')}</span>}
       </div>
       <div className="match-row">
         <div className={`team-side ${homeOwner ? 'owned' : ''}`}>
-          <button className="team-btn" onClick={() => onSelectTeam(home)} style={{ gap: 6 }}>
+          <button className="team-btn" onClick={(e) => { e.stopPropagation(); onSelectTeam(home); }} style={{ gap: 6 }}>
             <span className="flag">{getFlag(home)}</span>
             <div className="team-col">
               <span className="team-name">{home || match.homeTeam.name}</span>
@@ -133,7 +134,7 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam }) {
           )}
         </div>
         <div className={`team-side right ${awayOwner ? 'owned' : ''}`}>
-          <button className="team-btn" onClick={() => onSelectTeam(away)} style={{ gap: 6, flexDirection: 'row-reverse' }}>
+          <button className="team-btn" onClick={(e) => { e.stopPropagation(); onSelectTeam(away); }} style={{ gap: 6, flexDirection: 'row-reverse' }}>
             <span className="flag">{getFlag(away)}</span>
             <div className="team-col" style={{ alignItems: 'flex-end' }}>
               <span className="team-name">{away || match.awayTeam.name}</span>
@@ -148,6 +149,7 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam }) {
 
 export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType, onSelectTeam, currentUser }) {
   const [stageFilter, setStageFilter] = useState('ALL');
+  const [openMatch, setOpenMatch] = useState(null);
   const [showFinished, setShowFinished] = useState(true);
   const [search, setSearch] = useState('');
   const [limit, setLimit] = useState(PAGE_SIZE);
@@ -278,7 +280,7 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         <div key={day} className="day-group">
           <div className="day-header">{day}</div>
           {matches.map((m) => (
-            <MatchCard key={m.id} match={m} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} />
+            <MatchCard key={m.id} match={m} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={setOpenMatch} />
           ))}
         </div>
       ))}
@@ -287,6 +289,15 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         <button className="show-more-btn" onClick={() => setLimit((l) => l + PAGE_SIZE)}>
           Show more · {filtered.length - limit} remaining
         </button>
+      )}
+      {openMatch && (
+        <MatchSheet
+          match={openMatch}
+          assignments={assignments}
+          drawType={drawType}
+          onClose={() => setOpenMatch(null)}
+          onSelectTeam={onSelectTeam}
+        />
       )}
     </div>
   );

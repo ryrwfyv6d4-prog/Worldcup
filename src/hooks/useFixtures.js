@@ -18,7 +18,7 @@ const ESPN_NAME_MAP = {
   'South Korea': 'South Korea',
   'Korea Republic': 'South Korea',
 };
-const espnName = (n) => ESPN_NAME_MAP[n] || n;
+export const espnName = (n) => ESPN_NAME_MAP[n] || n;
 
 // Merge ESPN live/final data over the base schedule. ESPN only ever upgrades
 // a match that isn't already settled; if ESPN is down or empty, base wins.
