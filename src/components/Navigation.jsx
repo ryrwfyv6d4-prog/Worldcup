@@ -1,10 +1,10 @@
 export default function Navigation({ tab, setTab }) {
   const tabs = [
-    { id: 'leaderboard', label: 'Standings', icon: '🏆' },
+    { id: 'leaderboard', label: 'Polls', icon: '🏆' },
     { id: 'fixtures', label: 'Fixtures', icon: '📅' },
-    { id: 'wall', label: 'Wall', icon: '📸' },
+    { id: 'wall', label: 'The Wall', icon: '🧱' },
     { id: 'draw', label: 'Draw', icon: '🎲' },
-    { id: 'settings', label: 'Settings', icon: '⚙️' },
+    { id: 'settings', label: 'Shed Rules', icon: '⚙️' },
   ];
 
   return (
@@ -22,3 +22,4 @@ export default function Navigation({ tab, setTab }) {
     </nav>
   );
 }
+
