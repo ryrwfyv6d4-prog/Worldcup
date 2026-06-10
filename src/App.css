@@ -1969,3 +1969,18 @@ body, .app {
 @media (prefers-reduced-motion: reduce) {
   .wall-page .wall-grid > * { transform: none; }
 }
+
+.share-polls-btn {
+  display: block;
+  margin: 14px auto 0;
+  font-family: 'Graduate', serif;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  background: var(--glory-red);
+  color: var(--poster);
+  border: 2px solid var(--poster);
+  padding: 11px 22px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.45);
+  cursor: pointer;
+}
+.share-polls-btn:active { transform: translateY(1px); }
