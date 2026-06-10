@@ -186,16 +186,15 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <img src="/Worldcup/icon-192.png" alt="Dan's Shed" className="header-icon" style={{width:40,height:40,objectFit:'contain'}} />
-        <div className="header-text">
-          <h1 className="app-title">
-            DAN'S <span className="gold">SHED</span>
-          </h1>
-          <p className="app-year">
-            {selectedTeam ? `← ${selectedTeam}` : "World Cup Sweep '26"}
-          </p>
-        </div>
+      <div className="bunting" aria-hidden="true">
+        {Array.from({ length: 12 }).map((_, i) => <span key={i} />)}
+      </div>
+      <header className="app-header masthead">
+        <div className="masthead-eagle">🦅</div>
+        <h1 className="app-title">THE EAGLE'S NEST</h1>
+        <p className="app-year masthead-est">
+          {selectedTeam ? `← ${selectedTeam}` : "WORLD CUP SWEEP · EST. 2026 · DAN'S SHED"}
+        </p>
       </header>
 
       <main className="main">
