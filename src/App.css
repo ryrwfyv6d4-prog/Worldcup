@@ -144,22 +144,24 @@ body {
   min-height: 0;
   -webkit-overflow-scrolling: touch;
   background: var(--bg);
-  padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 20px);
+  padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 36px);
 }
 
 /* ── Bottom nav ── */
 .nav {
   display: flex;
-  background: var(--bg-elevated);
-  border-top: 1px solid var(--navy-light);
-  flex-shrink: 0;
-  height: calc(var(--nav-h) + var(--safe-bottom));
-  padding-bottom: var(--safe-bottom);
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: calc(var(--safe-bottom) + 12px);
+  left: 12px;
+  right: 12px;
   z-index: 100;
+  border-radius: 28px;
+  padding: 7px;
+  background: linear-gradient(160deg, rgba(255,243,214,0.13), rgba(255,243,214,0.04) 50%, rgba(255,243,214,0.08));
+  backdrop-filter: blur(22px) saturate(1.6);
+  -webkit-backdrop-filter: blur(22px) saturate(1.6);
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(255, 255, 255, 0.2) inset;
 }
 .nav-btn {
   flex: 1;
@@ -167,24 +169,31 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   background: none;
   border: none;
-  border-top: 3px solid transparent;
+  border-radius: 21px;
   cursor: pointer;
-  color: var(--text-muted-dark);
+  color: var(--text-faint-dark);
   font-size: 0.65rem;
-  font-weight: 500;
-  padding: 8px 4px 0;
-  transition: color 0.15s, border-color 0.15s;
+  font-weight: 600;
+  min-height: 52px;
+  padding: 7px 2px 5px;
+  transition: color 0.18s, background 0.18s, transform 0.12s;
   position: relative;
+  -webkit-tap-highlight-color: transparent;
 }
-.nav-btn.active {
-  color: var(--gold);
-  border-top-color: var(--gold);
+.nav-btn svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-.nav-btn:active { background: rgba(255, 255, 255, 0.04); }
-.nav-icon { font-size: 18px; line-height: 1; }
+.nav-btn:active { transform: scale(0.94); }
+.nav-icon { display: grid; place-items: center; line-height: 1; }
 .nav-label {
   font-size: 0.6rem;
   font-weight: 700;
@@ -1892,13 +1901,14 @@ body, .app {
 .owner-tag.me { color: var(--glory-red); }
 
 /* --- Nav --- */
-.nav {
-  background: linear-gradient(180deg, rgba(25,19,9,0.97), rgba(14,11,7,0.97));
-  border-top: 3px solid var(--brass);
-}
-.nav-btn { color: rgba(242,230,206,0.5); }
+
+
 .nav-btn .nav-label { font-family: 'Graduate', serif; font-size: 0.5rem; letter-spacing: 0.06em; }
-.nav-btn.active { color: var(--brass-bright); border-top-color: transparent; }
+.nav-btn.active {
+  color: var(--brass-bright);
+  background: linear-gradient(160deg, rgba(244, 201, 94, 0.2), rgba(244, 201, 94, 0.06));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.14) inset;
+}
 
 
 /* ================= THE WALL (of Mexico) ================= */
@@ -1987,3 +1997,40 @@ body, .app {
   cursor: pointer;
 }
 .share-polls-btn:active { transform: translateY(1px); }
+
+
+/* ── Glass list rows (Shed Rules) ── */
+.list-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border-radius: var(--radius);
+  padding: 13px 14px;
+  margin-bottom: 14px;
+  border: 1px solid var(--glass-line);
+  cursor: pointer;
+  color: var(--text-on-dark);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: left;
+  min-height: 50px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.16) inset;
+  transition: transform 0.12s ease;
+}
+.list-row:active { transform: scale(0.98); }
+.list-row-icon { font-size: 1.15rem; }
+.list-row-text { flex: 1; line-height: 1.2; }
+.list-row-sub {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-faint-dark);
+  letter-spacing: 0.03em;
+  margin-top: 2px;
+}
+.list-row-go { color: var(--text-faint-dark); font-size: 0.8rem; }

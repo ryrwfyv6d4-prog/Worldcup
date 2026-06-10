@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { SCORING, SCORING_LABELS } from '../data/worldcup2026.js';
 
-export default function Settings({ onResetDraw, onClearCache, currentUser, onChangeUser }) {
+export default function Settings({ onResetDraw, onClearCache, currentUser, onChangeUser, onOpenDraw }) {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleReset = () => {
@@ -17,8 +17,17 @@ export default function Settings({ onResetDraw, onClearCache, currentUser, onCha
   return (
     <div className="page">
       <div className="page-header">
-        <h2>Settings</h2>
+        <h2>Shed Rules</h2>
       </div>
+
+      <button className="list-row" onClick={onOpenDraw}>
+        <span className="list-row-icon">🎲</span>
+        <span className="list-row-text">
+          The Draw
+          <span className="list-row-sub">Locked · view all team allocations</span>
+        </span>
+        <span className="list-row-go">▸</span>
+      </button>
 
       <div className="card">
         <h3 className="section-title">You</h3>

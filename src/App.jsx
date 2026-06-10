@@ -262,6 +262,7 @@ export default function App() {
                 onClearCache={handleClearCache}
                 currentUser={resolvedUser}
                 onChangeUser={handleChangeUser}
+                onOpenDraw={() => handleSetTab('draw')}
               />
             )}
           </>
