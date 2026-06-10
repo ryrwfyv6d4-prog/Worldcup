@@ -1037,32 +1037,7 @@ body {
 .feed-time { font-size: 0.68rem; color: var(--text-muted); margin-left: auto; }
 
 /* ── Dark mode — flip white cards to dark navy ── */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --card: #2B2723;
-    --card-alt: #1A2D47;
-    --border: #2A3F5F;
-    --border-strong: #3A5070;
-    --text: #F1F5F9;
-    --text-muted: #94A3B8;
-  }
-  .match-group { color: var(--text); }
-  .badge { color: var(--text); }
-  .score { color: var(--text); }
-  .team-name { color: var(--text); }
-  .result-name { color: var(--text); }
-  .lb-name { color: var(--text); }
-  .breakdown-table td { color: var(--text); }
-  .score-row { color: var(--text); }
-  .section-title { color: var(--text); }
-  .textarea, .input { background: var(--card-alt); color: var(--text); }
-  .toggle-btn { background: var(--card); color: var(--text); }
-  .btn-secondary { background: var(--card-alt); color: var(--text); }
-  .btn-sm { background: var(--card-alt); color: var(--text); }
-  .btn-danger { background: var(--card); }
-  .error-msg { background: rgba(220, 38, 38, 0.15); }
-  .hint a { color: var(--gold); }
-}
+/* OS dark-mode overrides removed — app uses its own fixed theme */
 
 /* ── Search input (Fixtures) ── */
 .search-row {
@@ -1694,6 +1669,12 @@ h1, h2, h3, .app-title, .app-year, .lb-name, .lb-pts,
    ================================================================ */
 :root {
   --steel: #2B2723;
+  --card: #F2E6CE;
+  --card-alt: #fbf3df;
+  --border: #d8c9a6;
+  --border-strong: #cdb98f;
+  --text: #26201A;
+  --text-muted: #71624a;
   --steel-light: #38332D;
   --poster: #F2E6CE;
   --poster-edge: #d8c9a6;
