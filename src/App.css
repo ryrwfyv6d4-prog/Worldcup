@@ -157,11 +157,13 @@ body {
   z-index: 100;
   border-radius: 28px;
   padding: 7px;
-  background: linear-gradient(160deg, rgba(255,243,214,0.13), rgba(255,243,214,0.04) 50%, rgba(255,243,214,0.08));
+  background:
+    linear-gradient(160deg, rgba(255,243,214,0.10), rgba(255,243,214,0.02) 50%, rgba(255,243,214,0.06)),
+    rgba(16, 12, 6, 0.82);
   backdrop-filter: blur(22px) saturate(1.6);
   -webkit-backdrop-filter: blur(22px) saturate(1.6);
   border: 1px solid var(--glass-line);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(255, 255, 255, 0.2) inset;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.18) inset;
 }
 .nav-btn {
   flex: 1;
@@ -174,9 +176,10 @@ body {
   border: none;
   border-radius: 21px;
   cursor: pointer;
-  color: var(--text-faint-dark);
-  font-size: 0.65rem;
-  font-weight: 600;
+  color: rgba(244, 235, 216, 0.62);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   min-height: 52px;
   padding: 7px 2px 5px;
   transition: color 0.18s, background 0.18s, transform 0.12s;
@@ -2130,12 +2133,14 @@ body, .app {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  scroll-snap-type: x mandatory;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
   padding: 2px 16px 6px;
   margin: 0 -16px;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
 }
 .today-carousel::-webkit-scrollbar { display: none; }
 .today-card {
