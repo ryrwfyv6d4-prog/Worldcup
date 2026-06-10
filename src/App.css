@@ -5,7 +5,7 @@ html, body {
   overflow: hidden;
   overscroll-behavior: none;
 }
-html { font-size: 16px; -webkit-text-size-adjust: 100%; background: #221E19; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; background: #0E0B07; }
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);
@@ -13,35 +13,66 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── CSS vars (Dan's Shed palette) ── */
+/* ── CSS vars — MIDNIGHT SHED design tokens (single source of truth) ── */
 :root {
-  /* Deep navy + gold */
-  --bg: #221E19;
-  --bg-elevated: #2B2723;
-  --card: #FFFFFF;
-  --card-alt: #F8FAFC;
-  --border: #E2E8F0;
-  --border-strong: #CBD5E1;
-  --gold: #C9962E;
-  --gold-dark: #9c6f15;
-  --gold-glow: rgba(201, 150, 46, 0.18);
-  --navy: #221E19;
-  --navy-light: #3A352E;
-  --navy-lighter: #6B6254;
+  /* dark ground */
+  --bg: #0E0B07;
+  --bg-elevated: #191309;
+  --steel: #0E0B07;
+  --steel-light: #251D11;
+  --navy: #0E0B07;
+  --navy-light: #251D11;
+  --navy-lighter: #75643F;
 
-  --text: #0F172A;
-  --text-muted: #64748B;
-  --text-on-dark: #FFFFFF;
-  --text-muted-dark: #94A3B8;
+  /* paper surfaces */
+  --card: #F6ECD4;
+  --card-alt: #EDDFBE;
+  --poster: #F6ECD4;
+  --poster-deep: #EDDFBE;
+  --border: rgba(82, 62, 28, 0.26);
+  --border-strong: rgba(82, 62, 28, 0.42);
+  --poster-edge: rgba(82, 62, 28, 0.26);
 
-  --red: #DC2626;
-  --live-red: #EF4444;
-  --green: #16A34A;
+  /* ink on paper */
+  --text: #241B0E;
+  --text-muted: #75643F;
+  --ink: #241B0E;
+  --ink-soft: #75643F;
+  --ink-faint: #A2916C;
+
+  /* type on dark */
+  --text-on-dark: #F4EBD8;
+  --text-muted-dark: rgba(244, 235, 216, 0.6);
+  --text-faint-dark: rgba(244, 235, 216, 0.34);
+
+  /* hero accent: brass */
+  --gold: #E2A93B;
+  --gold-dark: #7A5A12;
+  --gold-glow: rgba(226, 169, 59, 0.16);
+  --brass: #E2A93B;
+  --brass-bright: #F4C95E;
+  --brass-deep: #7A5A12;
+
+  /* flag accents (bunting & tags only) */
+  --glory-red: #BE3A38;
+  --glory-blue: #2E4C7E;
+
+  /* semantic */
+  --red: #B3372F;
+  --live-red: #F0635C;
+  --green: #1F8A4C;
+  --green-on-dark: #43CE83;
+  --chalk-green: #1F261F;
+
+  /* glass recipe */
+  --hairline: rgba(244, 201, 94, 0.12);
+  --glass-bg: linear-gradient(160deg, rgba(255,243,214,0.10), rgba(255,243,214,0.035) 45%, rgba(255,243,214,0.07));
+  --glass-line: rgba(255, 240, 205, 0.22);
 
   --radius: 14px;
   --radius-sm: 8px;
-  --shadow: 0 2px 8px rgba(10, 22, 40, 0.08);
-  --shadow-lg: 0 6px 24px rgba(10, 22, 40, 0.14);
+  --shadow: 0 10px 26px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  --shadow-lg: 0 14px 34px rgba(0, 0, 0, 0.55);
   --nav-h: 68px;
   --header-h: 72px;
   --safe-top: env(safe-area-inset-top, 0px);
@@ -65,7 +96,7 @@ body {
 
 /* ── Header — "DAN'S SHED" ── */
 .app-header {
-  background: linear-gradient(180deg, #221E19 0%, #2B2723 100%);
+  background: linear-gradient(180deg, rgba(16,11,5,0.96) 0%, rgba(22,16,8,0.92) 100%);
   color: var(--text-on-dark);
   padding: calc(var(--safe-top) + 12px) 20px 14px;
   display: flex;
@@ -354,7 +385,7 @@ body {
 
 /* ── Next-match countdown (Standings hero) ── */
 .next-match {
-  background: linear-gradient(135deg, #2B2723 0%, #3A352E 100%);
+  background: linear-gradient(135deg, #191309 0%, #251D11 100%);
   border: 1px solid var(--navy-light);
   border-radius: var(--radius);
   padding: 14px 16px;
@@ -414,7 +445,7 @@ body {
 
 /* ── Lock banner ── */
 .lock-banner {
-  background: linear-gradient(135deg, #2B2723 0%, #3A352E 100%);
+  background: linear-gradient(135deg, #191309 0%, #251D11 100%);
   border: 1px solid var(--gold);
   border-radius: var(--radius);
   padding: 14px 16px;
@@ -1444,7 +1475,7 @@ body {
 
 /* ── Today's Matches ── */
 .today-matches {
-  background: linear-gradient(135deg, #0D1E35 0%, #2B2723 100%);
+  background: linear-gradient(135deg, #191309 0%, #251D11 100%);
   border: 1px solid var(--navy-light);
   border-radius: var(--radius);
   padding: 14px 16px;
@@ -1597,14 +1628,14 @@ h1, h2, h3, .app-title, .app-year, .lb-name, .lb-pts,
   text-align: center;
   margin-right: 2px;
 }
-.lb-delta.up { color: #2ECC71; }
+.lb-delta.up { color: var(--green-on-dark); }
 .lb-delta.down { color: var(--live-red); }
 .lb-delta.flat { color: var(--navy-lighter); }
 .lb-pts { display: flex; flex-direction: column; align-items: flex-end; }
 .lb-today {
   font-size: 0.64rem;
   font-weight: 800;
-  color: #2ECC71;
+  color: var(--green-on-dark);
   white-space: nowrap;
 }
 .your-next {
@@ -1659,7 +1690,7 @@ h1, h2, h3, .app-title, .app-year, .lb-name, .lb-pts,
 .group-table td { padding: 4px; border-top: 1px solid var(--navy-light); }
 .group-table .num { text-align: center; width: 26px; }
 .group-table .pts { font-weight: 800; }
-.group-table tr.qualifying td:first-child { border-left: 3px solid #2ECC71; }
+.group-table tr.qualifying td:first-child { border-left: 3px solid var(--green); }
 .group-table tr.mine { background: var(--gold-glow); }
 .group-table .owner-tag { font-size: 0.64rem; opacity: 0.7; }
 
@@ -1667,32 +1698,23 @@ h1, h2, h3, .app-title, .app-year, .lb-name, .lb-pts,
    THE EAGLE'S NEST — theme layer (overrides base dark theme)
    Corrugated steel shed + Americana campaign poster
    ================================================================ */
-:root {
-  --steel: #2B2723;
-  --card: #F2E6CE;
-  --card-alt: #fbf3df;
-  --border: #d8c9a6;
-  --border-strong: #cdb98f;
-  --text: #26201A;
-  --text-muted: #71624a;
-  --steel-light: #38332D;
-  --poster: #F2E6CE;
-  --poster-edge: #d8c9a6;
-  --poster-deep: #fbf3df;
-  --ink: #26201A;
-  --ink-soft: #71624a;
-  --glory-red: #B22234;
-  --glory-blue: #1E3A66;
-  --brass: #C9962E;
-  --brass-bright: #E8B84B;
-  --chalk-green: #283431;
-}
+/* (theme tokens merged into the base :root above) */
 
 body, .app {
   background:
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.045) 0px, rgba(255,255,255,0.045) 2px, rgba(0,0,0,0.18) 14px, rgba(255,255,255,0.02) 26px, rgba(0,0,0,0.12) 28px),
-    linear-gradient(180deg, #3A342D, var(--steel) 35%) !important;
+    radial-gradient(120% 60% at 50% -8%, rgba(226, 169, 59, 0.13), transparent 58%),
+    radial-gradient(90% 50% at 85% 105%, rgba(46, 76, 126, 0.10), transparent 60%),
+    linear-gradient(180deg, #16100A 0%, var(--bg) 50%, #0A0805 100%) !important;
   font-family: 'Barlow Condensed', sans-serif;
+}
+.app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* --- Bunting + masthead --- */
@@ -1717,7 +1739,7 @@ body, .app {
   font-size: 1.55rem;
   letter-spacing: 0.02em;
   color: var(--brass-bright);
-  text-shadow: 0 2px 0 #6b4a10, 0 4px 6px rgba(0,0,0,0.6);
+  text-shadow: 0 2px 0 rgba(0,0,0,0.45), 0 4px 8px rgba(0,0,0,0.5);
   margin-top: 2px;
 }
 .masthead-est {
@@ -1772,9 +1794,9 @@ body, .app {
 .today-matches.chalkboard {
   background:
     radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.04), transparent 60%),
-    #221E19;
+    #15110B;
   border: 2px solid var(--brass);
-  box-shadow: inset 0 0 0 4px #221E19, inset 0 0 0 5px rgba(201,150,46,0.4), 0 6px 14px rgba(0,0,0,0.5);
+  box-shadow: inset 0 0 0 4px #15110B, inset 0 0 0 5px rgba(244,201,94,0.35), 0 6px 14px rgba(0,0,0,0.5);
   border-radius: 0;
   color: #EDE7DA;
 }
@@ -1866,12 +1888,12 @@ body, .app {
 .group-tables { background: var(--poster); color: var(--ink); }
 .group-table-title { color: var(--glory-red); }
 .group-table td { border-color: var(--poster-edge); }
-.group-table tr.mine { background: #fdf4dd; }
+.group-table tr.mine { background: rgba(226, 169, 59, 0.13); }
 .owner-tag.me { color: var(--glory-red); }
 
 /* --- Nav --- */
 .nav {
-  background: linear-gradient(180deg, #353028, #221E19);
+  background: linear-gradient(180deg, rgba(25,19,9,0.97), rgba(14,11,7,0.97));
   border-top: 3px solid var(--brass);
 }
 .nav-btn { color: rgba(242,230,206,0.5); }
