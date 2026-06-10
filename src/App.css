@@ -1693,8 +1693,8 @@ h1, h2, h3, .app-title, .app-year, .lb-name, .lb-pts,
    Corrugated steel shed + Americana campaign poster
    ================================================================ */
 :root {
-  --steel: #272C2F;
-  --steel-light: #343A3E;
+  --steel: #2B2723;
+  --steel-light: #38332D;
   --poster: #F2E6CE;
   --poster-edge: #d8c9a6;
   --poster-deep: #fbf3df;
@@ -1710,7 +1710,7 @@ h1, h2, h3, .app-title, .app-year, .lb-name, .lb-pts,
 body, .app {
   background:
     repeating-linear-gradient(90deg, rgba(255,255,255,0.045) 0px, rgba(255,255,255,0.045) 2px, rgba(0,0,0,0.18) 14px, rgba(255,255,255,0.02) 26px, rgba(0,0,0,0.12) 28px),
-    linear-gradient(180deg, #353B3E, var(--steel) 35%) !important;
+    linear-gradient(180deg, #3A342D, var(--steel) 35%) !important;
   font-family: 'Barlow Condensed', sans-serif;
 }
 
@@ -1889,9 +1889,82 @@ body, .app {
 
 /* --- Nav --- */
 .nav {
-  background: linear-gradient(180deg, #31373B, #22272A);
+  background: linear-gradient(180deg, #353028, #221E19);
   border-top: 3px solid var(--brass);
 }
 .nav-btn { color: rgba(242,230,206,0.5); }
 .nav-btn .nav-label { font-family: 'Graduate', serif; font-size: 0.5rem; letter-spacing: 0.06em; }
 .nav-btn.active { color: var(--brass-bright); border-top-color: transparent; }
+
+
+/* ================= THE WALL (of Mexico) ================= */
+.wall-page {
+  background:
+    repeating-linear-gradient(90deg,
+      #6e4a2e 0px, #7d5636 10px, #5c3d24 12px,
+      #75503097 22px, #5c3d24 24px),
+    linear-gradient(180deg, #7a5433, #5c3d24);
+  margin: 0 -16px;
+  padding: 16px;
+  min-height: 70vh;
+}
+.wall-page .page-header h2 {
+  font-family: 'Ultra', serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--poster);
+  text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+}
+.wall-tagline {
+  font-family: 'Graduate', serif !important;
+  font-size: 0.6rem !important;
+  letter-spacing: 0.26em !important;
+  color: var(--brass-bright) !important;
+}
+.bricks-laid {
+  font-family: 'Graduate', serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  color: var(--poster);
+  background: rgba(0,0,0,0.28);
+  display: inline-block;
+  padding: 3px 10px;
+  margin-top: 6px;
+}
+.build-btn {
+  font-family: 'Graduate', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  background: var(--glory-red);
+  color: var(--poster);
+  border: 2px solid var(--poster);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+}
+.wall-page .polaroid, .wall-page .wall-grid > * {
+  background: #f5ecd7;
+  border: 1px solid #cdb98f;
+  box-shadow: 3px 5px 10px rgba(0,0,0,0.45);
+}
+.wall-page .wall-grid > *:nth-child(odd) { transform: rotate(-1.6deg); }
+.wall-page .wall-grid > *:nth-child(even) { transform: rotate(1.3deg); }
+.wall-page .wall-grid > *:nth-child(3n) { transform: rotate(-0.6deg); }
+.wall-page .polaroid-caption, .wall-page .wall-grid figcaption {
+  font-family: 'Graduate', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: #5a4626;
+}
+.wall-footer {
+  text-align: center;
+  font-family: 'Graduate', serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  color: rgba(242,230,206,0.75);
+  margin-top: 18px;
+}
+.wall-page .empty-state { color: var(--poster); }
+.wall-page .empty-state p { color: var(--poster); }
+@media (prefers-reduced-motion: reduce) {
+  .wall-page .wall-grid > * { transform: none; }
+}
