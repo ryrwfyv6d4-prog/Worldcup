@@ -2270,3 +2270,64 @@ body, .app {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+
+/* ════════ MIDNIGHT SHED — Fixtures glass pass ════════ */
+.match-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  border: 1px solid var(--glass-line);
+  border-left: 3px solid transparent;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255, 255, 255, 0.14) inset;
+}
+.match-card.live { border-left-color: var(--live-red); }
+.match-card.has-owner { border-left-color: var(--brass); }
+.match-card .team-name { color: var(--text-on-dark); }
+.match-card .score { color: var(--text-on-dark); }
+.match-card .match-date { color: var(--text-faint-dark); }
+.match-card .match-group {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--hairline);
+  color: var(--brass-bright);
+}
+.match-card .owner-tag { color: var(--brass-bright); }
+.match-card .team-side.owned .team-name { color: var(--brass-bright); }
+.match-card .badge-done { background: rgba(0, 0, 0, 0.28); color: var(--text-muted-dark); }
+.match-card .badge-upcoming { color: var(--text-muted-dark); }
+
+/* day headers become Graduate eyebrows */
+.day-header {
+  font-family: 'Graduate', serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.28em;
+  font-weight: 400;
+  color: var(--brass);
+  border-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 2px 4px;
+}
+.day-header::after { content: ""; flex: 1; height: 1px; background: var(--hairline); }
+
+/* filter pills: glass, brass when active */
+.filter-btn {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border: 1px solid var(--glass-line);
+  color: var(--text-muted-dark);
+  min-height: 34px;
+}
+.filter-btn.active {
+  background: linear-gradient(160deg, var(--brass-bright), var(--brass));
+  border-color: transparent;
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.show-more-btn {
+  background: var(--glass-bg);
+  border: 1px dashed var(--glass-line);
+  color: var(--brass-bright);
+}
