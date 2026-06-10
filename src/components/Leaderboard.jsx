@@ -43,8 +43,8 @@ function TodayMatches({ fixtures, assignments, drawType }) {
   if (todayFixtures.length === 0) return null;
 
   return (
-    <div className="today-matches">
-      <div className="today-label">Today's Matches</div>
+    <div className="today-matches chalkboard">
+      <div className="today-label">TODAY AT THE NEST</div>
       {todayFixtures.map((f) => {
         const home = normaliseTeamName(f.homeTeam.name);
         const away = normaliseTeamName(f.awayTeam.name);
@@ -153,12 +153,15 @@ function YourNextMatch({ fixtures, currentUser, assignments, drawType, onSelectT
   const mine = myTeams.includes(home) ? home : away;
 
   return (
-    <div className="your-next">
-      <div className="your-next-label">⭐ Your next match</div>
-      <button className="team-btn your-next-teams" onClick={() => onSelectTeam(mine)}>
-        {getFlag(home)} {home} <span className="next-match-vs">vs</span> {getFlag(away)} {away}
-      </button>
-      <div className="your-next-meta">{formatDateAEST(next.ts)} · {formatTimeAEST(next.ts)} AEST</div>
+    <div className="ticket">
+      <div className="ticket-stub">GAME<b>DAY</b><span>★</span></div>
+      <div className="ticket-body">
+        <div className="ticket-eyebrow">★ YOUR NEXT MATCH ★</div>
+        <button className="team-btn ticket-match" onClick={() => onSelectTeam(mine)}>
+          {getFlag(home)} {home} vs {getFlag(away)} {away}
+        </button>
+        <div className="ticket-meta">{formatDateAEST(next.ts)} · {formatTimeAEST(next.ts)} AEST</div>
+      </div>
     </div>
   );
 }
@@ -189,7 +192,7 @@ export default function Leaderboard({
   if (!hasAssignments) {
     return (
       <div className="page">
-        <div className="page-header"><h2>Standings</h2></div>
+        <div className="page-header"><h2>The Polls</h2></div>
         <NextMatch fixtures={fixtures} onSelectTeam={onSelectTeam} />
         <TodayMatches fixtures={fixtures} assignments={assignments} drawType={drawType} />
         <div className="empty-state">
@@ -203,7 +206,7 @@ export default function Leaderboard({
   return (
     <div className="page">
       <div className="page-header">
-        <h2>Standings</h2>
+        <h2>The Polls</h2>
         {!hasResults && (
           <p className="subtitle">
             {apiError ? 'Points will update once results load.' : 'Waiting for first results…'}
@@ -235,16 +238,19 @@ export default function Leaderboard({
               onClick={() => setExpanded(isExpanded ? null : entry.name)}
             >
               <div className="lb-main">
-                <span className="lb-rank">
-                  {i < 3 ? MEDALS[i] : <span className="lb-num">{i + 1}</span>}
-                </span>
+                <span className={`rosette ${i < 3 ? 'gold' : ''}`}>{i + 1}</span>
                 {hasResults && (
                   delta > 0 ? <span className="lb-delta up">▲{delta}</span>
                   : delta < 0 ? <span className="lb-delta down">▼{-delta}</span>
                   : <span className="lb-delta flat">–</span>
                 )}
                 <div className="lb-info">
-                  <span className="lb-name">{entry.name}{isMe && <span className="you-tag"> you</span>}</span>
+                  <span className="lb-name">
+                    {entry.name}
+                    {isMe && <span className="tag you">YOU</span>}
+                    {hasResults && i === 0 && <span className="tag front">FRONT RUNNER</span>}
+                    {hasResults && i === board.length - 1 && <span className="tag disaster">TOTAL DISASTER</span>}
+                  </span>
                   <span className="lb-teams">
                     {entry.teams.slice(0, 2).map((t) => (
                       <button
@@ -264,6 +270,7 @@ export default function Leaderboard({
                   {entry.total}<small>pts</small>
                   {todayPts > 0 && <span className="lb-today">+{todayPts} today</span>}
                 </span>
+                <span className={`lb-chev ${isExpanded ? 'open' : ''}`}>▶</span>
               </div>
 
               {isExpanded && (
@@ -343,6 +350,7 @@ export default function Leaderboard({
             </div>
           );
         })}
+        <div className="tap-hint">👆 Tap any bloke for the full story</div>
       </div>
 
       <ActivityFeed
