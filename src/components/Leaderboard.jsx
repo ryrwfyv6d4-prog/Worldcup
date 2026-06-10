@@ -166,6 +166,131 @@ function YourNextMatch({ fixtures, currentUser, assignments, drawType, onSelectT
   );
 }
 
+
+async function shareStandingsCard(board, prevStats, hasResults) {
+  const W = 1080, H = 1350;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  try { await document.fonts.load('60px Ultra'); await document.fonts.load('30px Graduate'); } catch {}
+
+  // Corrugated steel background
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#3A342D'); bg.addColorStop(0.35, '#2B2723'); bg.addColorStop(1, '#2B2723');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  for (let x = 0; x < W; x += 28) {
+    ctx.fillStyle = 'rgba(0,0,0,0.14)'; ctx.fillRect(x + 14, 0, 8, H);
+    ctx.fillStyle = 'rgba(255,255,255,0.035)'; ctx.fillRect(x, 0, 2, H);
+  }
+
+  // Bunting
+  const buntColors = ['#B22234', '#F2E6CE', '#1E3A66'];
+  const bw = W / 14;
+  for (let i = 0; i < 14; i++) {
+    ctx.fillStyle = buntColors[i % 3];
+    ctx.beginPath();
+    ctx.moveTo(i * bw + 2, 0); ctx.lineTo((i + 1) * bw - 2, 0); ctx.lineTo(i * bw + bw / 2, 46);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // Masthead
+  ctx.textAlign = 'center';
+  ctx.font = '52px serif'; ctx.fillText('🦅', W / 2, 110);
+  ctx.font = '64px Ultra, serif';
+  ctx.fillStyle = '#6b4a10'; ctx.fillText("THE EAGLE'S NEST", W / 2, 186);
+  ctx.fillStyle = '#E8B84B'; ctx.fillText("THE EAGLE'S NEST", W / 2, 181);
+  ctx.font = '20px Graduate, serif'; ctx.fillStyle = 'rgba(242,230,206,0.8)';
+  ctx.fillText('W O R L D   C U P   S W E E P   ·   D A N \u2019 S   S H E D', W / 2, 222);
+
+  const dateStr = new Date().toLocaleDateString('en-AU', { timeZone: 'Australia/Brisbane', weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
+  ctx.font = '24px Graduate, serif'; ctx.fillStyle = '#E8B84B';
+  ctx.fillText(`\u2605  THE POLLS \u2014 ${dateStr}  \u2605`, W / 2, 268);
+
+  // Poster board
+  const bx = 56, by = 292, bwd = W - 112, rowH = Math.min(78, 860 / board.length);
+  const bh = rowH * board.length + 20;
+  ctx.fillStyle = '#C9962E'; ctx.fillRect(bx - 4, by - 4, bwd + 8, bh + 8);
+  ctx.fillStyle = '#F2E6CE'; ctx.fillRect(bx, by, bwd, bh);
+
+  let topToday = { name: null, pts: 0 }, bigMove = { name: null, d: 0 };
+  board.forEach((entry, i) => {
+    const y = by + 10 + i * rowH;
+    const prev = prevStats[entry.name];
+    const todayPts = prev ? entry.total - prev.total : entry.total;
+    const delta = prev ? prev.rank - i : 0;
+    if (todayPts > topToday.pts) topToday = { name: entry.name, pts: todayPts };
+    if (Math.abs(delta) > Math.abs(bigMove.d)) bigMove = { name: entry.name, d: delta };
+
+    if (i > 0) { ctx.strokeStyle = '#d8c9a6'; ctx.beginPath(); ctx.moveTo(bx + 14, y); ctx.lineTo(bx + bwd - 14, y); ctx.stroke(); }
+
+    // Rosette
+    const cx = bx + 52, cy = y + rowH / 2;
+    ctx.beginPath(); ctx.arc(cx, cy, 24, 0, Math.PI * 2);
+    ctx.fillStyle = '#B22234'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, 21, 0, Math.PI * 2);
+    ctx.fillStyle = '#F2E6CE'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+    ctx.fillStyle = i < 3 ? '#C9962E' : '#1E3A66'; ctx.fill();
+    ctx.font = 'bold 22px Graduate, serif';
+    ctx.fillStyle = i < 3 ? '#3a2a08' : '#F2E6CE';
+    ctx.fillText(String(i + 1), cx, cy + 8);
+
+    // Name + tag
+    ctx.textAlign = 'left';
+    ctx.font = '700 34px "Barlow Condensed", sans-serif'; ctx.fillStyle = '#26201A';
+    ctx.fillText(entry.name, bx + 96, cy + 11);
+    const nameW = ctx.measureText(entry.name).width;
+    let tag = null, tagBg = null;
+    if (hasResults && i === 0) { tag = 'FRONT RUNNER'; tagBg = '#1E3A66'; }
+    if (hasResults && i === board.length - 1) { tag = 'TOTAL DISASTER'; tagBg = '#B22234'; }
+    if (tag) {
+      ctx.font = '14px Graduate, serif';
+      const tw = ctx.measureText(tag).width;
+      ctx.fillStyle = tagBg; ctx.fillRect(bx + 104 + nameW, cy - 6, tw + 14, 24);
+      ctx.fillStyle = '#F2E6CE'; ctx.fillText(tag, bx + 111 + nameW, cy + 11);
+    }
+
+    // Movement
+    ctx.textAlign = 'center'; ctx.font = '700 26px "Barlow Condensed", sans-serif';
+    if (hasResults && delta > 0) { ctx.fillStyle = '#2c7a3f'; ctx.fillText(`\u25B2${delta}`, bx + bwd - 220, cy + 9); }
+    else if (hasResults && delta < 0) { ctx.fillStyle = '#B22234'; ctx.fillText(`\u25BC${-delta}`, bx + bwd - 220, cy + 9); }
+    else if (hasResults) { ctx.fillStyle = '#b3a584'; ctx.fillText('\u2013', bx + bwd - 220, cy + 9); }
+
+    // Points + today
+    ctx.textAlign = 'right';
+    ctx.font = '40px Ultra, serif'; ctx.fillStyle = '#1E3A66';
+    ctx.fillText(String(entry.total), bx + bwd - 110, cy + 13);
+    if (todayPts > 0 && hasResults) {
+      ctx.font = '700 24px "Barlow Condensed", sans-serif'; ctx.fillStyle = '#2c7a3f';
+      ctx.fillText(`+${todayPts}`, bx + bwd - 28, cy + 9);
+    }
+    ctx.textAlign = 'center';
+  });
+
+  // Stat bar
+  const sy = by + bh + 36;
+  ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(bx, sy, bwd, 52);
+  ctx.font = '20px Graduate, serif'; ctx.fillStyle = '#F2E6CE';
+  let statLine = hasResults && topToday.name
+    ? `TOP SCORE TODAY: ${topToday.name.toUpperCase()} +${topToday.pts}` + (bigMove.name && bigMove.d !== 0 ? `   ·   BIGGEST MOVER: ${bigMove.name.toUpperCase()} ${bigMove.d > 0 ? '\u25B2' : '\u25BC'}${Math.abs(bigMove.d)}` : '')
+    : 'TOURNAMENT KICKS OFF \u2014 ALL TO PLAY FOR';
+  ctx.fillText(statLine, W / 2, sy + 34);
+
+  ctx.font = '18px Graduate, serif'; ctx.fillStyle = 'rgba(242,230,206,0.55)';
+  ctx.fillText("\u2605  T H E   E A G L E ' S   N E S T   \u00B7   W C   ' 2 6  \u2605", W / 2, H - 40);
+
+  // Share or download
+  const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
+  const file = new File([blob], 'eagles-nest-polls.png', { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'eagles-nest-polls.png'; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 export default function Leaderboard({
   assignments, drawType, fixtures, apiError, lastFetched, onSelectTeam,
   currentUser, lbReactions = {}, onLbReact,
@@ -352,6 +477,10 @@ export default function Leaderboard({
         })}
         <div className="tap-hint">👆 Tap any bloke for the full story</div>
       </div>
+
+      <button className="share-polls-btn" onClick={() => shareStandingsCard(board, prevStats, hasResults)}>
+        📤 SHARE THE POLLS
+      </button>
 
       <ActivityFeed
         fixtures={fixtures}
