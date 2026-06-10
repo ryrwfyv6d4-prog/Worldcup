@@ -2612,3 +2612,5 @@ body, .app {
 /* match cards now tappable */
 .match-card, .today-card { cursor: pointer; }
 .match-card:active { transform: scale(0.99); }
+
+.ms-odds-chip b { color: var(--text-on-dark); font-weight: 800; margin-left: 2px; }

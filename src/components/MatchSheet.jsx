@@ -120,24 +120,30 @@ function Timeline({ keyEvents }) {
   );
 }
 
-function Odds({ pickcenter }) {
+// American moneyline → Aussie decimal odds ($ returned per $1 staked)
+function toDecimal(ml) {
+  if (ml == null || isNaN(ml)) return null;
+  const dec = ml > 0 ? 1 + ml / 100 : 1 + 100 / Math.abs(ml);
+  return `$${dec.toFixed(2)}`;
+}
+
+function Odds({ pickcenter, home, away, homeFlag, awayFlag }) {
   const o = (pickcenter || [])[0];
   if (!o) return null;
-  const ml = (x) => (x && x.moneyLine != null ? (x.moneyLine > 0 ? `+${x.moneyLine}` : x.moneyLine) : null);
-  const home = ml(o.homeTeamOdds);
-  const away = ml(o.awayTeamOdds);
-  const draw = o.drawOdds && o.drawOdds.moneyLine != null ? (o.drawOdds.moneyLine > 0 ? `+${o.drawOdds.moneyLine}` : o.drawOdds.moneyLine) : null;
-  if (!home && !away && !o.details) return null;
+  const h = toDecimal(o.homeTeamOdds?.moneyLine);
+  const a = toDecimal(o.awayTeamOdds?.moneyLine);
+  const d = toDecimal(o.drawOdds?.moneyLine);
+  if (!h && !a && !o.details) return null;
   return (
     <div className="ms-section">
       <div className="ms-eyebrow">The bookies say</div>
       <div className="ms-odds">
-        {home && <span className="ms-odds-chip">HOME {home}</span>}
-        {draw && <span className="ms-odds-chip">DRAW {draw}</span>}
-        {away && <span className="ms-odds-chip">AWAY {away}</span>}
-        {!home && !away && o.details && <span className="ms-odds-chip">{o.details}</span>}
+        {h && <span className="ms-odds-chip">{homeFlag} {home} <b>{h}</b></span>}
+        {d && <span className="ms-odds-chip">Draw <b>{d}</b></span>}
+        {a && <span className="ms-odds-chip">{awayFlag} {away} <b>{a}</b></span>}
+        {!h && !a && o.details && <span className="ms-odds-chip">{o.details}</span>}
       </div>
-      {o.provider?.name && <p className="ms-fine">via {o.provider.name} — for entertainment, like Macri's draw picks</p>}
+      <p className="ms-fine">AUD-style decimal odds{o.provider?.name ? ` via ${o.provider.name}` : ''} — for entertainment, like Macri's draw picks</p>
     </div>
   );
 }
@@ -230,7 +236,7 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
 
         {phase === 'ready' && (
           <>
-            {!isDone && !isLive && <Odds pickcenter={summary.pickcenter} />}
+            {!isDone && !isLive && <Odds pickcenter={summary.pickcenter} home={home} away={away} homeFlag={getFlag(home)} awayFlag={getFlag(away)} />}
             <Timeline keyEvents={summary.keyEvents} />
             <StatRows boxscore={summary.boxscore} />
             <Lineups rosters={summary.rosters} />
