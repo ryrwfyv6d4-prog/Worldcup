@@ -43,42 +43,48 @@ function TodayMatches({ fixtures, assignments, drawType }) {
   if (todayFixtures.length === 0) return null;
 
   return (
-    <div className="today-matches chalkboard">
-      <div className="today-label">TODAY AT THE NEST</div>
-      {todayFixtures.map((f) => {
-        const home = normaliseTeamName(f.homeTeam.name);
-        const away = normaliseTeamName(f.awayTeam.name);
-        const homeOwner = getOwner(home, assignments, drawType);
-        const awayOwner = getOwner(away, assignments, drawType);
-        const isLive = f.status === 'IN_PLAY';
-        const isDone = f.status === 'FINISHED';
-        const owners = [homeOwner, awayOwner].filter(Boolean);
-        const uniqueOwners = [...new Set(owners)];
+    <>
+      <div className="lb-eyebrow">Today at the Nest</div>
+      <div className="today-carousel">
+        {todayFixtures.map((f) => {
+          const home = normaliseTeamName(f.homeTeam.name);
+          const away = normaliseTeamName(f.awayTeam.name);
+          const homeOwner = getOwner(home, assignments, drawType);
+          const awayOwner = getOwner(away, assignments, drawType);
+          const isLive = f.status === 'IN_PLAY';
+          const isDone = f.status === 'FINISHED';
+          const owners = [...new Set([homeOwner, awayOwner].filter(Boolean))];
+          const hs = f.score?.home ?? 0;
+          const as_ = f.score?.away ?? 0;
 
-        return (
-          <div key={f.id} className={`today-match-row ${isLive ? 'live-row' : ''}`}>
-            {isLive && <span className="today-live-dot" />}
-            <div style={{ flex: 1 }}>
-              <div className="today-teams">
-                {getFlag(home)} {home} vs {getFlag(away)} {away}
+          return (
+            <div key={f.id} className={`today-card ${isLive ? 'live' : ''}`}>
+              <div className={`mc-status ${isLive ? 'live' : 'upcoming'}`}>
+                {isLive && <span className="today-live-dot" />}
+                {isLive ? 'LIVE' : isDone ? 'FULL TIME' : formatTimeAEST(f.utcDate) + ' AEST'}
               </div>
-              {uniqueOwners.length > 0 && (
-                <div className="today-owner">{uniqueOwners.join(' & ')}</div>
+              <div className="mc-line">
+                <span className="mc-team">{getFlag(home)} {home}</span>
+                {(isLive || isDone)
+                  ? <span className={`mc-score ${hs > as_ ? 'winning' : ''}`}>{hs}</span>
+                  : <span className="mc-time">–</span>}
+              </div>
+              <div className="mc-line">
+                <span className="mc-team">{getFlag(away)} {away}</span>
+                {(isLive || isDone)
+                  ? <span className={`mc-score ${as_ > hs ? 'winning' : ''}`}>{as_}</span>
+                  : <span className="mc-time">–</span>}
+              </div>
+              {owners.length > 0 && (
+                <div className="mc-owners">
+                  {owners.map((o) => <span key={o} className="owner-pill">{o}</span>)}
+                </div>
               )}
             </div>
-            {isDone ? (
-              <span className="today-score">{f.score.home}–{f.score.away}</span>
-            ) : isLive ? (
-              <span className="today-score" style={{ color: 'var(--live-red)' }}>
-                {f.score.home ?? 0}–{f.score.away ?? 0}
-              </span>
-            ) : (
-              <span className="today-time">{formatTimeAEST(f.utcDate)}</span>
-            )}
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
@@ -291,6 +297,62 @@ async function shareStandingsCard(board, prevStats, hasResults) {
   URL.revokeObjectURL(a.href);
 }
 
+
+function ordinal(n) {
+  const s = ['TH', 'ST', 'ND', 'RD'];
+  const v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
+}
+
+function teamStoryToday(teams, fixtures) {
+  for (const f of fixtures) {
+    if (!isMatchToday(f.utcDate)) continue;
+    const home = normaliseTeamName(f.homeTeam.name);
+    const away = normaliseTeamName(f.awayTeam.name);
+    const mine = teams.includes(home) ? home : teams.includes(away) ? away : null;
+    if (!mine) continue;
+    if (f.status === 'IN_PLAY') return `${mine} are live right now`;
+    if (f.status !== 'FINISHED') return `${mine} kick off at ${formatTimeAEST(f.utcDate)}`;
+  }
+  return null;
+}
+
+function HeroCard({ board, currentUser, fixtures, prevStats, hasResults }) {
+  if (!currentUser) return null;
+  const idx = board.findIndex((e) => e.name === currentUser);
+  if (idx === -1) return null;
+  const me = board[idx];
+  const prev = prevStats[me.name];
+  const todayPts = prev ? me.total - prev.total : me.total;
+  const isLeader = idx === 0;
+  const gap = isLeader
+    ? (board.length > 1 ? me.total - board[1].total : 0)
+    : board[0].total - me.total;
+  const story = teamStoryToday(me.teams, fixtures)
+    || (hasResults ? 'No fixtures for your teams today.' : 'Tournament about to kick off.');
+
+  return (
+    <section className="lb-hero">
+      <div className="lb-hero-top">
+        <div className="lb-hero-rank">
+          <span className="pos">{idx + 1}</span>
+          <span className="ord">{ordinal(idx + 1)} PLACE</span>
+        </div>
+        <div className="lb-hero-stats">
+          <div className="hstat"><b>{me.total}</b><span>Points</span></div>
+          {hasResults && todayPts > 0 && (
+            <div className="hstat gain"><b>+{todayPts}</b><span>Today</span></div>
+          )}
+          <div className="hstat">
+            <b>{gap}</b><span>{isLeader ? 'Clear' : 'Off lead'}</span>
+          </div>
+        </div>
+      </div>
+      <div className="lb-hero-foot">🦅 <span>{story}</span></div>
+    </section>
+  );
+}
+
 export default function Leaderboard({
   assignments, drawType, fixtures, apiError, lastFetched, onSelectTeam,
   currentUser, lbReactions = {}, onLbReact,
@@ -344,9 +406,10 @@ export default function Leaderboard({
         )}
       </div>
 
-      <NextMatch fixtures={fixtures} onSelectTeam={onSelectTeam} />
-      <YourNextMatch fixtures={fixtures} currentUser={currentUser} assignments={assignments} drawType={drawType} onSelectTeam={onSelectTeam} />
+      <HeroCard board={board} currentUser={currentUser} fixtures={fixtures} prevStats={prevStats} hasResults={hasResults} />
       <TodayMatches fixtures={fixtures} assignments={assignments} drawType={drawType} />
+      <YourNextMatch fixtures={fixtures} currentUser={currentUser} assignments={assignments} drawType={drawType} onSelectTeam={onSelectTeam} />
+      <NextMatch fixtures={fixtures} onSelectTeam={onSelectTeam} />
 
       <div className="leaderboard">
         {board.map((entry, i) => {
@@ -363,12 +426,14 @@ export default function Leaderboard({
               onClick={() => setExpanded(isExpanded ? null : entry.name)}
             >
               <div className="lb-main">
-                <span className={`rosette ${i < 3 ? 'gold' : ''}`}>{i + 1}</span>
-                {hasResults && (
-                  delta > 0 ? <span className="lb-delta up">▲{delta}</span>
-                  : delta < 0 ? <span className="lb-delta down">▼{-delta}</span>
-                  : <span className="lb-delta flat">–</span>
-                )}
+                <span className="rank-block">
+                  <span className={`rosette ${i < 3 ? 'gold' : ''}`}>{i + 1}</span>
+                  {hasResults && (
+                    delta > 0 ? <span className="lb-delta up">▲{delta}</span>
+                    : delta < 0 ? <span className="lb-delta down">▼{-delta}</span>
+                    : <span className="lb-delta flat">–</span>
+                  )}
+                </span>
                 <div className="lb-info">
                   <span className="lb-name">
                     {entry.name}
@@ -376,19 +441,9 @@ export default function Leaderboard({
                     {hasResults && i === 0 && <span className="tag front">FRONT RUNNER</span>}
                     {hasResults && i === board.length - 1 && <span className="tag disaster">TOTAL DISASTER</span>}
                   </span>
-                  <span className="lb-teams">
-                    {entry.teams.slice(0, 2).map((t) => (
-                      <button
-                        key={t}
-                        className="team-chip team-btn"
-                        onClick={(e) => { e.stopPropagation(); onSelectTeam(t); }}
-                      >
-                        {getFlag(t)} {t}
-                      </button>
-                    ))}
-                    {entry.teams.length > 2 && (
-                      <span className="lb-more">+{entry.teams.length - 2} more</span>
-                    )}
+                  <span className="lb-sub">
+                    {teamStoryToday(entry.teams, fixtures)
+                      || entry.teams.slice(0, 2).map((t) => `${getFlag(t)} ${t}`).join(' · ')}
                   </span>
                 </div>
                 <span className="lb-pts">
@@ -456,7 +511,7 @@ export default function Leaderboard({
                 </div>
               )}
 
-              {isExpanded && entry.teams.length > 2 && (
+              {isExpanded && entry.teams.length > 0 && (
                 <div className="lb-breakdown">
                   <strong className="small-text" style={{ display: 'block', marginBottom: 6 }}>All teams</strong>
                   <div className="team-list">

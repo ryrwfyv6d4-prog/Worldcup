@@ -2034,3 +2034,239 @@ body, .app {
   margin-top: 2px;
 }
 .list-row-go { color: var(--text-faint-dark); font-size: 0.8rem; }
+
+
+/* ════════ MIDNIGHT SHED — Polls rework ════════ */
+
+/* eyebrow section dividers */
+.lb-eyebrow {
+  font-family: 'Graduate', serif;
+  font-size: 0.56rem;
+  letter-spacing: 0.3em;
+  color: var(--brass);
+  text-transform: uppercase;
+  margin: 18px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lb-eyebrow::after { content: ""; flex: 1; height: 1px; background: var(--hairline); }
+
+/* hero: your standing */
+.lb-hero {
+  border-radius: 20px;
+  padding: 14px 16px 12px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 4px;
+  background: linear-gradient(160deg, rgba(244,201,94,0.13), rgba(255,243,214,0.03) 50%, rgba(244,201,94,0.06));
+  backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.16) inset;
+}
+.lb-hero::after {
+  content: "🦅";
+  position: absolute;
+  right: -12px;
+  bottom: -22px;
+  font-size: 104px;
+  opacity: 0.07;
+  transform: rotate(-8deg);
+}
+.lb-hero-top { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; }
+.lb-hero-rank { display: flex; align-items: baseline; gap: 8px; }
+.lb-hero-rank .pos {
+  font-family: 'Ultra', serif;
+  font-size: 2.75rem;
+  line-height: 1;
+  background: linear-gradient(180deg, var(--brass-bright), var(--brass) 60%, var(--brass-deep));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.lb-hero-rank .ord {
+  font-family: 'Graduate', serif;
+  font-size: 0.68rem;
+  color: var(--text-muted-dark);
+  letter-spacing: 0.18em;
+}
+.lb-hero-stats { display: flex; gap: 18px; text-align: right; }
+.hstat b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+  color: var(--text-on-dark);
+}
+.hstat span {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-faint-dark);
+  text-transform: uppercase;
+}
+.hstat.gain b { color: var(--green-on-dark); }
+.lb-hero-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--hairline);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted-dark);
+  position: relative;
+  z-index: 1;
+}
+
+/* today carousel */
+.today-carousel {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 2px 16px 6px;
+  margin: 0 -16px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+.today-carousel::-webkit-scrollbar { display: none; }
+.today-card {
+  scroll-snap-align: start;
+  flex: 0 0 78%;
+  max-width: 300px;
+  border-radius: 16px;
+  padding: 12px 14px 10px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.16) inset;
+  transition: transform 0.12s ease;
+}
+.today-card:active { transform: scale(0.98); }
+.today-card.live { border-color: rgba(240, 99, 92, 0.5); }
+.today-card:only-child { flex-basis: 100%; max-width: none; }
+.mc-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 9px;
+}
+.mc-status.live { color: var(--live-red); }
+.mc-status.upcoming { color: var(--text-faint-dark); }
+.today-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--live-red);
+  animation: livePulse 1.6s infinite;
+}
+@keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+.mc-line { display: flex; align-items: center; justify-content: space-between; padding: 3px 0; }
+.mc-team {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-on-dark);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mc-score {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-on-dark);
+}
+.mc-score.winning { color: var(--brass-bright); }
+.mc-time { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; color: var(--text-muted-dark); }
+.mc-owners {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid var(--hairline);
+}
+.owner-pill {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--hairline);
+  color: var(--text-muted-dark);
+  border-radius: 99px;
+  padding: 3px 9px;
+}
+
+/* leaderboard row layout */
+.rank-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 32px;
+  flex-shrink: 0;
+}
+.rank-block .lb-delta { margin-top: 2px; font-size: 0.66rem; line-height: 1; }
+.lb-sub {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ink-faint);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rosette {
+  width: 29px;
+  height: 29px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 800;
+  background: var(--poster-deep);
+  color: var(--ink-soft);
+  border: 1px solid var(--poster-edge);
+  font-variant-numeric: tabular-nums;
+  box-shadow: none;
+}
+.rosette.gold {
+  background: linear-gradient(160deg, var(--brass-bright), var(--brass) 60%, var(--brass-deep));
+  color: var(--ink);
+  border: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* next-match countdown gets the glass treatment */
+.next-match {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  border: 1px solid var(--glass-line) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.16) inset;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
