@@ -272,8 +272,8 @@ export function useFixtures(apiKey) { // apiKey kept for API compat but unused
         const t = new Date(f.utcDate).getTime();
         return now > t - 15 * 60 * 1000 && now < t + 3 * 3600 * 1000;
       });
-      const elapsed = now - lastEspnRef.current;
-      if ((nearGame && elapsed > 55 * 1000) || elapsed > 10 * 60 * 1000) fetchEspn();
+      if (!nearGame) return; // nothing on or near — no polling at all
+      if (now - lastEspnRef.current > 55 * 1000) fetchEspn();
     }, 30 * 1000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchEspn(); };
     document.addEventListener('visibilitychange', onVisible);
