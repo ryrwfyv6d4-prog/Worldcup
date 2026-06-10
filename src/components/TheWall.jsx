@@ -403,20 +403,20 @@ export default function TheWall({ participants, currentUser, wallReactions = {},
   };
 
   return (
-    <div className="page">
+    <div className="page wall-page">
       <div className="page-header">
         <div className="header-row">
           <h2>The Wall</h2>
           {!adding && (
-            <button className="btn-outline-gold" onClick={() => setAdding(true)}>
-              + Add a bit
+            <button className="btn-outline-gold build-btn" onClick={() => setAdding(true)}>
+              🧱 BUILD THE WALL
             </button>
           )}
         </div>
-        <p className="subtitle">
-          Stick photos here as the bits come up.
-          {useCloud ? ' ☁️ Synced across all devices.' : ' 📱 Stored locally on this device.'}
-        </p>
+        <p className="subtitle wall-tagline">BIG. BEAUTIFUL. 10 FEET HIGHER.</p>
+        {photos.length > 0 && (
+          <p className="bricks-laid">🧱 {photos.length} BRICK{photos.length !== 1 ? 'S' : ''} LAID</p>
+        )}
       </div>
 
       {cloudError && (
@@ -448,8 +448,8 @@ export default function TheWall({ participants, currentUser, wallReactions = {},
 
       {!cloudLoading && photos.length === 0 && !adding && (
         <div className="empty-state">
-          <div className="empty-icon">🪣</div>
-          <p>The wall is bare. Pin your first photo.</p>
+          <div className="empty-icon">🧱</div>
+          <p>Nothing here yet. And Mexico's not paying for it.</p>
         </div>
       )}
 
@@ -469,6 +469,10 @@ export default function TheWall({ participants, currentUser, wallReactions = {},
         </div>
       )}
 
+      {!cloudLoading && photos.length > 0 && (
+        <p className="wall-footer">★ FUNDED BY THE LADS OF THE EAGLE'S NEST ★</p>
+      )}
+
       {lightboxIndex !== null && photos[lightboxIndex] && (
         <Lightbox
           photos={photos}
@@ -482,3 +486,4 @@ export default function TheWall({ participants, currentUser, wallReactions = {},
     </div>
   );
 }
+
