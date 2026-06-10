@@ -270,7 +270,7 @@ export default function Leaderboard({
                   {entry.total}<small>pts</small>
                   {todayPts > 0 && <span className="lb-today">+{todayPts} today</span>}
                 </span>
-                <span className={`lb-chev ${isExpanded ? 'open' : ''}`}>▶</span>
+                <span className={`lb-chev ${isExpanded ? 'open' : ''}`}>{'\u25B8'}</span>
               </div>
 
               {isExpanded && (
