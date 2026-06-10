@@ -1687,3 +1687,211 @@ h1, h2, h3, .app-title, .app-year, .lb-name, .lb-pts,
 .group-table tr.qualifying td:first-child { border-left: 3px solid #2ECC71; }
 .group-table tr.mine { background: var(--gold-glow); }
 .group-table .owner-tag { font-size: 0.64rem; opacity: 0.7; }
+
+/* ================================================================
+   THE EAGLE'S NEST — theme layer (overrides base dark theme)
+   Corrugated steel shed + Americana campaign poster
+   ================================================================ */
+:root {
+  --steel: #272C2F;
+  --steel-light: #343A3E;
+  --poster: #F2E6CE;
+  --poster-edge: #d8c9a6;
+  --poster-deep: #fbf3df;
+  --ink: #26201A;
+  --ink-soft: #71624a;
+  --glory-red: #B22234;
+  --glory-blue: #1E3A66;
+  --brass: #C9962E;
+  --brass-bright: #E8B84B;
+  --chalk-green: #283431;
+}
+
+body, .app {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.045) 0px, rgba(255,255,255,0.045) 2px, rgba(0,0,0,0.18) 14px, rgba(255,255,255,0.02) 26px, rgba(0,0,0,0.12) 28px),
+    linear-gradient(180deg, #353B3E, var(--steel) 35%) !important;
+  font-family: 'Barlow Condensed', sans-serif;
+}
+
+/* --- Bunting + masthead --- */
+.bunting { display: flex; height: 24px; overflow: hidden; filter: drop-shadow(0 3px 3px rgba(0,0,0,0.45)); }
+.bunting span { flex: 1; clip-path: polygon(0 0, 100% 0, 50% 100%); margin: 0 1px; }
+.bunting span:nth-child(3n+1) { background: var(--glory-red); }
+.bunting span:nth-child(3n+2) { background: var(--poster); }
+.bunting span:nth-child(3n+3) { background: var(--glory-blue); }
+
+.app-header.masthead {
+  display: block;
+  text-align: center;
+  background: none;
+  border-bottom: none;
+  padding: 12px 16px 8px;
+}
+.masthead-eagle { font-size: 1.7rem; line-height: 1; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.5)); }
+.masthead .app-title {
+  font-family: 'Ultra', serif;
+  font-size: 1.55rem;
+  letter-spacing: 0.02em;
+  color: var(--brass-bright);
+  text-shadow: 0 2px 0 #6b4a10, 0 4px 6px rgba(0,0,0,0.6);
+  margin-top: 2px;
+}
+.masthead-est {
+  font-family: 'Graduate', serif;
+  font-size: 0.56rem;
+  letter-spacing: 0.3em;
+  color: var(--poster);
+  opacity: 0.75;
+  margin-top: 5px;
+}
+
+/* --- Page headings as plaques --- */
+.page-header h2 {
+  font-family: 'Graduate', serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--poster);
+}
+.page-header .subtitle { color: rgba(242,230,206,0.55); }
+
+/* --- Game-day ticket --- */
+.ticket {
+  background: var(--poster);
+  border-radius: 4px;
+  position: relative;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.5);
+  display: flex;
+  margin-bottom: 12px;
+  color: var(--ink);
+}
+.ticket::before, .ticket::after {
+  content: ""; position: absolute; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--steel); top: 50%; transform: translateY(-50%);
+}
+.ticket::before { left: -8px; } .ticket::after { right: -8px; }
+.ticket-stub {
+  border-right: 2px dashed #b6a37c;
+  padding: 10px 12px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-family: 'Graduate', serif; font-size: 0.55rem; letter-spacing: 0.14em;
+  color: var(--glory-red); text-align: center;
+}
+.ticket-stub b { font-size: 1.15rem; line-height: 1.1; letter-spacing: 0; }
+.ticket-stub span { color: var(--glory-blue); }
+.ticket-body { padding: 9px 14px 11px; flex: 1; }
+.ticket-eyebrow { font-family: 'Graduate', serif; font-size: 0.54rem; letter-spacing: 0.22em; color: var(--glory-blue); }
+.ticket-match { font-weight: 800; font-size: 1.15rem; margin-top: 2px; color: var(--ink); display: block; text-align: left; }
+.ticket-meta { font-size: 0.84rem; font-weight: 500; color: var(--ink-soft); margin-top: 1px; }
+
+/* --- Chalkboard (today's matches) --- */
+.today-matches.chalkboard {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.05), transparent 60%),
+    var(--chalk-green);
+  border: 7px solid #5b3d22;
+  border-image: linear-gradient(135deg, #6e4a28, #4a3018) 1;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.55), inset 0 0 30px rgba(0,0,0,0.5);
+  border-radius: 0;
+  color: #EDE7DA;
+}
+.today-matches.chalkboard .today-label {
+  font-family: 'Graduate', serif; font-size: 0.62rem; letter-spacing: 0.26em;
+  text-align: center; color: #EDE7DA;
+  border-bottom: 1px dashed rgba(237,231,218,0.4);
+  padding-bottom: 7px;
+}
+.today-matches.chalkboard .today-owner { color: #9fb8ad; }
+.today-matches.chalkboard .today-score { font-family: 'Ultra', serif; color: var(--brass-bright); }
+.today-matches.chalkboard .today-time { color: #9fb8ad; }
+
+/* --- The Polls board --- */
+.leaderboard {
+  background: var(--poster);
+  border: 3px solid var(--brass);
+  box-shadow: inset 0 0 0 5px var(--poster), inset 0 0 0 6px #cdb98f, 0 8px 18px rgba(0,0,0,0.55);
+  border-radius: 0;
+  padding: 6px;
+}
+.lb-row {
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--poster-edge);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--ink);
+}
+.lb-row:last-of-type { border-bottom: none; }
+.lb-row:active { background: #ece0c2; }
+.lb-row.me {
+  background: repeating-linear-gradient(-45deg, #fdf4dd 0 10px, #f6e9c8 10px 20px);
+  outline: 2px solid var(--glory-red);
+  outline-offset: -2px;
+  border: none;
+  box-shadow: none;
+}
+.lb-name { color: var(--ink); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lb-teams .team-chip { background: none; border: 1px solid var(--poster-edge); color: var(--ink-soft); }
+.lb-more { color: var(--ink-soft); }
+.lb-pts { color: var(--glory-blue); }
+.lb-pts, .lb-pts small { font-family: 'Ultra', serif; }
+.lb-delta.flat { color: #b3a584; }
+.lb-delta.up { color: #2c7a3f; }
+
+.rosette {
+  width: 32px; height: 32px; flex-shrink: 0;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Graduate', serif; font-size: 0.85rem;
+  color: var(--poster);
+  background: radial-gradient(circle at 35% 30%, #2c4f86, var(--glory-blue) 65%);
+  box-shadow: 0 0 0 2px var(--poster), 0 0 0 3px var(--glory-red), 0 2px 4px rgba(0,0,0,0.25);
+}
+.rosette.gold { background: radial-gradient(circle at 35% 30%, var(--brass-bright), #9c6f15 70%); color: #3a2a08; }
+
+.tag {
+  font-family: 'Graduate', serif; font-size: 0.46rem; letter-spacing: 0.1em;
+  padding: 2px 6px; color: var(--poster); white-space: nowrap;
+}
+.tag.front { background: var(--glory-blue); }
+.tag.disaster { background: var(--glory-red); }
+.tag.you { background: var(--brass); color: #3a2a08; }
+
+.lb-chev { color: #b3a584; font-size: 0.8rem; flex-shrink: 0; transition: transform 0.15s; margin-left: 4px; }
+.lb-chev.open { transform: rotate(90deg); color: var(--glory-red); }
+
+.tap-hint {
+  text-align: center;
+  font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em;
+  color: #8a7a5c; padding: 8px 0 4px;
+  border-top: 1px dashed var(--poster-edge); margin-top: 2px;
+}
+
+.lb-breakdown { background: var(--poster-deep); color: var(--ink); border-radius: 0; }
+.breakdown-table th { color: var(--ink-soft); }
+.breakdown-table td { color: var(--ink); border-color: var(--poster-edge); }
+.pts-cell { color: #2c7a3f; font-weight: 800; }
+.lb-reactions { background: var(--poster-deep); }
+.lb-reaction-who { color: var(--ink-soft); }
+
+/* --- Cards & misc on steel --- */
+.card { background: var(--poster); color: var(--ink); border: 1px solid var(--poster-edge); }
+.card .section-title { font-family: 'Graduate', serif; font-size: 0.7rem; letter-spacing: 0.2em; color: var(--glory-blue); }
+.score-row { color: var(--ink); }
+.score-pts { color: var(--glory-red); font-weight: 800; }
+.next-match { background: var(--steel-light); border: 1px solid var(--brass); }
+.group-tables { background: var(--poster); color: var(--ink); }
+.group-table-title { color: var(--glory-red); }
+.group-table td { border-color: var(--poster-edge); }
+.group-table tr.mine { background: #fdf4dd; }
+.owner-tag.me { color: var(--glory-red); }
+
+/* --- Nav --- */
+.nav {
+  background: linear-gradient(180deg, #31373B, #22272A);
+  border-top: 3px solid var(--brass);
+}
+.nav-btn { color: rgba(242,230,206,0.5); }
+.nav-btn .nav-label { font-family: 'Graduate', serif; font-size: 0.5rem; letter-spacing: 0.06em; }
+.nav-btn.active { color: var(--brass-bright); border-top-color: transparent; }
