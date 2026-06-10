@@ -2614,3 +2614,5 @@ body, .app {
 .match-card:active { transform: scale(0.99); }
 
 .ms-odds-chip b { color: var(--text-on-dark); font-weight: 800; margin-left: 2px; }
+
+.lb-sub-flags { font-size: 0.9rem; letter-spacing: 0.06em; }

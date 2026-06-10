@@ -444,8 +444,10 @@ export default function Leaderboard({
                     {hasResults && i === board.length - 1 && <span className="tag disaster">TOTAL DISASTER</span>}
                   </span>
                   <span className="lb-sub">
-                    {teamStoryToday(entry.teams, fixtures)
-                      || entry.teams.slice(0, 2).map((t) => `${getFlag(t)} ${t}`).join(' · ')}
+                    <span className="lb-sub-flags">{entry.teams.map((t) => getFlag(t)).join(' ')}</span>
+                    {teamStoryToday(entry.teams, fixtures) && (
+                      <span> · {teamStoryToday(entry.teams, fixtures)}</span>
+                    )}
                   </span>
                 </div>
                 <span className="lb-pts">
