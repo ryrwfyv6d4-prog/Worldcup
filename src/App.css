@@ -150,10 +150,11 @@ body {
 /* ── Bottom nav ── */
 .nav {
   display: flex;
-  position: absolute;
-  bottom: calc(var(--safe-bottom) + 12px);
-  left: 12px;
-  right: 12px;
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(calc(100% - 24px), 480px);
   z-index: 100;
   border-radius: 28px;
   padding: 7px;
@@ -1841,11 +1842,10 @@ body, .app {
 .lb-row:last-of-type { border-bottom: none; }
 .lb-row:active { background: #ece0c2; }
 .lb-row.me {
-  background: repeating-linear-gradient(-45deg, #fdf4dd 0 10px, #f6e9c8 10px 20px);
-  outline: 2px solid var(--glory-red);
-  outline-offset: -2px;
+  background: linear-gradient(90deg, rgba(226, 169, 59, 0.16), rgba(226, 169, 59, 0.05) 55%);
+  box-shadow: inset 3px 0 0 var(--brass);
+  outline: none;
   border: none;
-  box-shadow: none;
 }
 .lb-name { color: var(--ink); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .lb-teams .team-chip { background: none; border: 1px solid var(--poster-edge); color: var(--ink-soft); }
