@@ -2616,3 +2616,118 @@ body, .app {
 .ms-odds-chip b { color: var(--text-on-dark); font-weight: 800; margin-left: 2px; }
 
 .lb-sub-flags { font-size: 0.9rem; letter-spacing: 0.06em; }
+
+
+/* ════════ ONE-CARD HERO ════════ */
+.ch-card {
+  border-radius: 18px;
+  padding: 10px 14px 6px;
+  margin-bottom: 4px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg, rgba(244,201,94,0.13), rgba(255,243,214,0.03) 50%, rgba(244,201,94,0.06));
+  backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.16) inset;
+}
+.ch-identity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: 'Graduate', serif;
+  font-size: 0.56rem;
+  letter-spacing: 0.22em;
+  color: var(--brass);
+  padding: 4px 0 8px;
+  min-height: 30px;
+  text-align: left;
+}
+.ch-switch {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint-dark);
+  border: 1px solid var(--hairline);
+  border-radius: 99px;
+  padding: 3px 9px;
+}
+.ch-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+}
+.ch-rank { display: flex; align-items: baseline; gap: 7px; }
+.ch-rank .pos {
+  font-family: 'Ultra', serif;
+  font-size: 2rem;
+  line-height: 1;
+  background: linear-gradient(180deg, var(--brass-bright), var(--brass) 60%, var(--brass-deep));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.ch-rank .ord {
+  font-family: 'Graduate', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  color: var(--text-muted-dark);
+}
+.ch-stats { display: flex; gap: 16px; text-align: right; }
+.ch-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--hairline);
+  cursor: pointer;
+  padding: 9px 0;
+  min-height: 42px;
+  font-family: var(--font-display);
+  text-align: left;
+}
+.ch-lab {
+  font-family: 'Graduate', serif;
+  font-size: 0.46rem;
+  letter-spacing: 0.2em;
+  color: var(--brass);
+  width: 52px;
+  flex-shrink: 0;
+}
+.ch-match {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-on-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ch-match i { font-style: normal; color: var(--text-faint-dark); font-size: 0.8rem; }
+.ch-cd {
+  margin-left: auto;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--brass-bright);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.ch-cd.live { color: var(--live-red); }
+.ch-when {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-faint-dark);
+  flex-shrink: 0;
+}
+.ch-header { display: flex; align-items: baseline; justify-content: space-between; }
+.ch-upd { font-family: var(--font-display); font-size: 0.72rem; font-weight: 500; color: var(--text-faint-dark); }

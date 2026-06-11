@@ -220,6 +220,7 @@ export default function App() {
                 currentUser={resolvedUser}
                 lbReactions={lbReactions}
                 onLbReact={handleLbReact}
+                onChangeUser={handleChangeUser}
               />
             )}
             {tab === 'draw' && (

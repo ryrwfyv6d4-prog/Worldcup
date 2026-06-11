@@ -318,38 +318,91 @@ function teamStoryToday(teams, fixtures) {
   return null;
 }
 
-function HeroCard({ board, currentUser, fixtures, prevStats, hasResults }) {
-  if (!currentUser) return null;
-  const idx = board.findIndex((e) => e.name === currentUser);
-  if (idx === -1) return null;
-  const me = board[idx];
-  const prev = prevStats[me.name];
-  const todayPts = prev ? me.total - prev.total : me.total;
+function nextFixtureFrom(fixtures, teams = null) {
+  const now = Date.now();
+  return fixtures
+    .filter((f) => f.status !== 'FINISHED' && f.utcDate)
+    .map((f) => ({ ...f, ts: new Date(f.utcDate).getTime() }))
+    .filter((f) => !isNaN(f.ts) && f.ts > now - 2 * 60 * 60 * 1000)
+    .filter((f) => !teams
+      || teams.includes(normaliseTeamName(f.homeTeam.name))
+      || teams.includes(normaliseTeamName(f.awayTeam.name)))
+    .sort((a, b) => a.ts - b.ts)[0] || null;
+}
+
+function HeroLine({ label, fixture, onOpenMatch, countdown }) {
+  if (!fixture) return null;
+  const home = normaliseTeamName(fixture.homeTeam.name);
+  const away = normaliseTeamName(fixture.awayTeam.name);
+  const isLive = fixture.status === 'IN_PLAY' || fixture.status === 'PAUSED';
+  return (
+    <button className="ch-line" onClick={() => onOpenMatch(fixture)}>
+      <span className="ch-lab">{label}</span>
+      <span className="ch-match">
+        {getFlag(home)} {home} <i>v</i> {getFlag(away)} {away}
+      </span>
+      {isLive ? (
+        <span className="ch-cd live">● {fixture.score.home ?? 0}–{fixture.score.away ?? 0}</span>
+      ) : countdown ? (
+        <span className="ch-cd">{countdown}</span>
+      ) : (
+        <span className="ch-when">{formatDateAEST(fixture.ts)} · {formatTimeAEST(fixture.ts)}</span>
+      )}
+    </button>
+  );
+}
+
+function HeroCard({ board, currentUser, fixtures, prevStats, hasResults, assignments, drawType, onOpenMatch, onChangeUser }) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => tick((t) => t + 1), 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const isGuest = !currentUser || currentUser === '__guest__';
+  const idx = isGuest ? -1 : board.findIndex((e) => e.name === currentUser);
+  const me = idx >= 0 ? board[idx] : null;
+  const myTeams = me ? me.teams : null;
+
+  const nextAny = nextFixtureFrom(fixtures);
+  const nextMine = myTeams ? nextFixtureFrom(fixtures, myTeams) : null;
+  const sameMatch = nextAny && nextMine && nextAny.id === nextMine.id;
+  const cd = nextAny && nextAny.status !== 'IN_PLAY' && nextAny.status !== 'PAUSED'
+    ? formatCountdown(nextAny.ts - Date.now())
+    : null;
+
+  const prev = me && prevStats[me.name];
+  const todayPts = me ? (prev ? me.total - prev.total : me.total) : 0;
   const isLeader = idx === 0;
-  const gap = isLeader
-    ? (board.length > 1 ? me.total - board[1].total : 0)
-    : board[0].total - me.total;
-  const story = teamStoryToday(me.teams, fixtures)
-    || (hasResults ? 'No fixtures for your teams today.' : 'Tournament about to kick off.');
+  const gap = me
+    ? (isLeader ? (board.length > 1 ? me.total - board[1].total : 0) : board[0].total - me.total)
+    : 0;
 
   return (
-    <section className="lb-hero">
-      <div className="lb-hero-top">
-        <div className="lb-hero-rank">
-          <span className="pos">{idx + 1}</span>
-          <span className="ord">{ordinal(idx + 1)} PLACE</span>
-        </div>
-        <div className="lb-hero-stats">
-          <div className="hstat"><b>{me.total}</b><span>Points</span></div>
-          {hasResults && todayPts > 0 && (
-            <div className="hstat gain"><b>+{todayPts}</b><span>Today</span></div>
-          )}
-          <div className="hstat">
-            <b>{gap}</b><span>{isLeader ? 'Clear' : 'Off lead'}</span>
+    <section className="ch-card">
+      <button className="ch-identity" onClick={onChangeUser}>
+        🦅 {isGuest ? 'WHO ARE YOU?' : `${me ? me.name.toUpperCase() : currentUser.toUpperCase()}'S CAMPAIGN`}
+        <span className="ch-switch">switch ▾</span>
+      </button>
+      {me && (
+        <div className="ch-top">
+          <div className="ch-rank">
+            <span className="pos">{idx + 1}</span>
+            <span className="ord">{ordinal(idx + 1)} PLACE</span>
+          </div>
+          <div className="ch-stats">
+            <div className="hstat"><b>{me.total}</b><span>Points</span></div>
+            {hasResults && todayPts > 0 && (
+              <div className="hstat gain"><b>+{todayPts}</b><span>Today</span></div>
+            )}
+            <div className="hstat"><b>{gap}</b><span>{isLeader ? 'Clear' : 'Off lead'}</span></div>
           </div>
         </div>
-      </div>
-      <div className="lb-hero-foot">🦅 <span>{story}</span></div>
+      )}
+      <HeroLine label="NEXT UP" fixture={nextAny} onOpenMatch={onOpenMatch} countdown={cd} />
+      {!sameMatch && (
+        <HeroLine label="YOURS" fixture={nextMine} onOpenMatch={onOpenMatch} countdown={null} />
+      )}
     </section>
   );
 }
@@ -394,24 +447,27 @@ export default function Leaderboard({
 
   return (
     <div className="page">
-      <div className="page-header">
+      <div className="page-header ch-header">
         <h2>The Polls</h2>
-        {!hasResults && (
-          <p className="subtitle">
-            {apiError ? 'Points will update once results load.' : 'Waiting for first results…'}
-          </p>
-        )}
-        {lastFetched && (
-          <p className="subtitle">
-            Updated {new Date(lastFetched).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-          </p>
-        )}
+        <span className="ch-upd">
+          {lastFetched
+            ? `Updated ${new Date(lastFetched).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`
+            : apiError ? 'Results loading…' : ''}
+        </span>
       </div>
 
-      <HeroCard board={board} currentUser={currentUser} fixtures={fixtures} prevStats={prevStats} hasResults={hasResults} />
+      <HeroCard
+        board={board}
+        currentUser={currentUser}
+        fixtures={fixtures}
+        prevStats={prevStats}
+        hasResults={hasResults}
+        assignments={assignments}
+        drawType={drawType}
+        onOpenMatch={setOpenMatch}
+        onChangeUser={onChangeUser}
+      />
       <TodayMatches fixtures={fixtures} assignments={assignments} drawType={drawType} onOpenMatch={setOpenMatch} />
-      <YourNextMatch fixtures={fixtures} currentUser={currentUser} assignments={assignments} drawType={drawType} onSelectTeam={onSelectTeam} />
-      <NextMatch fixtures={fixtures} onSelectTeam={onSelectTeam} />
 
       <div className="leaderboard">
         {board.map((entry, i) => {
