@@ -409,7 +409,7 @@ function HeroCard({ board, currentUser, fixtures, prevStats, hasResults, assignm
 
 export default function Leaderboard({
   assignments, drawType, fixtures, apiError, lastFetched, onSelectTeam,
-  currentUser, lbReactions = {}, onLbReact,
+  currentUser, lbReactions = {}, onLbReact, onChangeUser,
 }) {
   const [expanded, setExpanded] = useState(null);
   const [openMatch, setOpenMatch] = useState(null);
