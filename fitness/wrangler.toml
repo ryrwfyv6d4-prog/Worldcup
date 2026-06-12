@@ -6,6 +6,11 @@ name = "fitness-tracker"
 main = "worker/index.js"
 compatibility_date = "2026-01-01"
 
+# Built React UI is served as static assets; /api/* falls through to the Worker.
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "fitness-tracker"

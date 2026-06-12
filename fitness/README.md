@@ -1,95 +1,76 @@
 # Fitness & Nutrition Tracker
 
-Personal-use, MyFitnessPal-style calorie and macro tracker. Lives in `fitness/`
-**completely separate** from the World Cup app — its own Worker, own database,
-own deploy. Nothing here touches the worldcup Worker or its R2 bucket.
+Personal-use, MyFitnessPal-style calorie and macro tracker. React front-end +
+Cloudflare Worker API + D1 (SQLite) database, deployed as a single Worker.
 
-Full design: [`../docs/fitness-nutrition-tracker-spec.md`](../docs/fitness-nutrition-tracker-spec.md)
+This folder is **fully self-contained** — designed to be lifted into its own
+repository as-is (see "Moving to its own repo" below). Nothing here touches
+the World Cup app.
 
-## What's implemented (phase 1 — backend)
+Full design: [`docs/fitness-nutrition-tracker-spec.md`](docs/fitness-nutrition-tracker-spec.md)
 
-- **D1 schema** (`migrations/0001_init.sql`): foods (per-100g nutrients), named
-  servings, diary entries with nutrition snapshots, exercise logs, weight logs,
-  favorite meals.
+## What's here
+
+- **UI** (`src/`): mobile-first React dashboard — remaining-calories hero,
+  macro bars, meal cards with fractional-quantity logging, food search with
+  recents, barcode lookup + Open Food Facts import, favorites, exercise
+  logging with MET auto-calculation, trends charts, profile/goal settings.
+- **API** (`worker/index.js`): every endpoint from spec §5; also serves the
+  built UI as static assets with SPA fallback.
 - **Calorie engine** (`shared/engine.js`): Mifflin-St Jeor BMR, TDEE, goal
-  budgets, 4/4/9 macro targets, MET exercise burn, net-calorie summaries.
-  Pure functions, unit-tested.
-- **Worker API** (`worker/index.js`): every endpoint from spec §5 — profile,
-  weight, food search/barcode/import (Open Food Facts), diary CRUD,
-  copy-from-yesterday, exercise logs, favorites, calorie/macro reports.
-- **Seed data** (`seed/seed.sql`): 20 common foods with servings + 18 MET
-  exercises.
+  budgets, 4/4/9 macro targets, MET burn, net-calorie summaries. Pure
+  functions, unit-tested (`npm test`).
+- **Database** (`migrations/`, `seed/`): full schema + 20 starter foods with
+  servings and 18 MET exercises.
 
-Not yet built: the React dashboard UI (phase 2).
-
-## Setup
+## Running locally (no Cloudflare account needed)
 
 ```sh
-cd fitness
 npm install
+npx wrangler d1 execute fitness-tracker --local --config ./wrangler.toml --file=./migrations/0001_init.sql
+npx wrangler d1 execute fitness-tracker --local --config ./wrangler.toml --file=./seed/seed.sql
 
-# one-time: create the D1 database, then paste its id into wrangler.toml
-npm run db:create
-
-# local development (uses a local SQLite copy, no Cloudflare resources)
-npm run db:migrate:local
-npm run db:seed:local
-npm run dev                      # API at http://localhost:8787
-
-# production
-npm run db:migrate
-npm run db:seed
-npm run deploy
+npm run dev:api    # API + built UI at http://localhost:8787
+npm run dev        # (separate terminal) Vite dev server with HMR at :5173, proxies /api → :8787
 ```
 
-## Quick tour (curl)
+> Note: while this folder lives inside the Worldcup repo, pass
+> `--config ./wrangler.toml` to wrangler commands run from here so it doesn't
+> pick up the World Cup app's root config. This goes away once moved to its
+> own repo.
+
+## Deploying to Cloudflare
 
 ```sh
-API=http://localhost:8787/api/v1
+npm run db:create        # one-time; paste the printed database_id into wrangler.toml
+npm run db:migrate
+npm run db:seed
+npm run deploy           # builds the UI and deploys Worker + assets
+```
 
-# 1. Set up your profile (also returns computed BMR/TDEE/budget/macros)
-curl -X PUT $API/me -H 'Content-Type: application/json' -d '{
-  "sex": "male", "birth_date": "1990-06-15",
-  "height_cm": 180, "weight_kg": 84,
-  "activity_level": "light",
-  "goal_type": "lose", "goal_rate_kg_per_week": -0.5
-}'
+Optionally protect the API before exposing it publicly:
 
-# 2. Find food and log half a cup of oats to breakfast
-curl "$API/foods?q=oats"
-curl -X POST $API/me/diary/2026-06-12/entries -H 'Content-Type: application/json' \
-  -d '{"meal":"breakfast","food_id":"food_rolled_oats","serving_id":"srv_oats_halfcup","quantity":1}'
+```sh
+wrangler secret put API_TOKEN    # API then requires Authorization: Bearer <token>
+```
 
-# 3. Log 30 min of running (kcal auto-computed from MET x your weight)
-curl -X POST $API/me/exercise-logs -H 'Content-Type: application/json' \
-  -d '{"date":"2026-06-12","exercise_id":"ex_run_8","duration_min":30}'
+## Moving to its own repo
 
-# 4. The daily log — remaining calories, macro totals, per-meal breakdown
-curl $API/me/diary/2026-06-12
+This folder has no dependencies on anything outside it. To move:
 
-# 5. Save breakfast as a favorite, apply it tomorrow in one call
-curl -X POST $API/me/favorites/from-diary -H 'Content-Type: application/json' \
-  -d '{"date":"2026-06-12","meal":"breakfast","name":"Usual breakfast"}'
-curl -X POST $API/me/favorites/<id>/apply -H 'Content-Type: application/json' \
-  -d '{"date":"2026-06-13"}'
-
-# 6. Barcode: look up, and import from Open Food Facts on a miss
-curl $API/foods/barcode/5000159484695
-curl -X POST $API/foods/barcode/5000159484695/import
+```sh
+# 1. Create an empty repo named e.g. fitness-tracker on GitHub (no README)
+# 2. From a clone of Worldcup on the design branch:
+cp -r fitness /tmp/fitness-tracker
+cd /tmp/fitness-tracker
+git init -b main
+git add -A && git commit -m "Import fitness tracker"
+git remote add origin git@github.com:<you>/fitness-tracker.git
+git push -u origin main
 ```
 
 ## Tests
 
 ```sh
-npm test    # node --test, no dependencies needed
+npm test    # calorie engine unit tests (node --test, no deps)
 ```
-
-## Securing it
-
-The API is open by default (fine for local dev). Before deploying publicly:
-
-```sh
-wrangler secret put API_TOKEN
-```
-
-Every request then needs `Authorization: Bearer <token>`.

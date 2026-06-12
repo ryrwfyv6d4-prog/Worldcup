@@ -48,6 +48,17 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    // Non-API requests: serve the built SPA (when deployed with assets).
+    if (!url.pathname.startsWith("/api/")) {
+      if (env.ASSETS) {
+        const res = await env.ASSETS.fetch(request);
+        if (res.status !== 404) return res;
+        return env.ASSETS.fetch(new URL("/", request.url)); // SPA fallback
+      }
+      return err("not found", 404);
+    }
+
     const path = url.pathname.replace(/^\/api\/v1/, "") || "/";
 
     if (env.API_TOKEN) {
