@@ -1,19 +1,6 @@
-import { useState } from 'react';
 import { SCORING, SCORING_LABELS } from '../data/worldcup2026.js';
 
-export default function Settings({ onResetDraw, onClearCache, currentUser, onChangeUser, onOpenDraw }) {
-  const [showConfirm, setShowConfirm] = useState(false);
-
-  const handleReset = () => {
-    if (showConfirm) {
-      onResetDraw();
-      setShowConfirm(false);
-    } else {
-      setShowConfirm(true);
-      setTimeout(() => setShowConfirm(false), 5000);
-    }
-  };
-
+export default function Settings({ onClearCache, currentUser, onChangeUser, onOpenDraw }) {
   return (
     <div className="page">
       <div className="page-header">
@@ -68,21 +55,14 @@ export default function Settings({ onResetDraw, onClearCache, currentUser, onCha
       </div>
 
       <div className="card">
-        <h3 className="section-title">Data</h3>
+        <h3 className="section-title">Troubleshooting</h3>
         <div className="btn-group">
           <button className="btn-secondary" onClick={onClearCache}>
-            Clear fixtures cache
-          </button>
-          <button
-            className={`btn-danger ${showConfirm ? 'confirm' : ''}`}
-            onClick={handleReset}
-          >
-            {showConfirm ? 'Tap again to confirm' : 'Reset draw'}
+            Refresh match data
           </button>
         </div>
         <p className="hint">
-          Reset clears all participant assignments and unlocks the draw.
-          Clear cache refreshes stored match data.
+          Reloads the latest fixtures and scores. The draw is locked and can\'t be changed.
         </p>
       </div>
 
