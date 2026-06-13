@@ -126,8 +126,12 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
         </div>
         <div className="score-center">
           {showScore ? (
-            <span className="score">
-              {match.score.home ?? '–'} <span className={`status-badge ${cls}`}>{label}</span> {match.score.away ?? '–'}
+            <span className={`score ${isLive ? 'live-big' : ''}`}>
+              {match.score.home ?? '–'}
+              <span className={`status-badge ${cls}`}>
+                {isLive && match.liveClock ? match.liveClock : label}
+              </span>
+              {match.score.away ?? '–'}
             </span>
           ) : (
             <span className={`status-badge ${cls}`}>{label}</span>

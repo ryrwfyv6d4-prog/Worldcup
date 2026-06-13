@@ -2731,3 +2731,24 @@ body, .app {
 }
 .ch-header { display: flex; align-items: baseline; justify-content: space-between; }
 .ch-upd { font-family: var(--font-display); font-size: 0.72rem; font-weight: 500; color: var(--text-faint-dark); }
+
+
+/* ════════ LIVE score emphasis ════════ */
+.mc-score.big {
+  font-size: 1.7rem;
+  color: var(--brass-bright);
+  text-shadow: 0 0 16px rgba(244, 201, 94, 0.3);
+}
+.score.live-big {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-on-dark);
+  gap: 9px;
+}
+.score.live-big .status-badge {
+  font-size: 0.66rem;
+  background: var(--live-red);
+  color: #fff;
+  animation: livePulse 1.8s infinite;
+  align-self: center;
+}

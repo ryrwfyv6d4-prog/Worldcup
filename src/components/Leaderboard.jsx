@@ -62,18 +62,18 @@ function TodayMatches({ fixtures, assignments, drawType, onOpenMatch }) {
             <div key={f.id} className={`today-card ${isLive ? 'live' : ''}`} onClick={() => onOpenMatch && onOpenMatch(f)}>
               <div className={`mc-status ${isLive ? 'live' : 'upcoming'}`}>
                 {isLive && <span className="today-live-dot" />}
-                {isLive ? 'LIVE' : isDone ? 'FULL TIME' : formatTimeAEST(f.utcDate) + ' AEST'}
+                {isLive ? `LIVE · ${f.liveClock || ''}`.trim() : isDone ? 'FULL TIME' : formatTimeAEST(f.utcDate) + ' AEST'}
               </div>
               <div className="mc-line">
                 <span className="mc-team">{getFlag(home)} {home}</span>
                 {(isLive || isDone)
-                  ? <span className={`mc-score ${hs > as_ ? 'winning' : ''}`}>{hs}</span>
+                  ? <span className={`mc-score ${isLive ? 'big' : ''} ${hs > as_ ? 'winning' : ''}`}>{hs}</span>
                   : <span className="mc-time">–</span>}
               </div>
               <div className="mc-line">
                 <span className="mc-team">{getFlag(away)} {away}</span>
                 {(isLive || isDone)
-                  ? <span className={`mc-score ${as_ > hs ? 'winning' : ''}`}>{as_}</span>
+                  ? <span className={`mc-score ${isLive ? 'big' : ''} ${as_ > hs ? 'winning' : ''}`}>{as_}</span>
                   : <span className="mc-time">–</span>}
               </div>
               {owners.length > 0 && (
@@ -342,7 +342,7 @@ function HeroLine({ label, fixture, onOpenMatch, countdown }) {
         {getFlag(home)} {home} <i>v</i> {getFlag(away)} {away}
       </span>
       {isLive ? (
-        <span className="ch-cd live">● {fixture.score.home ?? 0}–{fixture.score.away ?? 0}</span>
+        <span className="ch-cd live">{fixture.score.home ?? 0}–{fixture.score.away ?? 0}{fixture.liveClock ? ` · ${fixture.liveClock}` : ''}</span>
       ) : countdown ? (
         <span className="ch-cd">{countdown}</span>
       ) : (
