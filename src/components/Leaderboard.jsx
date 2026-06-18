@@ -28,64 +28,122 @@ function getOwner(team, assignments, drawType) {
   return null;
 }
 
-function isMatchToday(utcDate) {
-  if (!utcDate) return false;
+function aestDay(utcDate, offset = 0) {
+  if (!utcDate) return '';
   const opts = { timeZone: 'Australia/Brisbane', day: 'numeric', month: 'numeric', year: 'numeric' };
-  const matchDay = new Date(utcDate).toLocaleDateString('en-AU', opts);
-  const today = new Date().toLocaleDateString('en-AU', opts);
-  return matchDay === today;
+  return new Date(new Date(utcDate).getTime() + offset * 86400000)
+    .toLocaleDateString('en-AU', opts);
+}
+function isMatchToday(utcDate) {
+  return aestDay(utcDate) === aestDay(new Date().toISOString());
+}
+function isMatchYesterday(utcDate) {
+  return aestDay(utcDate) === aestDay(new Date().toISOString(), -1);
+}
+function isMatchTomorrow(utcDate) {
+  return aestDay(utcDate) === aestDay(new Date().toISOString(), 1);
+}
+
+const TLA = {
+  Argentina: 'ARG', France: 'FRA', Brazil: 'BRA', England: 'ENG',
+  Spain: 'ESP', Germany: 'GER', Portugal: 'POR', Netherlands: 'NED',
+  Belgium: 'BEL', USA: 'USA', Canada: 'CAN', Mexico: 'MEX',
+  Morocco: 'MAR', Japan: 'JPN', 'South Korea': 'KOR', Uruguay: 'URU',
+  Colombia: 'COL', Senegal: 'SEN', Croatia: 'CRO', Australia: 'AUS',
+  Switzerland: 'SUI', Norway: 'NOR', Turkey: 'TUR', Egypt: 'EGY',
+  Ecuador: 'ECU', 'Ivory Coast': 'CIV', Scotland: 'SCO', 'South Africa': 'RSA',
+  Paraguay: 'PAR', Sweden: 'SWE', Algeria: 'ALG', Austria: 'AUT',
+  Iran: 'IRN', 'Bosnia & Herzegovina': 'BIH', Qatar: 'QAT', 'Saudi Arabia': 'KSA',
+  Uzbekistan: 'UZB', 'DR Congo': 'COD', Iraq: 'IRQ', Panama: 'PAN',
+  'Cape Verde': 'CPV', Haiti: 'HAI', 'Curaçao': 'CUW', 'New Zealand': 'NZL',
+  'Czech Republic': 'CZE', Ghana: 'GHA', Jordan: 'JOR', Tunisia: 'TUN',
+};
+const tla = (name) => TLA[name] || name.slice(0, 3).toUpperCase();
+
+function MatchGridCard({ match, assignments, drawType, onOpenMatch }) {
+  const home = normaliseTeamName(match.homeTeam.name);
+  const away = normaliseTeamName(match.awayTeam.name);
+  const homeOwner = getOwner(home, assignments, drawType);
+  const awayOwner = getOwner(away, assignments, drawType);
+  const isLive = match.status === 'IN_PLAY';
+  const isDone = match.status === 'FINISHED';
+  const owners = [...new Set([homeOwner, awayOwner].filter(Boolean))];
+  const hs = match.score?.home ?? 0;
+  const as_ = match.score?.away ?? 0;
+  return (
+    <div
+      className={`nest-match-card${isLive ? ' live' : ''}${owners.length ? ' has-owner' : ''}`}
+      onClick={() => onOpenMatch && onOpenMatch(match)}
+    >
+      <div className="nmc-row">
+        <div className="nmc-side">
+          <span className="nmc-flag">{getFlag(home)}</span>
+          <span className="nmc-code">{tla(home)}</span>
+        </div>
+        <div className="nmc-score-center">
+          {(isDone || isLive)
+            ? <span className="nmc-score">{hs}–{as_}</span>
+            : <span className="nmc-time">{formatTimeAEST(match.utcDate)}</span>
+          }
+        </div>
+        <div className="nmc-side right">
+          <span className="nmc-code">{tla(away)}</span>
+          <span className="nmc-flag">{getFlag(away)}</span>
+        </div>
+      </div>
+      <div className={`nmc-status${isLive ? ' live' : ''}`}>
+        {isDone ? 'FT' : isLive ? `● ${match.liveClock || 'LIVE'}` : ''}
+      </div>
+      {owners.length > 0 && (
+        <div className="nmc-owner">{owners.join(' & ')}</div>
+      )}
+    </div>
+  );
+}
+
+function DaySection({ label, fixtures, assignments, drawType, onOpenMatch }) {
+  if (!fixtures.length) return null;
+  return (
+    <div className="nest-day-section">
+      <div className="nest-day-label">{label}</div>
+      <div className="nest-day-grid">
+        {fixtures.map((f) => (
+          <MatchGridCard key={f.id} match={f} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function TodayMatches({ fixtures, assignments, drawType, onOpenMatch }) {
-  const todayFixtures = useMemo(() => (
-    fixtures.filter((f) => isMatchToday(f.utcDate))
-  ), [fixtures]);
+  const { yesterday, today, tomorrow } = useMemo(() => ({
+    yesterday: fixtures.filter((f) => isMatchYesterday(f.utcDate)),
+    today: fixtures.filter((f) => isMatchToday(f.utcDate)),
+    tomorrow: fixtures.filter((f) => isMatchTomorrow(f.utcDate)),
+  }), [fixtures]);
 
-  if (todayFixtures.length === 0) return null;
+  if (!yesterday.length && !today.length && !tomorrow.length) return null;
 
   return (
-    <>
-      <div className="lb-eyebrow">Today at the Nest</div>
-      <div className="today-carousel">
-        {todayFixtures.map((f) => {
-          const home = normaliseTeamName(f.homeTeam.name);
-          const away = normaliseTeamName(f.awayTeam.name);
-          const homeOwner = getOwner(home, assignments, drawType);
-          const awayOwner = getOwner(away, assignments, drawType);
-          const isLive = f.status === 'IN_PLAY';
-          const isDone = f.status === 'FINISHED';
-          const owners = [...new Set([homeOwner, awayOwner].filter(Boolean))];
-          const hs = f.score?.home ?? 0;
-          const as_ = f.score?.away ?? 0;
-
-          return (
-            <div key={f.id} className={`today-card ${isLive ? 'live' : ''}`} onClick={() => onOpenMatch && onOpenMatch(f)}>
-              <div className={`mc-status ${isLive ? 'live' : 'upcoming'}`}>
-                {isLive && <span className="today-live-dot" />}
-                {isLive ? `LIVE · ${f.liveClock || ''}`.trim() : isDone ? 'FULL TIME' : formatTimeAEST(f.utcDate) + ' AEST'}
-              </div>
-              <div className="mc-line">
-                <span className="mc-team">{getFlag(home)} {home}</span>
-                {(isLive || isDone)
-                  ? <span className={`mc-score ${isLive ? 'big' : ''} ${hs > as_ ? 'winning' : ''}`}>{hs}</span>
-                  : <span className="mc-time">–</span>}
-              </div>
-              <div className="mc-line">
-                <span className="mc-team">{getFlag(away)} {away}</span>
-                {(isLive || isDone)
-                  ? <span className={`mc-score ${isLive ? 'big' : ''} ${as_ > hs ? 'winning' : ''}`}>{as_}</span>
-                  : <span className="mc-time">–</span>}
-              </div>
-              {owners.length > 0 && (
-                <div className="mc-owners">
-                  {owners.map((o) => <span key={o} className="owner-pill">{o}</span>)}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </>
+    <div className="today-matches">
+      <div className="lb-eyebrow" style={{ marginBottom: 10 }}>At the Nest</div>
+      <DaySection label="Yesterday" fixtures={yesterday} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
+      <DaySection label="Today" fixtures={today} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
+      <DaySection label="Tomorrow" fixtures={tomorrow} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
+      <a
+        href="https://www.youtube.com/@FIFA"
+        target="_blank"
+        rel="noreferrer"
+        className="highlights-link"
+      >
+        <span className="highlights-icon">▶️</span>
+        <div className="highlights-text">
+          <strong>Match Highlights</strong>
+          <p>Goals &amp; replays on FIFA YouTube</p>
+        </div>
+        <span className="highlights-arrow">›</span>
+      </a>
+    </div>
   );
 }
 

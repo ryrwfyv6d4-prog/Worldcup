@@ -1526,6 +1526,104 @@ body {
   animation: pulse 1.4s ease-in-out infinite;
 }
 
+/* ── Nest match grid (Yesterday / Today / Tomorrow) ── */
+.nest-day-section { margin-bottom: 10px; }
+.nest-day-section:last-of-type { margin-bottom: 0; }
+.nest-day-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted-dark);
+  margin-bottom: 7px;
+}
+.nest-day-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.nest-match-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 9px;
+  padding: 9px 8px 7px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+}
+.nest-match-card:active { background: rgba(255,255,255,0.09); }
+.nest-match-card.live { border-color: rgba(220,38,38,0.35); background: rgba(220,38,38,0.05); }
+.nest-match-card.has-owner { border-color: rgba(232,184,75,0.3); }
+.nmc-row { display: flex; align-items: center; gap: 3px; }
+.nmc-side { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+.nmc-side.right { justify-content: flex-end; }
+.nmc-flag { font-size: 0.95rem; line-height: 1; flex-shrink: 0; }
+.nmc-code {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text-on-dark);
+  white-space: nowrap;
+}
+.nmc-score-center { flex-shrink: 0; text-align: center; padding: 0 3px; }
+.nmc-score {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--text-on-dark);
+  white-space: nowrap;
+}
+.nmc-time {
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: var(--text-muted-dark);
+  white-space: nowrap;
+}
+.nmc-status {
+  text-align: center;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted-dark);
+  margin-top: 4px;
+  min-height: 10px;
+}
+.nmc-status.live { color: var(--live-red); }
+.nmc-owner {
+  text-align: center;
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--gold);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── FIFA highlights link ── */
+.highlights-link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: rgba(180,10,10,0.07);
+  border: 1px solid rgba(200,20,20,0.18);
+  border-radius: 9px;
+  padding: 11px 13px;
+  margin-top: 12px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.highlights-link:active { background: rgba(180,10,10,0.13); }
+.highlights-icon { font-size: 1.25rem; flex-shrink: 0; }
+.highlights-text { flex: 1; min-width: 0; }
+.highlights-text strong { display: block; font-size: 0.84rem; color: var(--text-on-dark); font-weight: 700; }
+.highlights-text p { font-size: 0.68rem; color: var(--text-muted-dark); margin: 2px 0 0; }
+.highlights-arrow { color: var(--text-muted-dark); font-size: 1.2rem; flex-shrink: 0; }
+
 /* ── Predictions ── */
 .pred-list { display: flex; flex-direction: column; gap: 10px; }
 .pred-card {
