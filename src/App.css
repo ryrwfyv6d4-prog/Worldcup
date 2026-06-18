@@ -1527,18 +1527,8 @@ body {
 }
 
 /* ── Nest match grid (Yesterday / Today / Tomorrow) ── */
-.nest-day-section { margin-bottom: 10px; }
-.nest-day-section:last-of-type { margin-bottom: 0; }
-.nest-day-label {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-muted-dark);
-  margin-bottom: 7px;
-}
-/* Horizontal scroll container — pages of 4 (2×2) */
-.nest-day-scroll {
+/* Single horizontal scroll — one panel per day, swipe left/right */
+.nest-days-scroll {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 100%;
@@ -1549,17 +1539,22 @@ body {
   overscroll-behavior-x: contain;
   touch-action: pan-x pan-y;
 }
-.nest-day-scroll::-webkit-scrollbar { display: none; }
-.nest-day-page {
+.nest-days-scroll::-webkit-scrollbar { display: none; }
+.nest-day-panel {
   scroll-snap-align: start;
+}
+.nest-day-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted-dark);
+  margin-bottom: 7px;
+}
+.nest-day-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 7px;
-}
-.nest-page-hint {
-  font-weight: 500;
-  color: var(--text-muted-dark);
-  opacity: 0.7;
 }
 .nest-match-card {
   background: rgba(255,255,255,0.04);

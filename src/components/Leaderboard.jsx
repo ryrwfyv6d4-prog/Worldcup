@@ -120,30 +120,6 @@ function MatchGridCard({ match, assignments, drawType, onOpenMatch }) {
   );
 }
 
-function DaySection({ label, fixtures, assignments, drawType, onOpenMatch }) {
-  if (!fixtures.length) return null;
-  // Group into pages of 4 (2×2); each page scrolls horizontally
-  const pages = [];
-  for (let i = 0; i < fixtures.length; i += 4) pages.push(fixtures.slice(i, i + 4));
-  return (
-    <div className="nest-day-section">
-      <div className="nest-day-label">
-        {label}
-        {pages.length > 1 && <span className="nest-page-hint"> · {fixtures.length} matches</span>}
-      </div>
-      <div className="nest-day-scroll">
-        {pages.map((page, pi) => (
-          <div key={pi} className="nest-day-page">
-            {page.map((f) => (
-              <MatchGridCard key={f.id} match={f} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function TodayMatches({ fixtures, assignments, drawType, onOpenMatch }) {
   const { yesterday, today, tomorrow } = useMemo(() => ({
     yesterday: fixtures.filter((f) => isMatchYesterday(f.utcDate)),
@@ -151,14 +127,29 @@ function TodayMatches({ fixtures, assignments, drawType, onOpenMatch }) {
     tomorrow: fixtures.filter((f) => isMatchTomorrow(f.utcDate)),
   }), [fixtures]);
 
-  if (!yesterday.length && !today.length && !tomorrow.length) return null;
+  const days = [
+    { label: 'Yesterday', matches: yesterday },
+    { label: 'Today', matches: today },
+    { label: 'Tomorrow', matches: tomorrow },
+  ].filter((d) => d.matches.length > 0);
+
+  if (days.length === 0) return null;
 
   return (
     <div className="today-matches">
       <div className="lb-eyebrow" style={{ marginBottom: 10 }}>At the Nest</div>
-      <DaySection label="Yesterday" fixtures={yesterday} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
-      <DaySection label="Today" fixtures={today} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
-      <DaySection label="Tomorrow" fixtures={tomorrow} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
+      <div className="nest-days-scroll">
+        {days.map(({ label, matches }) => (
+          <div key={label} className="nest-day-panel">
+            <div className="nest-day-label">{label}</div>
+            <div className="nest-day-grid">
+              {matches.slice(0, 4).map((f) => (
+                <MatchGridCard key={f.id} match={f} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
