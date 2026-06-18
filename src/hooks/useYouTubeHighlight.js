@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 const API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
-const CACHE_KEY = 'yt_hl_v1';
+const CACHE_KEY = 'yt_hl_v2';
 
 // Module-level dedup — one in-flight request per match regardless of how many
 // components ask for the same match simultaneously.
@@ -22,7 +22,7 @@ async function fetchVideoId(home, away) {
 
   const q = encodeURIComponent(`${home} ${away} highlights FIFA World Cup 2026`);
   const promise = fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&type=video&maxResults=1&order=relevance&key=${API_KEY}`
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&type=video&videoDuration=medium&maxResults=1&order=relevance&key=${API_KEY}`
   )
     .then((r) => r.json())
     .then((j) => {
