@@ -32,6 +32,7 @@ jobs:
         run: npm run build
         env:
           VITE_WALL_API_URL: https://worldcup.phil-remington.workers.dev
+          VITE_YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

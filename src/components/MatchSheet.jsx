@@ -4,6 +4,7 @@ import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
 import { getBanter } from '../data/matchBanter.js';
 import { espnName } from '../hooks/useFixtures.js';
 import { formatTimeAEST, formatDateAEST } from '../utils/time.js';
+import { useYouTubeHighlight } from '../hooks/useYouTubeHighlight.js';
 
 const SCOREBOARD = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
 const SUMMARY = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=';
@@ -194,6 +195,12 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
   const venue = summary?.gameInfo?.venue;
   const pickTeam = (t) => { onClose(); onSelectTeam(t); };
 
+  const ytDirect = useYouTubeHighlight(home, away, isLive || isDone);
+  const ytUrl = ytDirect
+    || ((isLive || isDone)
+      ? `https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`
+      : null);
+
   return (
     <div className="ms-backdrop" onClick={onClose}>
       <div className="ms-sheet" onClick={(e) => e.stopPropagation()}>
@@ -227,15 +234,15 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
         </div>
 
         {/* Highlights link — only for finished/live matches */}
-        {(isDone || isLive) && (
+        {ytUrl && (
           <a
-            href={`https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`}
+            href={ytUrl}
             target="_blank"
             rel="noreferrer"
             className="ms-highlights"
           >
             <span className="ms-yt-icon">▶</span>
-            <span>Watch highlights on FIFA YouTube</span>
+            <span>{ytDirect ? 'Watch highlights on YouTube' : 'Search highlights on FIFA YouTube'}</span>
             <span className="ms-yt-arrow">›</span>
           </a>
         )}

@@ -5,6 +5,7 @@ import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
 import ActivityFeed from './ActivityFeed.jsx';
 import MatchSheet from './MatchSheet.jsx';
 import { formatTimeAEST, formatDateAEST } from '../utils/time.js';
+import { useYouTubeHighlight } from '../hooks/useYouTubeHighlight.js';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 const EMOJIS = ['😂', '🔥', '❤️', '😭', '👏', '🍻'];
@@ -71,10 +72,12 @@ function MatchGridCard({ match, assignments, drawType, onOpenMatch }) {
   const hs = match.score?.home ?? 0;
   const as_ = match.score?.away ?? 0;
 
-  // FIFA channel search — much more targeted than global YouTube search
-  const ytUrl = (isDone || isLive)
-    ? `https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`
-    : null;
+  const ytDirect = useYouTubeHighlight(home, away, isDone || isLive);
+  // Show search URL immediately while the API resolves, swap to direct once ready
+  const ytUrl = ytDirect
+    || ((isDone || isLive)
+      ? `https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`
+      : null);
 
   return (
     <div
