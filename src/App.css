@@ -1531,7 +1531,8 @@ body {
 .nest-days-scroll {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 100%;
+  grid-auto-columns: calc(100% - 28px);
+  gap: 8px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
@@ -1568,28 +1569,34 @@ body {
 .nest-match-card:active { background: rgba(255,255,255,0.09); }
 .nest-match-card.live { border-color: rgba(220,38,38,0.35); background: rgba(220,38,38,0.05); }
 .nest-match-card.has-owner { border-color: rgba(232,184,75,0.3); }
-.nmc-row { display: flex; align-items: center; gap: 3px; }
-.nmc-side { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
-.nmc-side.right { justify-content: flex-end; }
-.nmc-flag { font-size: 0.95rem; line-height: 1; flex-shrink: 0; }
+.nmc-row { display: flex; align-items: center; gap: 4px; padding: 4px 0 2px; }
+.nmc-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.nmc-flag { font-size: 1.65rem; line-height: 1; }
 .nmc-code {
   font-family: var(--font-display);
-  font-size: 0.68rem;
+  font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.02em;
   color: var(--text-on-dark);
   white-space: nowrap;
 }
-.nmc-score-center { flex-shrink: 0; text-align: center; padding: 0 3px; }
+.nmc-score-center { flex-shrink: 0; text-align: center; padding: 0 4px; }
 .nmc-score {
   font-family: var(--font-display);
-  font-size: 0.88rem;
+  font-size: 1.05rem;
   font-weight: 800;
   color: var(--text-on-dark);
   white-space: nowrap;
 }
 .nmc-time {
-  font-size: 0.64rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-muted-dark);
   white-space: nowrap;

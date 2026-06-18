@@ -93,8 +93,8 @@ function MatchGridCard({ match, assignments, drawType, onOpenMatch }) {
           }
         </div>
         <div className="nmc-side right">
-          <span className="nmc-code">{tla(away)}</span>
           <span className="nmc-flag">{getFlag(away)}</span>
+          <span className="nmc-code">{tla(away)}</span>
         </div>
       </div>
       <div className="nmc-bottom">
