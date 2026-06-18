@@ -3,6 +3,7 @@ import MatchSheet from './MatchSheet.jsx';
 import { getFlag } from '../data/worldcup2026.js';
 import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
 import { formatTimeAEST, formatDateAEST } from '../utils/time.js';
+import { useYouTubeHighlight } from '../hooks/useYouTubeHighlight.js';
 
 const STAGE_ORDER = ['GROUP_STAGE', 'LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL'];
 const STAGE_LABELS = {
@@ -105,14 +106,34 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
   const homeOwner = ownerMap[home];
   const awayOwner = ownerMap[away];
   const isLive = match.status === 'IN_PLAY' || match.status === 'PAUSED';
-  const showScore = match.status === 'FINISHED' || isLive;
+  const isDone = match.status === 'FINISHED';
+  const showScore = isDone || isLive;
   const hasOwner = !!(homeOwner || awayOwner);
+
+  const ytDirect = useYouTubeHighlight(home, away, isDone || isLive);
+  const ytUrl = ytDirect
+    || ((isDone || isLive)
+      ? `https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`
+      : null);
 
   return (
     <div className={`match-card ${isLive ? 'live' : ''} ${hasOwner && !isLive ? 'has-owner' : ''}`} onClick={() => onOpenMatch(match)}>
       <div className="match-date">
-        {formatTimeAEST(match.utcDate)} AEST
-        {match.group && <span className="match-group">{match.group.replace('GROUP_', 'Group ')}</span>}
+        <span>{formatTimeAEST(match.utcDate)} AEST</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
+          {match.group && <span className="match-group">{match.group.replace('GROUP_', 'Group ')}</span>}
+          {ytUrl && (
+            <a
+              href={ytUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="match-yt-btn"
+              onClick={(e) => e.stopPropagation()}
+            >
+              ▶ Highlights
+            </a>
+          )}
+        </span>
       </div>
       <div className="match-row">
         <div className={`team-side ${homeOwner ? 'owned' : ''}`}>

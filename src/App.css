@@ -705,6 +705,19 @@ body {
   align-items: center;
   gap: 6px;
 }
+.match-yt-btn {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-decoration: none;
+  background: var(--card-alt);
+  border-radius: 4px;
+  padding: 2px 7px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.match-yt-btn:active { background: rgba(220,30,30,0.2); color: #ff5555; }
 .match-group {
   background: var(--card-alt);
   border-radius: 10px;
@@ -1561,7 +1574,7 @@ body {
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 9px;
-  padding: 9px 8px 7px;
+  padding: 11px 8px 9px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background 0.12s;
@@ -1574,14 +1587,14 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   flex: 1;
   min-width: 0;
 }
-.nmc-flag { font-size: 1.65rem; line-height: 1; }
+.nmc-flag { font-size: 2.1rem; line-height: 1; }
 .nmc-code {
   font-family: var(--font-display);
-  font-size: 0.82rem;
+  font-size: 1.0rem;
   font-weight: 800;
   letter-spacing: 0.02em;
   color: var(--text-on-dark);
@@ -1590,13 +1603,13 @@ body {
 .nmc-score-center { flex-shrink: 0; text-align: center; padding: 0 4px; }
 .nmc-score {
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   font-weight: 800;
   color: var(--text-on-dark);
   white-space: nowrap;
 }
 .nmc-time {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-muted-dark);
   white-space: nowrap;
@@ -1605,12 +1618,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  margin-top: 4px;
-  min-height: 14px;
+  gap: 8px;
+  margin-top: 6px;
+  min-height: 18px;
 }
 .nmc-status {
-  font-size: 0.56rem;
+  font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -1618,13 +1631,13 @@ body {
 }
 .nmc-status.live { color: var(--live-red); }
 .nmc-yt {
-  font-size: 0.58rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--text-muted-dark);
   text-decoration: none;
-  background: rgba(255,255,255,0.06);
-  border-radius: 3px;
-  padding: 1px 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  padding: 3px 10px;
   letter-spacing: 0.01em;
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
@@ -1632,10 +1645,10 @@ body {
 .nmc-yt:active { background: rgba(220,30,30,0.25); color: #ff5555; }
 .nmc-owner {
   text-align: center;
-  font-size: 0.58rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--gold);
-  margin-top: 3px;
+  margin-top: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
