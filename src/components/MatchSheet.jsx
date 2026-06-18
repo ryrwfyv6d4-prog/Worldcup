@@ -226,6 +226,20 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
           </button>
         </div>
 
+        {/* Highlights link — only for finished/live matches */}
+        {(isDone || isLive) && (
+          <a
+            href={`https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="ms-highlights"
+          >
+            <span className="ms-yt-icon">▶</span>
+            <span>Watch highlights on FIFA YouTube</span>
+            <span className="ms-yt-arrow">›</span>
+          </a>
+        )}
+
         {/* The history — above the game information, as requested */}
         <div className="ms-history">
           <div className="ms-history-label">★ THE HISTORY ★</div>

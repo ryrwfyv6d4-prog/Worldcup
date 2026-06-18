@@ -1546,10 +1546,12 @@ body {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   touch-action: pan-x pan-y;
+  width: 100%;
 }
 .nest-day-scroll::-webkit-scrollbar { display: none; }
 .nest-day-page {
-  flex: 0 0 100%;
+  min-width: 100%;
+  flex-shrink: 0;
   scroll-snap-align: start;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2592,6 +2594,36 @@ body, .app {
   margin-top: 5px;
 }
 /* the history card — paper, like the team descriptions */
+.ms-highlights {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(200,15,15,0.09);
+  border: 1px solid rgba(220,30,30,0.22);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  margin-bottom: 12px;
+  text-decoration: none;
+  color: var(--text-on-dark);
+  font-size: 0.86rem;
+  font-weight: 600;
+  -webkit-tap-highlight-color: transparent;
+}
+.ms-highlights:active { background: rgba(200,15,15,0.16); }
+.ms-yt-icon {
+  font-size: 0.72rem;
+  background: rgba(220,30,30,0.5);
+  color: #fff;
+  border-radius: 3px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+.ms-yt-arrow {
+  margin-left: auto;
+  color: var(--text-muted-dark);
+  font-size: 1.1rem;
+}
+
 .ms-history {
   background: var(--poster);
   border-radius: var(--radius);

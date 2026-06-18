@@ -71,8 +71,9 @@ function MatchGridCard({ match, assignments, drawType, onOpenMatch }) {
   const hs = match.score?.home ?? 0;
   const as_ = match.score?.away ?? 0;
 
+  // FIFA channel search — much more targeted than global YouTube search
   const ytUrl = (isDone || isLive)
-    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(`${home} v ${away} FIFA World Cup 2026 highlights`)}`
+    ? `https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`
     : null;
 
   return (
