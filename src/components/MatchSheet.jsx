@@ -195,7 +195,7 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
   const venue = summary?.gameInfo?.venue;
   const pickTeam = (t) => { onClose(); onSelectTeam(t); };
 
-  const ytDirect = useYouTubeHighlight(home, away, isLive || isDone);
+  const ytDirect = useYouTubeHighlight(home, away, isLive || isDone, isDone ? (match.score?.home ?? null) : null, isDone ? (match.score?.away ?? null) : null);
   const ytUrl = ytDirect
     || ((isLive || isDone)
       ? `https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`

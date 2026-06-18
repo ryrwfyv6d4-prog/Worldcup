@@ -110,7 +110,9 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
   const showScore = isDone || isLive;
   const hasOwner = !!(homeOwner || awayOwner);
 
-  const ytDirect = useYouTubeHighlight(home, away, isDone || isLive);
+  const hs = match.score?.home;
+  const as_ = match.score?.away;
+  const ytDirect = useYouTubeHighlight(home, away, isDone || isLive, isDone ? hs : null, isDone ? as_ : null);
   const ytUrl = ytDirect
     || ((isDone || isLive)
       ? `https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`

@@ -72,7 +72,7 @@ function MatchGridCard({ match, assignments, drawType, onOpenMatch }) {
   const hs = match.score?.home ?? 0;
   const as_ = match.score?.away ?? 0;
 
-  const ytDirect = useYouTubeHighlight(home, away, isDone || isLive);
+  const ytDirect = useYouTubeHighlight(home, away, isDone || isLive, isDone ? hs : null, isDone ? as_ : null);
   // Show search URL immediately while the API resolves, swap to direct once ready
   const ytUrl = ytDirect
     || ((isDone || isLive)
