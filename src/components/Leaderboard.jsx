@@ -70,6 +70,11 @@ function MatchGridCard({ match, assignments, drawType, onOpenMatch }) {
   const owners = [...new Set([homeOwner, awayOwner].filter(Boolean))];
   const hs = match.score?.home ?? 0;
   const as_ = match.score?.away ?? 0;
+
+  const ytUrl = (isDone || isLive)
+    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(`${home} v ${away} FIFA World Cup 2026 highlights`)}`
+    : null;
+
   return (
     <div
       className={`nest-match-card${isLive ? ' live' : ''}${owners.length ? ' has-owner' : ''}`}
@@ -91,8 +96,21 @@ function MatchGridCard({ match, assignments, drawType, onOpenMatch }) {
           <span className="nmc-flag">{getFlag(away)}</span>
         </div>
       </div>
-      <div className={`nmc-status${isLive ? ' live' : ''}`}>
-        {isDone ? 'FT' : isLive ? `● ${match.liveClock || 'LIVE'}` : ''}
+      <div className="nmc-bottom">
+        <span className={`nmc-status${isLive ? ' live' : ''}`}>
+          {isDone ? 'FT' : isLive ? `● ${match.liveClock || 'LIVE'}` : ''}
+        </span>
+        {ytUrl && (
+          <a
+            href={ytUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="nmc-yt"
+            onClick={(e) => e.stopPropagation()}
+          >
+            ▶
+          </a>
+        )}
       </div>
       {owners.length > 0 && (
         <div className="nmc-owner">{owners.join(' & ')}</div>
@@ -103,12 +121,22 @@ function MatchGridCard({ match, assignments, drawType, onOpenMatch }) {
 
 function DaySection({ label, fixtures, assignments, drawType, onOpenMatch }) {
   if (!fixtures.length) return null;
+  // Group into pages of 4 (2×2); each page scrolls horizontally
+  const pages = [];
+  for (let i = 0; i < fixtures.length; i += 4) pages.push(fixtures.slice(i, i + 4));
   return (
     <div className="nest-day-section">
-      <div className="nest-day-label">{label}</div>
-      <div className="nest-day-grid">
-        {fixtures.map((f) => (
-          <MatchGridCard key={f.id} match={f} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
+      <div className="nest-day-label">
+        {label}
+        {pages.length > 1 && <span className="nest-page-hint"> · {fixtures.length} matches</span>}
+      </div>
+      <div className="nest-day-scroll">
+        {pages.map((page, pi) => (
+          <div key={pi} className="nest-day-page">
+            {page.map((f) => (
+              <MatchGridCard key={f.id} match={f} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
+            ))}
+          </div>
         ))}
       </div>
     </div>
@@ -130,19 +158,6 @@ function TodayMatches({ fixtures, assignments, drawType, onOpenMatch }) {
       <DaySection label="Yesterday" fixtures={yesterday} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
       <DaySection label="Today" fixtures={today} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
       <DaySection label="Tomorrow" fixtures={tomorrow} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
-      <a
-        href="https://www.youtube.com/@FIFA"
-        target="_blank"
-        rel="noreferrer"
-        className="highlights-link"
-      >
-        <span className="highlights-icon">▶️</span>
-        <div className="highlights-text">
-          <strong>Match Highlights</strong>
-          <p>Goals &amp; replays on FIFA YouTube</p>
-        </div>
-        <span className="highlights-arrow">›</span>
-      </a>
     </div>
   );
 }

@@ -1537,10 +1537,28 @@ body {
   color: var(--text-muted-dark);
   margin-bottom: 7px;
 }
-.nest-day-grid {
+/* Horizontal scroll container — pages of 4 (2×2) */
+.nest-day-scroll {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+}
+.nest-day-scroll::-webkit-scrollbar { display: none; }
+.nest-day-page {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 7px;
+}
+.nest-page-hint {
+  font-weight: 500;
+  color: var(--text-muted-dark);
+  opacity: 0.7;
 }
 .nest-match-card {
   background: rgba(255,255,255,0.04);
@@ -1580,17 +1598,35 @@ body {
   color: var(--text-muted-dark);
   white-space: nowrap;
 }
+.nmc-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 4px;
+  min-height: 14px;
+}
 .nmc-status {
-  text-align: center;
   font-size: 0.56rem;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--text-muted-dark);
-  margin-top: 4px;
-  min-height: 10px;
 }
 .nmc-status.live { color: var(--live-red); }
+.nmc-yt {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--text-muted-dark);
+  text-decoration: none;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  padding: 1px 5px;
+  letter-spacing: 0.01em;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.nmc-yt:active { background: rgba(220,30,30,0.25); color: #ff5555; }
 .nmc-owner {
   text-align: center;
   font-size: 0.58rem;
