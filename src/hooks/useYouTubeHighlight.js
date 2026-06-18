@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 const API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
-const CACHE_KEY = 'yt_hl_v3';
+const CACHE_KEY = 'yt_hl_v4';
 const FIFA_CHANNEL = 'UCpcTrCXblq78GZrTUTLWeBw';
 
 // Module-level dedup — one in-flight request per match regardless of how many
@@ -21,7 +21,7 @@ async function fetchVideoId(home, away) {
   if (cache[key]) return cache[key];
   if (inFlight.has(key)) return inFlight.get(key);
 
-  const q = encodeURIComponent(`${home} ${away} highlights`);
+  const q = encodeURIComponent(`${home} ${away} FIFA World Cup 2026 highlights`);
   const promise = fetch(
     `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${FIFA_CHANNEL}&q=${q}&type=video&maxResults=1&order=relevance&key=${API_KEY}`
   )
