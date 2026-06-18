@@ -1539,19 +1539,18 @@ body {
 }
 /* Horizontal scroll container — pages of 4 (2×2) */
 .nest-day-scroll {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   touch-action: pan-x pan-y;
-  width: 100%;
 }
 .nest-day-scroll::-webkit-scrollbar { display: none; }
 .nest-day-page {
-  min-width: 100%;
-  flex-shrink: 0;
   scroll-snap-align: start;
   display: grid;
   grid-template-columns: 1fr 1fr;
