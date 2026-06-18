@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 const API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
-const CACHE_KEY = 'yt_hl_v5';
+const CACHE_KEY = 'yt_hl_v6';
 const FIFA_CHANNEL = 'UCpcTrCXblq78GZrTUTLWeBw';
 
 const inFlight = new Map();
@@ -20,11 +20,14 @@ async function fetchVideoId(cacheKey, query) {
 
   const q = encodeURIComponent(query);
   const promise = fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${FIFA_CHANNEL}&q=${q}&type=video&maxResults=1&order=relevance&key=${API_KEY}`
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${FIFA_CHANNEL}&q=${q}&type=video&maxResults=5&order=relevance&key=${API_KEY}`
   )
     .then((r) => r.json())
     .then((j) => {
-      const id = j.items?.[0]?.id?.videoId || null;
+      // Only use a result whose title contains "highlight" — never fall back to goal clips
+      const items = j.items || [];
+      const match = items.find((i) => i.snippet?.title?.toLowerCase().includes('highlight'));
+      const id = match?.id?.videoId || null;
       if (id) {
         const c = readCache();
         c[cacheKey] = id;
