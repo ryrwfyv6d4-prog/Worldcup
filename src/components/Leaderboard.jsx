@@ -75,7 +75,7 @@ function MatchGridCard({ match, assignments, drawType, onOpenMatch }) {
   const ytDirect = useYouTubeHighlight(home, away, isDone || isLive, isDone ? hs : null, isDone ? as_ : null);
   // Show search URL immediately while the API resolves, swap to direct once ready
   const sbsUrl = (isDone || isLive)
-    ? `https://www.sbs.com.au/ondemand/search?q=${encodeURIComponent(`${home} ${away} FIFA World Cup highlights`)}`
+    ? `https://www.youtube.com/@SBSAustralia/search?query=${encodeURIComponent(`${home} ${away} FIFA World Cup highlights`)}`
     : null;
   const ytUrl = ytDirect
     || sbsUrl

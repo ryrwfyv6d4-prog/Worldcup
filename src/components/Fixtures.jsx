@@ -114,7 +114,7 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
   const as_ = match.score?.away;
   const ytDirect = useYouTubeHighlight(home, away, isDone || isLive, isDone ? hs : null, isDone ? as_ : null);
   const sbsUrl = (isDone || isLive)
-    ? `https://www.sbs.com.au/ondemand/search?q=${encodeURIComponent(`${home} ${away} FIFA World Cup highlights`)}`
+    ? `https://www.youtube.com/@SBSAustralia/search?query=${encodeURIComponent(`${home} ${away} FIFA World Cup highlights`)}`
     : null;
   const ytUrl = ytDirect
     || sbsUrl
