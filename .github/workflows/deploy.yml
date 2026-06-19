@@ -28,6 +28,14 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         continue-on-error: true
 
+      - name: Set Worker YouTube API key
+        working-directory: worker
+        run: echo "$YOUTUBE_API_KEY" | npx wrangler secret put YOUTUBE_API_KEY
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        continue-on-error: true
+
       - name: Build React app
         run: npm run build
         env:
