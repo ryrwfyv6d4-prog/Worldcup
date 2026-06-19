@@ -122,6 +122,69 @@ export default {
         return json({ ok: true });
       }
 
+      // GET /highlight — resolve a match highlights video, shared-cached in R2.
+      // Query: ?home=France&away=Senegal&hs=3&as=1  (hs/as optional)
+      // Tries FIFA channel then SBS Sport. Caches the resolved videoId so all
+      // users share one lookup and we make at most ~1 API call per match per day.
+      if (request.method === 'GET' && path === '/highlight') {
+        const home = url.searchParams.get('home') || '';
+        const away = url.searchParams.get('away') || '';
+        const hs = url.searchParams.get('hs');
+        const as_ = url.searchParams.get('as');
+        if (!home || !away) return json({ videoId: null });
+
+        const hasScore = hs != null && hs !== '' && as_ != null && as_ !== '';
+        const cacheKey = hasScore
+          ? `highlights/${home}|${away}|${hs}-${as_}.json`
+          : `highlights/${home}|${away}.json`;
+
+        // 1. Shared cache hit — zero quota
+        const cached = await env.WALL.get(cacheKey);
+        if (cached) {
+          const c = JSON.parse(await cached.text());
+          if (c.videoId) return json({ videoId: c.videoId, source: c.source || 'cache' });
+          // negative cache: only re-try after 30 min
+          if (Date.now() - (c.ts || 0) < 30 * 60 * 1000) return json({ videoId: null });
+        }
+
+        const key = env.YOUTUBE_API_KEY;
+        if (!key) return json({ videoId: null });
+
+        const query = hasScore
+          ? `Highlights ${home} ${hs}-${as_} ${away} FIFA World Cup 2026`
+          : `${home} ${away} FIFA World Cup 2026 highlights`;
+
+        const FIFA_CHANNEL = 'UCpcTrCXblq78GZrTUTLWeBw';
+        const SBS_CHANNEL = 'UCn6UMS98Ox-B3jkSWlweJ2w';
+
+        async function searchChannel(channelId) {
+          try {
+            const r = await fetch(
+              `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&key=${key}`
+            );
+            const j = await r.json();
+            const items = j.items || [];
+            const m = items.find((i) => i.snippet?.title?.toLowerCase().includes('highlight'));
+            return m?.id?.videoId || null;
+          } catch {
+            return null;
+          }
+        }
+
+        let videoId = await searchChannel(FIFA_CHANNEL);
+        let source = 'fifa';
+        if (!videoId) { videoId = await searchChannel(SBS_CHANNEL); source = 'sbs'; }
+
+        // Cache the outcome (positive forever, negative with a timestamp)
+        await env.WALL.put(
+          cacheKey,
+          JSON.stringify(videoId ? { videoId, source, ts: Date.now() } : { videoId: null, ts: Date.now() }),
+          { httpMetadata: { contentType: 'application/json' } }
+        );
+
+        return json({ videoId, source: videoId ? source : null });
+      }
+
       // GET /predictions — load all predictions
       if (request.method === 'GET' && path === '/predictions') {
         const item = await env.WALL.get('predictions.json');
