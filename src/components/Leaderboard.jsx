@@ -242,7 +242,29 @@ function YourNextMatch({ fixtures, currentUser, assignments, drawType, onSelectT
 }
 
 
-async function shareStandingsCard(board, prevStats, hasResults) {
+// Build leaderboard sorted by pts → GD → GF → name (mirrors FIFA tiebreak logic)
+function buildBoardWithGoals(assignments, drawType, fixtures) {
+  const raw = buildLeaderboard(assignments, drawType, fixtures);
+  const withGoals = raw.map((entry) => {
+    let gf = 0, ga = 0;
+    for (const m of fixtures) {
+      if (m.status !== 'FINISHED') continue;
+      const home = normaliseTeamName(m.homeTeam.name);
+      const away = normaliseTeamName(m.awayTeam.name);
+      if (entry.teams.includes(home)) { gf += m.score?.home ?? 0; ga += m.score?.away ?? 0; }
+      if (entry.teams.includes(away)) { gf += m.score?.away ?? 0; ga += m.score?.home ?? 0; }
+    }
+    return { ...entry, gf, ga };
+  });
+  return withGoals.sort((a, b) =>
+    (b.total - a.total) ||
+    ((b.gf - b.ga) - (a.gf - a.ga)) ||
+    (b.gf - a.gf) ||
+    a.name.localeCompare(b.name)
+  );
+}
+
+
   const W = 1080, H = 1350;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
@@ -483,14 +505,14 @@ export default function Leaderboard({
   const [openMatch, setOpenMatch] = useState(null);
 
   const board = useMemo(
-    () => buildLeaderboard(assignments, drawType, fixtures),
+    () => buildBoardWithGoals(assignments, drawType, fixtures),
     [assignments, drawType, fixtures]
   );
 
   // Standings as of start of today (Brisbane) — powers "+pts today" and movement arrows
   const prevStats = useMemo(() => {
     const prevFixtures = fixtures.filter((f) => f.status === 'FINISHED' && !isMatchToday(f.utcDate));
-    const prevBoard = buildLeaderboard(assignments, drawType, prevFixtures);
+    const prevBoard = buildBoardWithGoals(assignments, drawType, prevFixtures);
     const map = {};
     prevBoard.forEach((e, i) => { map[e.name] = { rank: i, total: e.total }; });
     return map;
