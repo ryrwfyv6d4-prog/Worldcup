@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 
 const API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
-const CACHE_KEY = 'yt_hl_v6';
-const FIFA_CHANNEL = 'UCpcTrCXblq78GZrTUTLWeBw';
+const CACHE_KEY = 'yt_hl_v7';
+// Official broadcaster channels, tried in priority order.
+const FIFA_CHANNEL = 'UCpcTrCXblq78GZrTUTLWeBw';   // FIFA
+const SBS_CHANNEL = 'UCn6UMS98Ox-B3jkSWlweJ2w';    // SBS Sport (@SBSSportau)
 
 const inFlight = new Map();
 
@@ -13,30 +15,40 @@ function writeCache(obj) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(obj)); } catch {}
 }
 
+// Query one channel for a highlights video. Returns a videoId or null.
+async function searchChannel(channelId, query) {
+  const q = encodeURIComponent(query);
+  try {
+    const r = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${q}&type=video&maxResults=5&order=relevance&key=${API_KEY}`
+    );
+    const j = await r.json();
+    const items = j.items || [];
+    // Only use a result whose title contains "highlight" — never fall back to goal clips
+    const match = items.find((i) => i.snippet?.title?.toLowerCase().includes('highlight'));
+    return match?.id?.videoId || null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchVideoId(cacheKey, query) {
   const cache = readCache();
   if (cache[cacheKey]) return cache[cacheKey];
   if (inFlight.has(cacheKey)) return inFlight.get(cacheKey);
 
-  const q = encodeURIComponent(query);
-  const promise = fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${FIFA_CHANNEL}&q=${q}&type=video&maxResults=5&order=relevance&key=${API_KEY}`
-  )
-    .then((r) => r.json())
-    .then((j) => {
-      // Only use a result whose title contains "highlight" — never fall back to goal clips
-      const items = j.items || [];
-      const match = items.find((i) => i.snippet?.title?.toLowerCase().includes('highlight'));
-      const id = match?.id?.videoId || null;
-      if (id) {
-        const c = readCache();
-        c[cacheKey] = id;
-        writeCache(c);
-      }
-      inFlight.delete(cacheKey);
-      return id;
-    })
-    .catch(() => { inFlight.delete(cacheKey); return null; });
+  // Try FIFA first, then SBS Sport. Only a real video ID is cached/returned.
+  const promise = (async () => {
+    let id = await searchChannel(FIFA_CHANNEL, query);
+    if (!id) id = await searchChannel(SBS_CHANNEL, query);
+    if (id) {
+      const c = readCache();
+      c[cacheKey] = id;
+      writeCache(c);
+    }
+    inFlight.delete(cacheKey);
+    return id;
+  })();
 
   inFlight.set(cacheKey, promise);
   return promise;
