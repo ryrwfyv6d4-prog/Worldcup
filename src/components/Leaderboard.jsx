@@ -242,8 +242,11 @@ function YourNextMatch({ fixtures, currentUser, assignments, drawType, onSelectT
 }
 
 
-// Build leaderboard sorted by pts → GD → GF → name (mirrors FIFA tiebreak logic)
+// Build leaderboard sorted by pts → GD → GF → draw order (FIFA tiebreak logic)
+// Draw order (insertion order of assignments) is used as the final tiebreaker,
+// equivalent to FIFA's "drawing of lots" — it was determined randomly at draw time.
 function buildBoardWithGoals(assignments, drawType, fixtures) {
+  const drawOrder = Object.keys(assignments); // preserves insertion/draw order
   const raw = buildLeaderboard(assignments, drawType, fixtures);
   const withGoals = raw.map((entry) => {
     let gf = 0, ga = 0;
@@ -254,13 +257,13 @@ function buildBoardWithGoals(assignments, drawType, fixtures) {
       if (entry.teams.includes(home)) { gf += m.score?.home ?? 0; ga += m.score?.away ?? 0; }
       if (entry.teams.includes(away)) { gf += m.score?.away ?? 0; ga += m.score?.home ?? 0; }
     }
-    return { ...entry, gf, ga };
+    return { ...entry, gf, ga, drawIdx: drawOrder.indexOf(entry.name) };
   });
   return withGoals.sort((a, b) =>
     (b.total - a.total) ||
     ((b.gf - b.ga) - (a.gf - a.ga)) ||
     (b.gf - a.gf) ||
-    a.name.localeCompare(b.name)
+    (a.drawIdx - b.drawIdx)
   );
 }
 
