@@ -233,16 +233,16 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
           </button>
         </div>
 
-        {/* Highlights link — only for finished/live matches */}
-        {ytUrl && (
+        {/* Highlights link — direct when API resolved, search fallback otherwise */}
+        {(ytDirect || (isLive || isDone)) && (
           <a
-            href={ytUrl}
+            href={ytDirect || `https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`}
             target="_blank"
             rel="noreferrer"
             className="ms-highlights"
           >
             <span className="ms-yt-icon">▶</span>
-            <span>{ytDirect ? 'Watch highlights on YouTube' : 'Search highlights on FIFA YouTube'}</span>
+            <span>{ytDirect ? 'Watch highlights on YouTube' : 'Search FIFA YouTube for highlights'}</span>
             <span className="ms-yt-arrow">›</span>
           </a>
         )}

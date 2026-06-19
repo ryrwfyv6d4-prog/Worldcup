@@ -113,12 +113,6 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
   const hs = match.score?.home;
   const as_ = match.score?.away;
   const ytDirect = useYouTubeHighlight(home, away, isDone || isLive, isDone ? hs : null, isDone ? as_ : null);
-  // ytDirect resolves to a real video on FIFA, else SBS Sport. If neither has
-  // a video yet, fall back to the FIFA channel search page.
-  const ytUrl = ytDirect
-    || ((isDone || isLive)
-      ? `https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`
-      : null);
 
   return (
     <div className={`match-card ${isLive ? 'live' : ''} ${hasOwner && !isLive ? 'has-owner' : ''}`} onClick={() => onOpenMatch(match)}>
@@ -126,9 +120,9 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
         <span>{formatTimeAEST(match.utcDate)} AEST</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
           {match.group && <span className="match-group">{match.group.replace('GROUP_', 'Group ')}</span>}
-          {ytUrl && (
+          {ytDirect && (
             <a
-              href={ytUrl}
+              href={ytDirect}
               target="_blank"
               rel="noreferrer"
               className="match-yt-btn"

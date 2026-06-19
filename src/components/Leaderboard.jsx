@@ -73,13 +73,6 @@ function MatchGridCard({ match, assignments, drawType, onOpenMatch }) {
   const as_ = match.score?.away ?? 0;
 
   const ytDirect = useYouTubeHighlight(home, away, isDone || isLive, isDone ? hs : null, isDone ? as_ : null);
-  // Show search URL immediately while the API resolves, swap to direct once ready
-  // ytDirect resolves to a real video on FIFA, else SBS Sport. If neither has
-  // a video yet, fall back to the FIFA channel search page.
-  const ytUrl = ytDirect
-    || ((isDone || isLive)
-      ? `https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`
-      : null);
 
   return (
     <div
@@ -106,9 +99,9 @@ function MatchGridCard({ match, assignments, drawType, onOpenMatch }) {
         <span className={`nmc-status${isLive ? ' live' : ''}`}>
           {isDone ? 'FT' : isLive ? `● ${match.liveClock || 'LIVE'}` : ''}
         </span>
-        {ytUrl && (
+        {ytDirect && (
           <a
-            href={ytUrl}
+            href={ytDirect}
             target="_blank"
             rel="noreferrer"
             className="nmc-yt"
