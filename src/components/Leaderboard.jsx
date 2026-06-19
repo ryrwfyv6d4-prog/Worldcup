@@ -268,6 +268,7 @@ function buildBoardWithGoals(assignments, drawType, fixtures) {
 }
 
 
+async function shareStandingsCard(board, prevStats, hasResults) {
   const W = 1080, H = 1350;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
