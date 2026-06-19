@@ -74,7 +74,11 @@ function MatchGridCard({ match, assignments, drawType, onOpenMatch }) {
 
   const ytDirect = useYouTubeHighlight(home, away, isDone || isLive, isDone ? hs : null, isDone ? as_ : null);
   // Show search URL immediately while the API resolves, swap to direct once ready
+  const sbsUrl = (isDone || isLive)
+    ? `https://www.sbs.com.au/ondemand/search?q=${encodeURIComponent(`${home} ${away} FIFA World Cup highlights`)}`
+    : null;
   const ytUrl = ytDirect
+    || sbsUrl
     || ((isDone || isLive)
       ? `https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`
       : null);
