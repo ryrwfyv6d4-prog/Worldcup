@@ -135,8 +135,8 @@ export default {
 
         const hasScore = hs != null && hs !== '' && as_ != null && as_ !== '';
         const cacheKey = hasScore
-          ? `highlights/v4/${home}|${away}|${hs}-${as_}.json`
-          : `highlights/v4/${home}|${away}.json`;
+          ? `highlights/v5/${home}|${away}|${hs}-${as_}.json`
+          : `highlights/v5/${home}|${away}.json`;
 
         // 1. Shared cache hit — zero quota
         const cached = await env.WALL.get(cacheKey);
@@ -150,9 +150,7 @@ export default {
         const key = env.YOUTUBE_API_KEY;
         if (!key) return json({ videoId: null });
 
-        const query = hasScore
-          ? `Highlights ${home} ${hs}-${as_} ${away} FIFA World Cup 2026`
-          : `${home} ${away} FIFA World Cup 2026 highlights`;
+        const query = `${home} ${away} FIFA World Cup 2026 highlights`;
 
         const FIFA_CHANNEL = 'UCpcTrCXblq78GZrTUTLWeBw';
         const SBS_CHANNEL = 'UCn6UMS98Ox-B3jkSWlweJ2w';
@@ -172,7 +170,7 @@ export default {
           return alias ? title.includes(alias) : false;
         };
 
-        async function searchChannel(channelId, requireScore) {
+        async function searchChannel(channelId) {
           try {
             const r = await fetch(
               `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&publishedAfter=${PUBLISHED_AFTER}&key=${key}`
@@ -184,7 +182,6 @@ export default {
               const title = t(i.snippet?.title);
               if (!title.includes('highlight') || !title.includes('2026')) return false;
               if (!teamInTitle(home, title) || !teamInTitle(away, title)) return false;
-              if (requireScore && hasScore && !title.includes(`${hs}-${as_}`) && !title.includes(`${hs} - ${as_}`)) return false;
               return true;
             });
             return m?.id?.videoId || null;
@@ -193,11 +190,9 @@ export default {
           }
         }
 
-        // FIFA: require score in title to avoid wrong-game matches
-        // SBS: relaxed — they don't include scores in titles
-        let videoId = await searchChannel(FIFA_CHANNEL, true);
+        let videoId = await searchChannel(FIFA_CHANNEL);
         let source = 'fifa';
-        if (!videoId) { videoId = await searchChannel(SBS_CHANNEL, false); source = 'sbs'; }
+        if (!videoId) { videoId = await searchChannel(SBS_CHANNEL); source = 'sbs'; }
 
         // Cache the outcome (positive forever, negative with a timestamp)
         await env.WALL.put(
