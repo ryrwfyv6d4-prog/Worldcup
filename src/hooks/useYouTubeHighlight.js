@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
 const YT_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || '';
-const CACHE_KEY = 'yt_hl_v13';
+const CACHE_KEY = 'yt_hl_v12';
 
 const FIFA_CHANNEL = 'UCpcTrCXblq78GZrTUTLWeBw';
 const SBS_CHANNEL = 'UCn6UMS98Ox-B3jkSWlweJ2w';
