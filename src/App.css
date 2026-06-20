@@ -1840,6 +1840,17 @@ h1, h2, h3, .app-title, .app-year, .lb-name, .lb-pts,
 }
 .group-tables-grid { padding: 0 12px 12px; }
 .group-table { margin-bottom: 14px; }
+.r32-projections {
+  margin: 6px 0 0;
+  padding: 6px 8px;
+  list-style: none;
+  background: rgba(0,0,0,0.04);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  line-height: 1.7;
+}
+.r32-projections li { opacity: 0.85; }
+.r32-projections b { opacity: 1; font-weight: 700; }
 .group-table-title {
   font-size: 0.72rem;
   font-weight: 800;

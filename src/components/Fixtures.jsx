@@ -20,6 +20,43 @@ const STATUS_BADGE = {
 };
 const PAGE_SIZE = 15;
 
+// R32 bracket derived from the official 2026 FIFA World Cup draw (openfootball data)
+// Each group's winner and runner-up face a fixed opponent slot in Round of 32
+const R32_BRACKET = {
+  A: { win: { type: 'best3rd', groups: ['C','E','F','H','I'] }, run: { type: 'runner', group: 'B' } },
+  B: { win: { type: 'best3rd', groups: ['E','F','G','I','J'] }, run: { type: 'runner', group: 'A' } },
+  C: { win: { type: 'runner', group: 'F' },                    run: { type: 'winner', group: 'F' } },
+  D: { win: { type: 'best3rd', groups: ['B','E','F','I','J'] }, run: { type: 'runner', group: 'G' } },
+  E: { win: { type: 'best3rd', groups: ['A','B','C','D','F'] }, run: { type: 'runner', group: 'I' } },
+  F: { win: { type: 'runner', group: 'C' },                    run: { type: 'winner', group: 'C' } },
+  G: { win: { type: 'best3rd', groups: ['A','E','H','I','J'] }, run: { type: 'runner', group: 'D' } },
+  H: { win: { type: 'runner', group: 'J' },                    run: { type: 'winner', group: 'J' } },
+  I: { win: { type: 'best3rd', groups: ['C','D','F','G','H'] }, run: { type: 'runner', group: 'E' } },
+  J: { win: { type: 'runner', group: 'H' },                    run: { type: 'winner', group: 'H' } },
+  K: { win: { type: 'best3rd', groups: ['D','E','I','J','L'] }, run: { type: 'runner', group: 'L' } },
+  L: { win: { type: 'best3rd', groups: ['E','H','I','J','K'] }, run: { type: 'runner', group: 'K' } },
+};
+
+function resolveR32Slot(slot, tables) {
+  if (slot.type === 'winner') {
+    const t = tables.find((x) => x.letter === slot.group);
+    return t?.rows[0]?.p > 0 ? t.rows[0].team : null;
+  }
+  if (slot.type === 'runner') {
+    const t = tables.find((x) => x.letter === slot.group);
+    return t?.rows[1]?.p > 0 ? t.rows[1].team : null;
+  }
+  if (slot.type === 'best3rd') {
+    const thirds = slot.groups
+      .map((g) => tables.find((x) => x.letter === g)?.rows[2])
+      .filter((r) => r && r.p > 0);
+    if (!thirds.length) return null;
+    thirds.sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf);
+    return thirds[0].team;
+  }
+  return null;
+}
+
 function GroupTables({ fixtures, ownerMap, currentUser, onSelectTeam }) {
   const [open, setOpen] = useState(false);
 
@@ -45,6 +82,7 @@ function GroupTables({ fixtures, ownerMap, currentUser, onSelectTeam }) {
     }
     return Object.keys(groups).sort().map((g) => ({
       group: g,
+      letter: g.replace('GROUP_', ''),
       rows: Object.values(groups[g]).sort((x, y) =>
         y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf || x.team.localeCompare(y.team)
       ),
@@ -60,38 +98,49 @@ function GroupTables({ fixtures, ownerMap, currentUser, onSelectTeam }) {
       </button>
       {open && (
         <div className="group-tables-grid">
-          {tables.map(({ group, rows }) => (
-            <div key={group} className="group-table">
-              <div className="group-table-title">Group {group}</div>
-              <table>
-                <thead>
-                  <tr><th></th><th className="num">P</th><th className="num">W</th><th className="num">D</th><th className="num">L</th><th className="num">GD</th><th className="num">Pts</th></tr>
-                </thead>
-                <tbody>
-                  {rows.map((r, i) => {
-                    const owner = ownerMap[r.team];
-                    const isMine = currentUser && owner === currentUser;
-                    return (
-                      <tr key={r.team} className={`${i < 2 ? 'qualifying' : ''} ${isMine ? 'mine' : ''}`}>
-                        <td>
-                          <button className="team-btn" onClick={() => onSelectTeam(r.team)}>
-                            {getFlag(r.team)} {r.team}
-                          </button>
-                          {owner && <span className={`owner-tag ${isMine ? 'me' : ''}`}> {owner}</span>}
-                        </td>
-                        <td className="num">{r.p}</td>
-                        <td className="num">{r.w}</td>
-                        <td className="num">{r.d}</td>
-                        <td className="num">{r.l}</td>
-                        <td className="num">{r.gf - r.ga}</td>
-                        <td className="num pts">{r.pts}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ))}
+          {tables.map(({ group, letter, rows }) => {
+            const bracket = R32_BRACKET[letter];
+            const p1opp = bracket && rows[0]?.p > 0 ? resolveR32Slot(bracket.win, tables) : null;
+            const p2opp = bracket && rows[1]?.p > 0 ? resolveR32Slot(bracket.run, tables) : null;
+            return (
+              <div key={group} className="group-table">
+                <div className="group-table-title">Group {letter}</div>
+                <table>
+                  <thead>
+                    <tr><th></th><th className="num">P</th><th className="num">W</th><th className="num">D</th><th className="num">L</th><th className="num">GD</th><th className="num">Pts</th></tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((r, i) => {
+                      const owner = ownerMap[r.team];
+                      const isMine = currentUser && owner === currentUser;
+                      return (
+                        <tr key={r.team} className={`${i < 2 ? 'qualifying' : ''} ${isMine ? 'mine' : ''}`}>
+                          <td>
+                            <button className="team-btn" onClick={() => onSelectTeam(r.team)}>
+                              {getFlag(r.team)} {r.team}
+                            </button>
+                            {owner && <span className={`owner-tag ${isMine ? 'me' : ''}`}> {owner}</span>}
+                          </td>
+                          <td className="num">{r.p}</td>
+                          <td className="num">{r.w}</td>
+                          <td className="num">{r.d}</td>
+                          <td className="num">{r.l}</td>
+                          <td className="num">{r.gf - r.ga}</td>
+                          <td className="num pts">{r.pts}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {(p1opp || p2opp) && (
+                  <ul className="r32-projections">
+                    {p1opp && rows[0] && <li><b>1st:</b> {getFlag(rows[0].team)} {rows[0].team} vs {getFlag(p1opp)} {p1opp}</li>}
+                    {p2opp && rows[1] && <li><b>2nd:</b> {getFlag(rows[1].team)} {rows[1].team} vs {getFlag(p2opp)} {p2opp}</li>}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
           <p className="hint" style={{ marginTop: 4 }}>Top 2 qualify automatically; best 3rd-placed teams may also advance.</p>
         </div>
       )}
