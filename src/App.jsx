@@ -3,7 +3,6 @@ import Navigation from './components/Navigation.jsx';
 import Draw from './components/Draw.jsx';
 import Leaderboard from './components/Leaderboard.jsx';
 import Fixtures from './components/Fixtures.jsx';
-import Bracket from './components/Bracket.jsx';
 import Settings from './components/Settings.jsx';
 import TeamDetail from './components/TeamDetail.jsx';
 import TheWall from './components/TheWall.jsx';
@@ -244,15 +243,6 @@ export default function App() {
                 error={error}
                 lastFetched={lastFetched}
                 onRefresh={refresh}
-                assignments={assignments}
-                drawType={drawType}
-                onSelectTeam={handleSelectTeam}
-                currentUser={resolvedUser}
-              />
-            )}
-            {tab === 'bracket' && (
-              <Bracket
-                fixtures={fixtures}
                 assignments={assignments}
                 drawType={drawType}
                 onSelectTeam={handleSelectTeam}

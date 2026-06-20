@@ -5,23 +5,73 @@ import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
 import { formatTimeAEST, formatDateAEST } from '../utils/time.js';
 import { useYouTubeHighlight } from '../hooks/useYouTubeHighlight.js';
 
-const STAGE_ORDER = ['GROUP_STAGE', 'LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL'];
-const STAGE_LABELS = {
-  GROUP_STAGE: 'Group Stage', LAST_32: 'R32', LAST_16: 'R16',
-  QUARTER_FINALS: 'QF', SEMI_FINALS: 'SF', FINAL: 'Final',
-};
-const STATUS_BADGE = {
-  FINISHED: { label: 'FT', cls: 'badge-done' },
-  IN_PLAY: { label: 'LIVE', cls: 'badge-live' },
-  PAUSED: { label: 'HT', cls: 'badge-live' },
-  SCHEDULED: { label: 'vs', cls: 'badge-upcoming' },
-  TIMED: { label: 'vs', cls: 'badge-upcoming' },
-  POSTPONED: { label: 'PPD', cls: 'badge-ppd' },
-};
-const PAGE_SIZE = 15;
+// ── Bracket data (official 2026 FIFA draw) ────────────────────────────────────
 
-// R32 bracket derived from the official 2026 FIFA World Cup draw (openfootball data)
-// Each group's winner and runner-up face a fixed opponent slot in Round of 32
+const R32 = [
+  { num: 73,  s1: '2A',         s2: '2B',         date: '28 Jun' },
+  { num: 74,  s1: '1E',         s2: '3A/B/C/D/F', date: '29 Jun' },
+  { num: 75,  s1: '1F',         s2: '2C',         date: '29 Jun' },
+  { num: 76,  s1: '1C',         s2: '2F',         date: '29 Jun' },
+  { num: 77,  s1: '1I',         s2: '3C/D/F/G/H', date: '30 Jun' },
+  { num: 78,  s1: '2E',         s2: '2I',         date: '30 Jun' },
+  { num: 79,  s1: '1A',         s2: '3C/E/F/H/I', date: '30 Jun' },
+  { num: 80,  s1: '1L',         s2: '3E/H/I/J/K', date: '1 Jul'  },
+  { num: 81,  s1: '1D',         s2: '3B/E/F/I/J', date: '1 Jul'  },
+  { num: 82,  s1: '1G',         s2: '3A/E/H/I/J', date: '1 Jul'  },
+  { num: 83,  s1: '2K',         s2: '2L',         date: '2 Jul'  },
+  { num: 84,  s1: '1H',         s2: '2J',         date: '2 Jul'  },
+  { num: 85,  s1: '1B',         s2: '3E/F/G/I/J', date: '2 Jul'  },
+  { num: 86,  s1: '1J',         s2: '2H',         date: '3 Jul'  },
+  { num: 87,  s1: '1K',         s2: '3D/E/I/J/L', date: '3 Jul'  },
+  { num: 88,  s1: '2D',         s2: '2G',         date: '3 Jul'  },
+];
+
+const R16 = [
+  { num: 89,  s1: 'W74', s2: 'W77', date: '4 Jul' },
+  { num: 90,  s1: 'W73', s2: 'W75', date: '4 Jul' },
+  { num: 91,  s1: 'W76', s2: 'W78', date: '5 Jul' },
+  { num: 92,  s1: 'W79', s2: 'W80', date: '5 Jul' },
+  { num: 93,  s1: 'W83', s2: 'W84', date: '6 Jul' },
+  { num: 94,  s1: 'W81', s2: 'W82', date: '6 Jul' },
+  { num: 95,  s1: 'W86', s2: 'W88', date: '7 Jul' },
+  { num: 96,  s1: 'W85', s2: 'W87', date: '7 Jul' },
+];
+
+const QF = [
+  { num: 97,  s1: 'W89', s2: 'W90', date: '9 Jul'  },
+  { num: 98,  s1: 'W93', s2: 'W94', date: '10 Jul' },
+  { num: 99,  s1: 'W91', s2: 'W92', date: '11 Jul' },
+  { num: 100, s1: 'W95', s2: 'W96', date: '11 Jul' },
+];
+
+const SF = [
+  { num: 101, s1: 'W97',  s2: 'W98',  date: '14 Jul' },
+  { num: 102, s1: 'W99',  s2: 'W100', date: '15 Jul' },
+];
+
+const FINAL_MATCH = [
+  { num: 104, s1: 'W101', s2: 'W102', date: '19 Jul' },
+];
+
+const KNOCKOUT_ROUNDS = [
+  { id: 'R32',   label: 'R32',   full: 'Round of 32',    matches: R32        },
+  { id: 'R16',   label: 'R16',   full: 'Round of 16',    matches: R16        },
+  { id: 'QF',    label: 'QF',    full: 'Quarter-finals', matches: QF         },
+  { id: 'SF',    label: 'SF',    full: 'Semi-finals',    matches: SF         },
+  { id: 'FINAL', label: 'Final', full: 'Final',          matches: FINAL_MATCH},
+];
+
+const MODES = [
+  { id: 'all',   label: 'All'   },
+  { id: 'groups',label: 'Groups'},
+  { id: 'R32',   label: 'R32'  },
+  { id: 'R16',   label: 'R16'  },
+  { id: 'QF',    label: 'QF'   },
+  { id: 'SF',    label: 'SF'   },
+  { id: 'FINAL', label: 'Final'},
+];
+
+// R32 projections for group table footer
 const R32_BRACKET = {
   A: { win: { type: 'best3rd', groups: ['C','E','F','H','I'] }, run: { type: 'runner', group: 'B' } },
   B: { win: { type: 'best3rd', groups: ['E','F','G','I','J'] }, run: { type: 'runner', group: 'A' } },
@@ -36,6 +86,38 @@ const R32_BRACKET = {
   K: { win: { type: 'best3rd', groups: ['D','E','I','J','L'] }, run: { type: 'runner', group: 'L' } },
   L: { win: { type: 'best3rd', groups: ['E','H','I','J','K'] }, run: { type: 'runner', group: 'K' } },
 };
+
+const PAGE_SIZE = 15;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function buildGroupTables(fixtures) {
+  const groups = {};
+  for (const m of fixtures) {
+    if (m.stage !== 'GROUP_STAGE' || !m.group) continue;
+    const home = normaliseTeamName(m.homeTeam.name);
+    const away = normaliseTeamName(m.awayTeam.name);
+    if (!groups[m.group]) groups[m.group] = {};
+    for (const t of [home, away]) {
+      if (!groups[m.group][t]) groups[m.group][t] = { team: t, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+    }
+    if (m.status !== 'FINISHED') continue;
+    const h = groups[m.group][home];
+    const a = groups[m.group][away];
+    h.p++; a.p++;
+    h.gf += m.score.home; h.ga += m.score.away;
+    a.gf += m.score.away; a.ga += m.score.home;
+    if (m.score.winner === 'HOME_TEAM') { h.w++; h.pts += 3; a.l++; }
+    else if (m.score.winner === 'AWAY_TEAM') { a.w++; a.pts += 3; h.l++; }
+    else { h.d++; a.d++; h.pts++; a.pts++; }
+  }
+  return Object.keys(groups).sort().map((g) => ({
+    letter: g,
+    rows: Object.values(groups[g]).sort((x, y) =>
+      y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf || x.team.localeCompare(y.team)
+    ),
+  }));
+}
 
 function resolveR32Slot(slot, tables) {
   if (slot.type === 'winner') {
@@ -57,96 +139,46 @@ function resolveR32Slot(slot, tables) {
   return null;
 }
 
-function GroupTables({ fixtures, ownerMap, currentUser, onSelectTeam }) {
-  const [open, setOpen] = useState(false);
+function resolveSlot(slot, groupTables, fixtureByNum) {
+  if (!slot) return null;
 
-  const tables = useMemo(() => {
-    const groups = {};
-    for (const m of fixtures) {
-      if (m.stage !== 'GROUP_STAGE' || !m.group) continue;
-      const home = normaliseTeamName(m.homeTeam.name);
-      const away = normaliseTeamName(m.awayTeam.name);
-      if (!groups[m.group]) groups[m.group] = {};
-      for (const t of [home, away]) {
-        if (!groups[m.group][t]) groups[m.group][t] = { team: t, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
-      }
-      if (m.status !== 'FINISHED') continue;
-      const h = groups[m.group][home];
-      const a = groups[m.group][away];
-      h.p++; a.p++;
-      h.gf += m.score.home; h.ga += m.score.away;
-      a.gf += m.score.away; a.ga += m.score.home;
-      if (m.score.winner === 'HOME_TEAM') { h.w++; h.pts += 3; a.l++; }
-      else if (m.score.winner === 'AWAY_TEAM') { a.w++; a.pts += 3; h.l++; }
-      else { h.d++; a.d++; h.pts++; a.pts++; }
+  const posMatch = slot.match(/^([12])([A-L])$/);
+  if (posMatch) {
+    const pos = parseInt(posMatch[1]) - 1;
+    const letter = posMatch[2];
+    const table = groupTables.find((t) => t.letter === letter);
+    if (table?.rows[pos]?.p > 0) return { team: table.rows[pos].team, projected: true };
+    return null;
+  }
+
+  const thirdMatch = slot.match(/^3([A-L](?:\/[A-L])*)$/);
+  if (thirdMatch) {
+    const letters = thirdMatch[1].split('/');
+    const thirds = letters
+      .map((g) => groupTables.find((t) => t.letter === g)?.rows[2])
+      .filter((r) => r && r.p > 0);
+    if (!thirds.length) return null;
+    thirds.sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf);
+    return { team: thirds[0].team, projected: true };
+  }
+
+  const winnerMatch = slot.match(/^W(\d+)$/);
+  if (winnerMatch) {
+    const n = parseInt(winnerMatch[1]);
+    const fix = fixtureByNum[n];
+    if (fix?.status === 'FINISHED') {
+      const w = fix.score.winner === 'HOME_TEAM'
+        ? normaliseTeamName(fix.homeTeam.name)
+        : normaliseTeamName(fix.awayTeam.name);
+      return { team: w, projected: false };
     }
-    return Object.keys(groups).sort().map((g) => ({
-      group: g,
-      letter: g.replace('GROUP_', ''),
-      rows: Object.values(groups[g]).sort((x, y) =>
-        y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf || x.team.localeCompare(y.team)
-      ),
-    }));
-  }, [fixtures]);
+    return null;
+  }
 
-  if (tables.length === 0) return null;
-
-  return (
-    <div className="card group-tables">
-      <button className="group-tables-toggle" onClick={() => setOpen(!open)}>
-        📊 Group Tables <span className="chev">{open ? '▾' : '▸'}</span>
-      </button>
-      {open && (
-        <div className="group-tables-grid">
-          {tables.map(({ group, letter, rows }) => {
-            const bracket = R32_BRACKET[letter];
-            const p1opp = bracket && rows[0]?.p > 0 ? resolveR32Slot(bracket.win, tables) : null;
-            const p2opp = bracket && rows[1]?.p > 0 ? resolveR32Slot(bracket.run, tables) : null;
-            return (
-              <div key={group} className="group-table">
-                <div className="group-table-title">Group {letter}</div>
-                <table>
-                  <thead>
-                    <tr><th></th><th className="num">P</th><th className="num">W</th><th className="num">D</th><th className="num">L</th><th className="num">GD</th><th className="num">Pts</th></tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((r, i) => {
-                      const owner = ownerMap[r.team];
-                      const isMine = currentUser && owner === currentUser;
-                      return (
-                        <tr key={r.team} className={`${i < 2 ? 'qualifying' : ''} ${isMine ? 'mine' : ''}`}>
-                          <td>
-                            <button className="team-btn" onClick={() => onSelectTeam(r.team)}>
-                              {getFlag(r.team)} {r.team}
-                            </button>
-                            {owner && <span className={`owner-tag ${isMine ? 'me' : ''}`}> {owner}</span>}
-                          </td>
-                          <td className="num">{r.p}</td>
-                          <td className="num">{r.w}</td>
-                          <td className="num">{r.d}</td>
-                          <td className="num">{r.l}</td>
-                          <td className="num">{r.gf - r.ga}</td>
-                          <td className="num pts">{r.pts}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                {(p1opp || p2opp) && (
-                  <ul className="r32-projections">
-                    {p1opp && rows[0] && <li><b>1st:</b> {getFlag(rows[0].team)} {rows[0].team} vs {getFlag(p1opp)} {p1opp}</li>}
-                    {p2opp && rows[1] && <li><b>2nd:</b> {getFlag(rows[1].team)} {rows[1].team} vs {getFlag(p2opp)} {p2opp}</li>}
-                  </ul>
-                )}
-              </div>
-            );
-          })}
-          <p className="hint" style={{ marginTop: 4 }}>Top 2 qualify automatically; best 3rd-placed teams may also advance.</p>
-        </div>
-      )}
-    </div>
-  );
+  return null;
 }
+
+// ── MatchCard ─────────────────────────────────────────────────────────────────
 
 function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) {
   const home = normaliseTeamName(match.homeTeam.name);
@@ -167,16 +199,13 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
       className={`match-card ${isLive ? 'live' : ''} ${hasOwner && !isLive ? 'has-owner' : ''}`}
       onClick={() => onOpenMatch(match)}
     >
-      {/* Meta row */}
       <div className="mc-meta">
         <span className="mc-time">
           {isDone || isLive ? formatDateAEST(match.utcDate) : `${formatTimeAEST(match.utcDate)} AEST`}
         </span>
         <span className="mc-meta-right">
           {match.group && <span className="match-group">Grp {match.group}</span>}
-          {isLive && (
-            <span className="status-badge badge-live">{match.liveClock ? `${match.liveClock}'` : 'LIVE'}</span>
-          )}
+          {isLive && <span className="status-badge badge-live">{match.liveClock ? `${match.liveClock}'` : 'LIVE'}</span>}
           {isDone && <span className="status-badge badge-done">FT</span>}
           {!isDone && !isLive && <span className="mc-vs">vs</span>}
           {ytDirect && (
@@ -185,8 +214,6 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
           )}
         </span>
       </div>
-
-      {/* Home team */}
       <div className="mc-team-row">
         <button className="mc-team-btn" onClick={(e) => { e.stopPropagation(); onSelectTeam(home); }}>
           <span className="mc-flag">{getFlag(home)}</span>
@@ -197,8 +224,6 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
         </button>
         {showScore && <span className="mc-score-val">{match.score.home ?? '–'}</span>}
       </div>
-
-      {/* Away team */}
       <div className="mc-team-row">
         <button className="mc-team-btn" onClick={(e) => { e.stopPropagation(); onSelectTeam(away); }}>
           <span className="mc-flag">{getFlag(away)}</span>
@@ -213,33 +238,159 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
   );
 }
 
+// ── BracketCard ───────────────────────────────────────────────────────────────
+
+function BracketCard({ def, groupTables, fixtureByNum, ownerMap, currentUser, onSelectTeam }) {
+  const fixture = fixtureByNum[def.num];
+  const isLive = fixture?.status === 'IN_PLAY' || fixture?.status === 'PAUSED';
+  const isDone = fixture?.status === 'FINISHED';
+  const showScore = isDone || isLive;
+
+  const r1 = resolveSlot(def.s1, groupTables, fixtureByNum);
+  const r2 = resolveSlot(def.s2, groupTables, fixtureByNum);
+
+  const team1 = fixture ? normaliseTeamName(fixture.homeTeam.name) : r1?.team;
+  const team2 = fixture ? normaliseTeamName(fixture.awayTeam.name) : r2?.team;
+  const proj1 = !fixture && r1?.projected;
+  const proj2 = !fixture && r2?.projected;
+
+  const own1 = team1 ? ownerMap[team1] : null;
+  const own2 = team2 ? ownerMap[team2] : null;
+  const hasOwner = !!(own1 || own2);
+  const anyProjected = proj1 || proj2;
+
+  const TeamRow = ({ team, owner, projected, score }) => (
+    <div className="mc-team-row">
+      {team ? (
+        <button className="mc-team-btn" onClick={(e) => { e.stopPropagation(); onSelectTeam(team); }}>
+          <span className="mc-flag">{getFlag(team)}</span>
+          <div className="mc-team-info">
+            <span className={`mc-name${owner ? ' owned' : ''}${projected ? ' bk-projected' : ''}`}>{team}</span>
+            {owner && <span className={`mc-owner${currentUser === owner ? ' me' : ''}`}>{owner}</span>}
+          </div>
+        </button>
+      ) : (
+        <span className="bk-tbd">TBD</span>
+      )}
+      {showScore && <span className="mc-score-val">{score ?? '–'}</span>}
+    </div>
+  );
+
+  return (
+    <div className={`match-card${isLive ? ' live' : ''}${hasOwner && !isLive ? ' has-owner' : ''}`}>
+      <div className="mc-meta">
+        <span className="mc-time">{def.date}</span>
+        <span className="mc-meta-right">
+          {isLive && <span className="status-badge badge-live">{fixture.liveClock ? `${fixture.liveClock}'` : 'LIVE'}</span>}
+          {isDone && <span className="status-badge badge-done">FT</span>}
+          {!isDone && !isLive && anyProjected && <span className="bk-proj-tag">projected</span>}
+        </span>
+      </div>
+      <TeamRow team={team1} owner={own1} projected={proj1} score={fixture?.score?.home} />
+      <TeamRow team={team2} owner={own2} projected={proj2} score={fixture?.score?.away} />
+    </div>
+  );
+}
+
+// ── Group tables (always-visible grid, no accordion) ─────────────────────────
+
+function GroupTablesSection({ groupTables, ownerMap, currentUser, onSelectTeam }) {
+  if (!groupTables.length) return null;
+  return (
+    <div className="group-tables-grid">
+      {groupTables.map(({ letter, rows }) => {
+        const bracket = R32_BRACKET[letter];
+        const p1opp = bracket && rows[0]?.p > 0 ? resolveR32Slot(bracket.win, groupTables) : null;
+        const p2opp = bracket && rows[1]?.p > 0 ? resolveR32Slot(bracket.run, groupTables) : null;
+        return (
+          <div key={letter} className="group-table">
+            <div className="group-table-title">Group {letter}</div>
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th className="num">P</th>
+                  <th className="num">W</th>
+                  <th className="num">D</th>
+                  <th className="num">L</th>
+                  <th className="num">GD</th>
+                  <th className="num">Pts</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r, i) => {
+                  const owner = ownerMap[r.team];
+                  const isMine = currentUser && owner === currentUser;
+                  return (
+                    <tr key={r.team} className={`${i < 2 ? 'qualifying' : ''} ${isMine ? 'mine' : ''}`}>
+                      <td>
+                        <button className="team-btn" onClick={() => onSelectTeam(r.team)}>
+                          {getFlag(r.team)} {r.team}
+                        </button>
+                        {owner && <span className={`owner-tag ${isMine ? 'me' : ''}`}> {owner}</span>}
+                      </td>
+                      <td className="num">{r.p}</td>
+                      <td className="num">{r.w}</td>
+                      <td className="num">{r.d}</td>
+                      <td className="num">{r.l}</td>
+                      <td className="num">{r.gf - r.ga}</td>
+                      <td className="num pts">{r.pts}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {(p1opp || p2opp) && (
+              <ul className="r32-projections">
+                {p1opp && rows[0] && <li><b>1st:</b> {getFlag(rows[0].team)} {rows[0].team} vs {getFlag(p1opp)} {p1opp}</li>}
+                {p2opp && rows[1] && <li><b>2nd:</b> {getFlag(rows[1].team)} {rows[1].team} vs {getFlag(p2opp)} {p2opp}</li>}
+              </ul>
+            )}
+          </div>
+        );
+      })}
+      <p className="hint" style={{ marginTop: 4 }}>Top 2 qualify automatically; best 3rd-placed teams may also advance.</p>
+    </div>
+  );
+}
+
+// ── Fixtures page ─────────────────────────────────────────────────────────────
+
 export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType, onSelectTeam, currentUser }) {
-  const [stageFilter, setStageFilter] = useState('ALL');
+  const [mode, setMode] = useState('groups');
   const [openMatch, setOpenMatch] = useState(null);
   const [showFinished, setShowFinished] = useState(true);
   const [search, setSearch] = useState('');
   const [limit, setLimit] = useState(PAGE_SIZE);
 
-  useEffect(() => { setLimit(PAGE_SIZE); }, [stageFilter, showFinished, search]);
+  useEffect(() => { setLimit(PAGE_SIZE); }, [mode, showFinished, search]);
+
+  const isKnockout = !['all', 'groups'].includes(mode);
 
   const ownerMap = useMemo(() => {
     const map = {};
     for (const name of Object.keys(assignments)) {
-      const teams = getTeamsForParticipant(name, assignments, drawType);
-      for (const t of teams) map[t] = name;
+      for (const t of getTeamsForParticipant(name, assignments, drawType)) map[t] = name;
     }
     return map;
   }, [assignments, drawType]);
 
-  const stages = useMemo(() => {
-    const set = new Set(fixtures.map((f) => f.stage));
-    return STAGE_ORDER.filter((s) => set.has(s));
+  const groupTables = useMemo(() => buildGroupTables(fixtures), [fixtures]);
+
+  const fixtureByNum = useMemo(() => {
+    const map = {};
+    for (const f of fixtures) {
+      if (typeof f.id === 'number' && f.id >= 73) map[f.id] = f;
+    }
+    return map;
   }, [fixtures]);
+
+  const currentKnockout = KNOCKOUT_ROUNDS.find((r) => r.id === mode);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let list = fixtures;
-    if (stageFilter !== 'ALL') list = list.filter((f) => f.stage === stageFilter);
+    if (mode === 'groups') list = list.filter((f) => f.stage === 'GROUP_STAGE');
     if (!showFinished) list = list.filter((f) => f.status !== 'FINISHED');
     if (q) {
       list = list.filter((f) => {
@@ -251,7 +402,7 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
       });
     }
     return [...list].sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
-  }, [fixtures, stageFilter, showFinished, search, ownerMap]);
+  }, [fixtures, mode, showFinished, search, ownerMap]);
 
   const visible = useMemo(() => filtered.slice(0, limit), [filtered, limit]);
 
@@ -284,9 +435,22 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         {error && <p className="error-msg">{error}</p>}
       </div>
 
-      {fixtures.length > 0 && (
+      {/* Mode pills */}
+      <div className="stage-filters">
+        {MODES.map((m) => (
+          <button
+            key={m.id}
+            className={`filter-btn ${mode === m.id ? 'active' : ''}`}
+            onClick={() => setMode(m.id)}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Search + show-finished toggle (list modes only) */}
+      {!isKnockout && fixtures.length > 0 && (
         <div className="filter-bar">
-          {/* Search */}
           <div className="search-row">
             <input
               className="search-input"
@@ -295,21 +459,8 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            {search && (
-              <button className="search-clear" onClick={() => setSearch('')}>✕</button>
-            )}
+            {search && <button className="search-clear" onClick={() => setSearch('')}>✕</button>}
           </div>
-
-          {/* Stage pills */}
-          <div className="stage-filters">
-            <button className={`filter-btn ${stageFilter === 'ALL' ? 'active' : ''}`} onClick={() => setStageFilter('ALL')}>All</button>
-            {stages.map((s) => (
-              <button key={s} className={`filter-btn ${stageFilter === s ? 'active' : ''}`} onClick={() => setStageFilter(s)}>
-                {STAGE_LABELS[s] || s}
-              </button>
-            ))}
-          </div>
-
           <label className="toggle-label">
             <input type="checkbox" checked={showFinished} onChange={(e) => setShowFinished(e.target.checked)} />
             <span>Show finished</span>
@@ -317,52 +468,78 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         </div>
       )}
 
-      {fixtures.length > 0 && (
-        <GroupTables fixtures={fixtures} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} />
+      {/* Group tables (groups mode only) */}
+      {mode === 'groups' && (
+        <GroupTablesSection
+          groupTables={groupTables}
+          ownerMap={ownerMap}
+          currentUser={currentUser}
+          onSelectTeam={onSelectTeam}
+        />
       )}
 
-      {fixtures.length === 0 && !loading && (
-        <div className="empty-state">
-          <div className="empty-icon">📅</div>
-          <p>{error || 'No fixtures found. Pull to refresh or check your connection.'}</p>
-        </div>
-      )}
-
-      {filtered.length === 0 && !loading && fixtures.length > 0 && (
-        <div className="empty-state">
-          <div className="empty-icon">🔍</div>
-          <p>No matches found for "{search}"</p>
-        </div>
-      )}
-
-      {loading && (
-        <div className="loading">
-          <div className="spinner" />
-          <p>Loading fixtures…</p>
-        </div>
-      )}
-
-      {!loading && Array.from(grouped.entries()).map(([day, matches]) => (
-        <div key={day} className="day-group">
-          <div className="day-header">{day}</div>
-          {matches.map((m) => (
-            <MatchCard
-              key={m.id}
-              match={m}
+      {/* Knockout bracket */}
+      {isKnockout && currentKnockout && (
+        <>
+          <div className="bk-round-title">{currentKnockout.full}</div>
+          {currentKnockout.matches.map((def) => (
+            <BracketCard
+              key={def.num}
+              def={def}
+              groupTables={groupTables}
+              fixtureByNum={fixtureByNum}
               ownerMap={ownerMap}
               currentUser={currentUser}
               onSelectTeam={onSelectTeam}
-              onOpenMatch={setOpenMatch}
             />
           ))}
-        </div>
-      ))}
-
-      {hasMore && (
-        <button className="show-more-btn" onClick={() => setLimit((l) => l + PAGE_SIZE)}>
-          Show more · {filtered.length - limit} remaining
-        </button>
+        </>
       )}
+
+      {/* Match list (all + groups modes) */}
+      {!isKnockout && (
+        <>
+          {fixtures.length === 0 && !loading && (
+            <div className="empty-state">
+              <div className="empty-icon">📅</div>
+              <p>{error || 'No fixtures found. Pull to refresh or check your connection.'}</p>
+            </div>
+          )}
+          {filtered.length === 0 && !loading && fixtures.length > 0 && (
+            <div className="empty-state">
+              <div className="empty-icon">🔍</div>
+              <p>No matches found{search ? ` for "${search}"` : ''}</p>
+            </div>
+          )}
+          {loading && (
+            <div className="loading">
+              <div className="spinner" />
+              <p>Loading fixtures…</p>
+            </div>
+          )}
+          {!loading && Array.from(grouped.entries()).map(([day, matches]) => (
+            <div key={day} className="day-group">
+              <div className="day-header">{day}</div>
+              {matches.map((m) => (
+                <MatchCard
+                  key={m.id}
+                  match={m}
+                  ownerMap={ownerMap}
+                  currentUser={currentUser}
+                  onSelectTeam={onSelectTeam}
+                  onOpenMatch={setOpenMatch}
+                />
+              ))}
+            </div>
+          ))}
+          {hasMore && (
+            <button className="show-more-btn" onClick={() => setLimit((l) => l + PAGE_SIZE)}>
+              Show more · {filtered.length - limit} remaining
+            </button>
+          )}
+        </>
+      )}
+
       {openMatch && (
         <MatchSheet
           match={openMatch}
@@ -375,4 +552,3 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
     </div>
   );
 }
-
