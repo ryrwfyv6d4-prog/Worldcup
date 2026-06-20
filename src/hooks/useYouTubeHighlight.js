@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
 const YT_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || '';
-const CACHE_KEY = 'yt_hl_v9';
+const CACHE_KEY = 'yt_hl_v10';
 
 const FIFA_CHANNEL = 'UCpcTrCXblq78GZrTUTLWeBw';
 const SBS_CHANNEL = 'UCn6UMS98Ox-B3jkSWlweJ2w';
@@ -18,11 +18,12 @@ function writeCache(obj) {
 
 async function searchYT(channelId, query) {
   const r = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&key=${YT_KEY}`
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&publishedAfter=2026-06-01T00%3A00%3A00Z&key=${YT_KEY}`
   );
   const j = await r.json();
   const items = j.items || [];
-  const m = items.find((i) => i.snippet?.title?.toLowerCase().includes('highlight'));
+  const t = (s) => s?.toLowerCase() || '';
+  const m = items.find((i) => t(i.snippet?.title).includes('highlight') && t(i.snippet?.title).includes('2026'));
   return m?.id?.videoId || null;
 }
 

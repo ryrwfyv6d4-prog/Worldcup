@@ -135,8 +135,8 @@ export default {
 
         const hasScore = hs != null && hs !== '' && as_ != null && as_ !== '';
         const cacheKey = hasScore
-          ? `highlights/${home}|${away}|${hs}-${as_}.json`
-          : `highlights/${home}|${away}.json`;
+          ? `highlights/v2/${home}|${away}|${hs}-${as_}.json`
+          : `highlights/v2/${home}|${away}.json`;
 
         // 1. Shared cache hit — zero quota
         const cached = await env.WALL.get(cacheKey);
@@ -156,15 +156,17 @@ export default {
 
         const FIFA_CHANNEL = 'UCpcTrCXblq78GZrTUTLWeBw';
         const SBS_CHANNEL = 'UCn6UMS98Ox-B3jkSWlweJ2w';
+        const PUBLISHED_AFTER = '2026-06-01T00:00:00Z';
 
         async function searchChannel(channelId) {
           try {
             const r = await fetch(
-              `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&key=${key}`
+              `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&publishedAfter=${PUBLISHED_AFTER}&key=${key}`
             );
             const j = await r.json();
             const items = j.items || [];
-            const m = items.find((i) => i.snippet?.title?.toLowerCase().includes('highlight'));
+            const t = (s) => s?.toLowerCase() || '';
+            const m = items.find((i) => t(i.snippet?.title).includes('highlight') && t(i.snippet?.title).includes('2026'));
             return m?.id?.videoId || null;
           } catch {
             return null;
