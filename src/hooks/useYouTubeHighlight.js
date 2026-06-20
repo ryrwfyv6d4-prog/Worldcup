@@ -81,12 +81,12 @@ async function resolveVideoId(cacheKey, home, away, hs, as_) {
         const query = `${home} ${away} FIFA World Cup 2026 highlights`;
         let id = null;
         for (const apiKey of YT_KEYS) {
-          const fifa = await searchYT(FIFA_CHANNEL, query, home, away, apiKey);
-          if (fifa === 'QUOTA_EXCEEDED') continue;
-          if (fifa) { id = fifa; break; }
           const sbs = await searchYT(SBS_CHANNEL, query, home, away, apiKey);
           if (sbs === 'QUOTA_EXCEEDED') continue;
           if (sbs) { id = sbs; break; }
+          const fifa = await searchYT(FIFA_CHANNEL, query, home, away, apiKey);
+          if (fifa === 'QUOTA_EXCEEDED') continue;
+          if (fifa) { id = fifa; break; }
           break;
         }
         if (id) {

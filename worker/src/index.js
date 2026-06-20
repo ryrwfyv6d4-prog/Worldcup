@@ -135,8 +135,8 @@ export default {
 
         const hasScore = hs != null && hs !== '' && as_ != null && as_ !== '';
         const cacheKey = hasScore
-          ? `highlights/v6/${home}|${away}|${hs}-${as_}.json`
-          : `highlights/v6/${home}|${away}.json`;
+          ? `highlights/v7/${home}|${away}|${hs}-${as_}.json`
+          : `highlights/v7/${home}|${away}.json`;
 
         // 1. Shared cache hit — zero quota
         const cached = await env.WALL.get(cacheKey);
@@ -192,15 +192,16 @@ export default {
         }
 
         // Try each API key in turn, falling back on quota exhaustion
+        // SBS checked first — uploads faster and more reliably than FIFA channel
         let videoId = null;
-        let source = 'fifa';
+        let source = 'sbs';
         for (const apiKey of keys) {
-          videoId = await searchChannel(FIFA_CHANNEL, apiKey);
+          videoId = await searchChannel(SBS_CHANNEL, apiKey);
           if (videoId === 'QUOTA_EXCEEDED') { videoId = null; continue; }
           if (!videoId) {
-            const sbs = await searchChannel(SBS_CHANNEL, apiKey);
-            if (sbs === 'QUOTA_EXCEEDED') continue;
-            if (sbs) { videoId = sbs; source = 'sbs'; }
+            const fifa = await searchChannel(FIFA_CHANNEL, apiKey);
+            if (fifa === 'QUOTA_EXCEEDED') continue;
+            if (fifa) { videoId = fifa; source = 'fifa'; }
           }
           if (videoId) break;
         }
