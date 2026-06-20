@@ -135,8 +135,8 @@ export default {
 
         const hasScore = hs != null && hs !== '' && as_ != null && as_ !== '';
         const cacheKey = hasScore
-          ? `highlights/v2/${home}|${away}|${hs}-${as_}.json`
-          : `highlights/v2/${home}|${away}.json`;
+          ? `highlights/v3/${home}|${away}|${hs}-${as_}.json`
+          : `highlights/v3/${home}|${away}.json`;
 
         // 1. Shared cache hit — zero quota
         const cached = await env.WALL.get(cacheKey);
@@ -158,6 +158,20 @@ export default {
         const SBS_CHANNEL = 'UCn6UMS98Ox-B3jkSWlweJ2w';
         const PUBLISHED_AFTER = '2026-06-01T00:00:00Z';
 
+        const ALIASES = {
+          'turkey': 'türkiye',
+          'usa': 'united states',
+          'south korea': 'korea republic',
+          'czech republic': 'czechia',
+          "ivory coast": "côte d'ivoire",
+        };
+        const teamInTitle = (name, title) => {
+          const n = name.toLowerCase();
+          if (title.includes(n)) return true;
+          const alias = ALIASES[n];
+          return alias ? title.includes(alias) : false;
+        };
+
         async function searchChannel(channelId) {
           try {
             const r = await fetch(
@@ -169,6 +183,7 @@ export default {
             const m = items.find((i) => {
               const title = t(i.snippet?.title);
               if (!title.includes('highlight') || !title.includes('2026')) return false;
+              if (!teamInTitle(home, title) || !teamInTitle(away, title)) return false;
               if (hasScore && !title.includes(`${hs}-${as_}`) && !title.includes(`${hs} - ${as_}`)) return false;
               return true;
             });

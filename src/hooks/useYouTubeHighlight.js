@@ -2,12 +2,28 @@ import { useState, useEffect } from 'react';
 
 const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
 const YT_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || '';
-const CACHE_KEY = 'yt_hl_v10';
+const CACHE_KEY = 'yt_hl_v11';
 
 const FIFA_CHANNEL = 'UCpcTrCXblq78GZrTUTLWeBw';
 const SBS_CHANNEL = 'UCn6UMS98Ox-B3jkSWlweJ2w';
 
 const inFlight = new Map();
+
+// FIFA/YouTube often use different names than football-data.org
+const ALIASES = {
+  'turkey': 'türkiye',
+  'usa': 'united states',
+  'south korea': 'korea republic',
+  'czech republic': 'czechia',
+  "ivory coast": "côte d'ivoire",
+};
+
+function teamInTitle(name, title) {
+  const n = name.toLowerCase();
+  if (title.includes(n)) return true;
+  const alias = ALIASES[n];
+  return alias ? title.includes(alias) : false;
+}
 
 function readCache() {
   try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch { return {}; }
@@ -16,7 +32,7 @@ function writeCache(obj) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(obj)); } catch {}
 }
 
-async function searchYT(channelId, query, hs, as_) {
+async function searchYT(channelId, query, home, away, hs, as_) {
   const r = await fetch(
     `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&publishedAfter=2026-06-01T00%3A00%3A00Z&key=${YT_KEY}`
   );
@@ -27,6 +43,7 @@ async function searchYT(channelId, query, hs, as_) {
   const m = items.find((i) => {
     const title = t(i.snippet?.title);
     if (!title.includes('highlight') || !title.includes('2026')) return false;
+    if (!teamInTitle(home, title) || !teamInTitle(away, title)) return false;
     if (hasScore && !title.includes(`${hs}-${as_}`) && !title.includes(`${hs} - ${as_}`)) return false;
     return true;
   });
@@ -62,8 +79,8 @@ async function resolveVideoId(cacheKey, home, away, hs, as_) {
         const query = hasScore
           ? `Highlights ${home} ${hs}-${as_} ${away} FIFA World Cup 2026`
           : `${home} ${away} FIFA World Cup 2026 highlights`;
-        let id = await searchYT(FIFA_CHANNEL, query, hs, as_);
-        if (!id) id = await searchYT(SBS_CHANNEL, query, hs, as_);
+        let id = await searchYT(FIFA_CHANNEL, query, home, away, hs, as_);
+        if (!id) id = await searchYT(SBS_CHANNEL, query, home, away, hs, as_);
         if (id) {
           const c = readCache(); c[cacheKey] = id; writeCache(c);
           inFlight.delete(cacheKey);
