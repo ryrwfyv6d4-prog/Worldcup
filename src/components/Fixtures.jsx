@@ -148,10 +148,9 @@ function GroupTables({ fixtures, ownerMap, currentUser, onSelectTeam }) {
   );
 }
 
-function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) {
+function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch, predictions, onPick, participants }) {
   const home = normaliseTeamName(match.homeTeam.name);
   const away = normaliseTeamName(match.awayTeam.name);
-  const { label, cls } = STATUS_BADGE[match.status] || { label: match.status, cls: 'badge-upcoming' };
   const homeOwner = ownerMap[home];
   const awayOwner = ownerMap[away];
   const isLive = match.status === 'IN_PLAY' || match.status === 'PAUSED';
@@ -163,63 +162,102 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
   const as_ = match.score?.away;
   const ytDirect = useYouTubeHighlight(home, away, isDone || isLive, isDone ? hs : null, isDone ? as_ : null);
 
+  const matchPicks = predictions?.[match.id] || {};
+  const myPick = currentUser ? matchPicks[currentUser] : null;
+  const canPick = !isDone && !isLive && new Date(match.utcDate) > new Date() && !!currentUser && !!onPick;
+  const result = isDone
+    ? (match.score.winner === 'HOME_TEAM' ? 'home' : match.score.winner === 'AWAY_TEAM' ? 'away' : 'draw')
+    : null;
+  const hasPicks = Object.keys(matchPicks).length > 0;
+  const showPicks = (participants?.length > 0) && (hasPicks || canPick);
+
   return (
-    <div className={`match-card ${isLive ? 'live' : ''} ${hasOwner && !isLive ? 'has-owner' : ''}`} onClick={() => onOpenMatch(match)}>
-      <div className="match-date">
-        <span>{formatTimeAEST(match.utcDate)} AEST</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
-          {match.group && <span className="match-group">{match.group.replace('GROUP_', 'Group ')}</span>}
+    <div
+      className={`match-card ${isLive ? 'live' : ''} ${hasOwner && !isLive ? 'has-owner' : ''}`}
+      onClick={() => onOpenMatch(match)}
+    >
+      {/* Meta row */}
+      <div className="mc-meta">
+        <span className="mc-time">
+          {isDone || isLive ? formatDateAEST(match.utcDate) : `${formatTimeAEST(match.utcDate)} AEST`}
+        </span>
+        <span className="mc-meta-right">
+          {match.group && <span className="match-group">Grp {match.group}</span>}
+          {isLive && (
+            <span className="status-badge badge-live">{match.liveClock ? `${match.liveClock}'` : 'LIVE'}</span>
+          )}
+          {isDone && <span className="status-badge badge-done">FT</span>}
+          {!isDone && !isLive && <span className="mc-vs">vs</span>}
           {ytDirect && (
-            <a
-              href={ytDirect}
-              target="_blank"
-              rel="noreferrer"
-              className="match-yt-btn"
-              onClick={(e) => e.stopPropagation()}
-            >
-              ▶ Highlights
-            </a>
+            <a href={ytDirect} target="_blank" rel="noreferrer" className="match-yt-btn"
+               onClick={(e) => e.stopPropagation()}>▶</a>
           )}
         </span>
       </div>
-      <div className="match-row">
-        <div className={`team-side ${homeOwner ? 'owned' : ''}`}>
-          <button className="team-btn" onClick={(e) => { e.stopPropagation(); onSelectTeam(home); }} style={{ gap: 6 }}>
-            <span className="flag">{getFlag(home)}</span>
-            <div className="team-col">
-              <span className="team-name">{home || match.homeTeam.name}</span>
-              {homeOwner && <span className={`owner-tag ${currentUser === homeOwner ? 'me' : ''}`}>({homeOwner})</span>}
+
+      {/* Home team */}
+      <div className="mc-team-row">
+        <button className="mc-team-btn" onClick={(e) => { e.stopPropagation(); onSelectTeam(home); }}>
+          <span className="mc-flag">{getFlag(home)}</span>
+          <div className="mc-team-info">
+            <span className={`mc-name ${homeOwner ? 'owned' : ''}`}>{home}</span>
+            {homeOwner && <span className={`mc-owner ${currentUser === homeOwner ? 'me' : ''}`}>{homeOwner}</span>}
+          </div>
+        </button>
+        {showScore && <span className="mc-score-val">{match.score.home ?? '–'}</span>}
+      </div>
+
+      {/* Away team */}
+      <div className="mc-team-row">
+        <button className="mc-team-btn" onClick={(e) => { e.stopPropagation(); onSelectTeam(away); }}>
+          <span className="mc-flag">{getFlag(away)}</span>
+          <div className="mc-team-info">
+            <span className={`mc-name ${awayOwner ? 'owned' : ''}`}>{away}</span>
+            {awayOwner && <span className={`mc-owner ${currentUser === awayOwner ? 'me' : ''}`}>{awayOwner}</span>}
+          </div>
+        </button>
+        {showScore && <span className="mc-score-val">{match.score.away ?? '–'}</span>}
+      </div>
+
+      {/* Picks */}
+      {showPicks && (
+        <div className="mc-picks" onClick={(e) => e.stopPropagation()}>
+          {hasPicks && (
+            <div className="mc-picks-row">
+              {(participants || []).map((p) => {
+                const pick = matchPicks[p];
+                if (!pick) return null;
+                const correct = result && pick === result;
+                const wrong = result && pick !== result;
+                const icon = pick === 'home' ? getFlag(home) : pick === 'away' ? getFlag(away) : 'D';
+                return (
+                  <span key={p} className={`mc-pick-chip${correct ? ' correct' : wrong ? ' wrong' : p === currentUser ? ' mine' : ''}`}>
+                    {p} {icon}
+                  </span>
+                );
+              })}
             </div>
-          </button>
-        </div>
-        <div className="score-center">
-          {showScore ? (
-            <span className={`score ${isLive ? 'live-big' : ''}`}>
-              {match.score.home ?? '–'}
-              <span className={`status-badge ${cls}`}>
-                {isLive && match.liveClock ? match.liveClock : label}
-              </span>
-              {match.score.away ?? '–'}
-            </span>
-          ) : (
-            <span className={`status-badge ${cls}`}>{label}</span>
+          )}
+          {canPick && (
+            <div className="mc-pick-btns">
+              {[['home', getFlag(home)], ['draw', 'Draw'], ['away', getFlag(away)]].map(([key, label]) => (
+                <button
+                  key={key}
+                  className={`mc-pick-btn${myPick === key ? ' sel' : ''}`}
+                  onClick={() => onPick(match.id, currentUser, key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           )}
         </div>
-        <div className={`team-side right ${awayOwner ? 'owned' : ''}`}>
-          <button className="team-btn" onClick={(e) => { e.stopPropagation(); onSelectTeam(away); }} style={{ gap: 6, flexDirection: 'row-reverse' }}>
-            <span className="flag">{getFlag(away)}</span>
-            <div className="team-col" style={{ alignItems: 'flex-end' }}>
-              <span className="team-name">{away || match.awayTeam.name}</span>
-              {awayOwner && <span className={`owner-tag ${currentUser === awayOwner ? 'me' : ''}`}>({awayOwner})</span>}
-            </div>
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
 
-export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType, onSelectTeam, currentUser }) {
+export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType, onSelectTeam, currentUser, predictions, onPick, participants }) {
   const [stageFilter, setStageFilter] = useState('ALL');
   const [openMatch, setOpenMatch] = useState(null);
   const [showFinished, setShowFinished] = useState(true);
@@ -352,7 +390,17 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         <div key={day} className="day-group">
           <div className="day-header">{day}</div>
           {matches.map((m) => (
-            <MatchCard key={m.id} match={m} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={setOpenMatch} />
+            <MatchCard
+              key={m.id}
+              match={m}
+              ownerMap={ownerMap}
+              currentUser={currentUser}
+              onSelectTeam={onSelectTeam}
+              onOpenMatch={setOpenMatch}
+              predictions={predictions}
+              onPick={onPick}
+              participants={participants}
+            />
           ))}
         </div>
       ))}

@@ -27,6 +27,29 @@ export default function App() {
 
   const { fixtures, loading, error, lastFetched, refresh } = useFixtures();
 
+  const [predictions, setPredictions] = useState({});
+
+  useEffect(() => {
+    if (!WORKER_URL) return;
+    fetch(`${WORKER_URL}/predictions`)
+      .then((r) => r.ok ? r.json() : {})
+      .then((p) => setPredictions(p || {}))
+      .catch(() => {});
+  }, []);
+
+  const handlePick = useCallback((matchId, person, pick) => {
+    if (!WORKER_URL || !person) return;
+    setPredictions((prev) => ({
+      ...prev,
+      [matchId]: { ...(prev[matchId] || {}), [person]: pick },
+    }));
+    fetch(`${WORKER_URL}/predictions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ matchId, person, pick }),
+    }).catch(() => {});
+  }, []);
+
   // Guard: prevent accidentally overwriting a draw that lived in the cloud
   // with empty state on a device that hasn't loaded the draw locally yet.
   const cloudHadDrawRef = useRef(false);
@@ -247,6 +270,9 @@ export default function App() {
                 drawType={drawType}
                 onSelectTeam={handleSelectTeam}
                 currentUser={resolvedUser}
+                predictions={predictions}
+                onPick={handlePick}
+                participants={participants}
               />
             )}
             {tab === 'wall' && (

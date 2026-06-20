@@ -726,6 +726,116 @@ body {
   color: var(--text);
 }
 
+/* ── New vertical match card layout ── */
+.mc-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 7px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.mc-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+}
+.mc-vs {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+.mc-team-row {
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+}
+.mc-team-row + .mc-team-row {
+  border-top: 1px solid var(--border);
+}
+.mc-team-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  min-width: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.mc-flag { font-size: 1.5rem; flex-shrink: 0; line-height: 1; }
+.mc-team-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.mc-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mc-name.owned { color: var(--gold-dark); }
+.mc-owner {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.mc-owner.me { color: var(--gold-dark); }
+.mc-score-val {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-left: 10px;
+  flex-shrink: 0;
+  min-width: 22px;
+  text-align: right;
+}
+.mc-picks {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+}
+.mc-picks-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.mc-pick-chip {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--card-alt);
+  color: var(--text-muted);
+}
+.mc-pick-chip.mine { color: var(--text); font-weight: 700; }
+.mc-pick-chip.correct { background: rgba(22,163,74,0.15); color: var(--green); }
+.mc-pick-chip.wrong { opacity: 0.4; text-decoration: line-through; }
+.mc-pick-btns { display: flex; gap: 5px; }
+.mc-pick-btn {
+  flex: 1;
+  font-size: 1rem;
+  padding: 5px 4px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mc-pick-btn.sel {
+  border-color: var(--gold);
+  background: rgba(196,155,61,0.12);
+}
+
 .match-row { display: flex; align-items: center; gap: 8px; }
 .team-side {
   flex: 1;
