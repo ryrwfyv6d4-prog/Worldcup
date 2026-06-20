@@ -135,8 +135,8 @@ export default {
 
         const hasScore = hs != null && hs !== '' && as_ != null && as_ !== '';
         const cacheKey = hasScore
-          ? `highlights/v7/${home}|${away}|${hs}-${as_}.json`
-          : `highlights/v7/${home}|${away}.json`;
+          ? `highlights/v8/${home}|${away}|${hs}-${as_}.json`
+          : `highlights/v8/${home}|${away}.json`;
 
         // 1. Shared cache hit — zero quota
         const cached = await env.WALL.get(cacheKey);
@@ -173,7 +173,7 @@ export default {
         async function searchChannel(channelId, apiKey) {
           try {
             const r = await fetch(
-              `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&publishedAfter=${PUBLISHED_AFTER}&key=${apiKey}`
+              `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=10&order=relevance&publishedAfter=${PUBLISHED_AFTER}&key=${apiKey}`
             );
             const j = await r.json();
             if (j.error?.errors?.[0]?.reason === 'quotaExceeded') return 'QUOTA_EXCEEDED';

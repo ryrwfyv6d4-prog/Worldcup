@@ -37,7 +37,7 @@ function writeCache(obj) {
 
 async function searchYT(channelId, query, home, away, apiKey) {
   const r = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&publishedAfter=2026-06-01T00%3A00%3A00Z&key=${apiKey}`
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=10&order=relevance&publishedAfter=2026-06-01T00%3A00%3A00Z&key=${apiKey}`
   );
   const j = await r.json();
   if (j.error?.errors?.[0]?.reason === 'quotaExceeded') return 'QUOTA_EXCEEDED';
