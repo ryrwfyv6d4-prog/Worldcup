@@ -147,8 +147,8 @@ export default {
           if (Date.now() - (c.ts || 0) < 30 * 60 * 1000) return json({ videoId: null });
         }
 
-        const key = env.YOUTUBE_API_KEY;
-        if (!key) return json({ videoId: null });
+        const keys = [env.YOUTUBE_API_KEY, env.YOUTUBE_API_KEY_BACKUP].filter(Boolean);
+        if (!keys.length) return json({ videoId: null });
 
         const query = `${home} ${away} FIFA World Cup 2026 highlights`;
 
@@ -170,12 +170,13 @@ export default {
           return alias ? title.includes(alias) : false;
         };
 
-        async function searchChannel(channelId) {
+        async function searchChannel(channelId, apiKey) {
           try {
             const r = await fetch(
-              `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&publishedAfter=${PUBLISHED_AFTER}&key=${key}`
+              `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&publishedAfter=${PUBLISHED_AFTER}&key=${apiKey}`
             );
             const j = await r.json();
+            if (j.error?.errors?.[0]?.reason === 'quotaExceeded') return 'QUOTA_EXCEEDED';
             const items = j.items || [];
             const t = (s) => s?.toLowerCase() || '';
             const m = items.find((i) => {
@@ -190,9 +191,19 @@ export default {
           }
         }
 
-        let videoId = await searchChannel(FIFA_CHANNEL);
+        // Try each API key in turn, falling back on quota exhaustion
+        let videoId = null;
         let source = 'fifa';
-        if (!videoId) { videoId = await searchChannel(SBS_CHANNEL); source = 'sbs'; }
+        for (const apiKey of keys) {
+          videoId = await searchChannel(FIFA_CHANNEL, apiKey);
+          if (videoId === 'QUOTA_EXCEEDED') { videoId = null; continue; }
+          if (!videoId) {
+            const sbs = await searchChannel(SBS_CHANNEL, apiKey);
+            if (sbs === 'QUOTA_EXCEEDED') continue;
+            if (sbs) { videoId = sbs; source = 'sbs'; }
+          }
+          if (videoId) break;
+        }
 
         // Cache the outcome (positive forever, negative with a timestamp)
         await env.WALL.put(

@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 
 const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
-const YT_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || '';
+const YT_KEYS = [
+  import.meta.env.VITE_YOUTUBE_API_KEY,
+  import.meta.env.VITE_YOUTUBE_API_KEY_BACKUP,
+].filter(Boolean);
 const CACHE_KEY = 'yt_hl_v12';
 
 const FIFA_CHANNEL = 'UCpcTrCXblq78GZrTUTLWeBw';
@@ -32,11 +35,12 @@ function writeCache(obj) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(obj)); } catch {}
 }
 
-async function searchYT(channelId, query, home, away) {
+async function searchYT(channelId, query, home, away, apiKey) {
   const r = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&publishedAfter=2026-06-01T00%3A00%3A00Z&key=${YT_KEY}`
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&publishedAfter=2026-06-01T00%3A00%3A00Z&key=${apiKey}`
   );
   const j = await r.json();
+  if (j.error?.errors?.[0]?.reason === 'quotaExceeded') return 'QUOTA_EXCEEDED';
   const items = j.items || [];
   const t = (s) => s?.toLowerCase() || '';
   const m = items.find((i) => {
@@ -72,11 +76,19 @@ async function resolveVideoId(cacheKey, home, away, hs, as_) {
     }
 
     // Direct YouTube API fallback (Worker returned null or is unavailable)
-    if (YT_KEY) {
+    if (YT_KEYS.length) {
       try {
         const query = `${home} ${away} FIFA World Cup 2026 highlights`;
-        let id = await searchYT(FIFA_CHANNEL, query, home, away);
-        if (!id) id = await searchYT(SBS_CHANNEL, query, home, away);
+        let id = null;
+        for (const apiKey of YT_KEYS) {
+          const fifa = await searchYT(FIFA_CHANNEL, query, home, away, apiKey);
+          if (fifa === 'QUOTA_EXCEEDED') continue;
+          if (fifa) { id = fifa; break; }
+          const sbs = await searchYT(SBS_CHANNEL, query, home, away, apiKey);
+          if (sbs === 'QUOTA_EXCEEDED') continue;
+          if (sbs) { id = sbs; break; }
+          break;
+        }
         if (id) {
           const c = readCache(); c[cacheKey] = id; writeCache(c);
           inFlight.delete(cacheKey);
@@ -102,7 +114,7 @@ export function useYouTubeHighlight(home, away, enabled, homeScore, awayScore) {
   );
 
   useEffect(() => {
-    if (!enabled || (!WORKER_URL && !YT_KEY)) return;
+    if (!enabled || (!WORKER_URL && !YT_KEYS.length)) return;
     let alive = true;
     resolveVideoId(cacheKey, home, away, homeScore, awayScore).then((id) => {
       if (alive && id) setVideoId(id);
