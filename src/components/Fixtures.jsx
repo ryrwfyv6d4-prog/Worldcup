@@ -62,13 +62,14 @@ const KNOCKOUT_ROUNDS = [
 ];
 
 const MODES = [
-  { id: 'all',   label: 'All'   },
-  { id: 'groups',label: 'Groups'},
-  { id: 'R32',   label: 'R32'  },
-  { id: 'R16',   label: 'R16'  },
-  { id: 'QF',    label: 'QF'   },
-  { id: 'SF',    label: 'SF'   },
-  { id: 'FINAL', label: 'Final'},
+  { id: 'all',         label: 'All'         },
+  { id: 'tables',      label: 'Group Table' },
+  { id: 'group-stage', label: 'Group Stage' },
+  { id: 'R32',         label: 'R32'         },
+  { id: 'R16',         label: 'R16'         },
+  { id: 'QF',          label: 'QF'          },
+  { id: 'SF',          label: 'SF'          },
+  { id: 'FINAL',       label: 'Final'       },
 ];
 
 // R32 projections for group table footer
@@ -359,7 +360,7 @@ function GroupTablesSection({ groupTables, ownerMap, currentUser, onSelectTeam }
 // ── Fixtures page ─────────────────────────────────────────────────────────────
 
 export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType, onSelectTeam, currentUser }) {
-  const [mode, setMode] = useState('groups');
+  const [mode, setMode] = useState('tables');
   const [openMatch, setOpenMatch] = useState(null);
   const [showFinished, setShowFinished] = useState(true);
   const [search, setSearch] = useState('');
@@ -367,7 +368,7 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
 
   useEffect(() => { setLimit(PAGE_SIZE); }, [mode, showFinished, search]);
 
-  const isKnockout = !['all', 'groups'].includes(mode);
+  const isKnockout = !['all', 'tables', 'group-stage'].includes(mode);
 
   const ownerMap = useMemo(() => {
     const map = {};
@@ -392,7 +393,7 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let list = fixtures;
-    if (mode === 'groups') list = list.filter((f) => f.stage === 'GROUP_STAGE');
+    if (mode === 'group-stage') list = list.filter((f) => f.stage === 'GROUP_STAGE');
     if (!showFinished) list = list.filter((f) => f.status !== 'FINISHED');
     if (q) {
       list = list.filter((f) => {
@@ -450,8 +451,8 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         ))}
       </div>
 
-      {/* Search + show-finished toggle (list modes only) */}
-      {!isKnockout && fixtures.length > 0 && (
+      {/* Search + show-finished toggle (match list modes only) */}
+      {!isKnockout && mode !== 'tables' && fixtures.length > 0 && (
         <div className="filter-bar">
           <div className="search-row">
             <input
@@ -470,8 +471,8 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         </div>
       )}
 
-      {/* Group tables (groups mode only) */}
-      {mode === 'groups' && (
+      {/* Group tables */}
+      {mode === 'tables' && (
         <GroupTablesSection
           groupTables={groupTables}
           ownerMap={ownerMap}
@@ -498,8 +499,8 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         </>
       )}
 
-      {/* Match list (all + groups modes) */}
-      {!isKnockout && (
+      {/* Match list (all + group-stage modes) */}
+      {!isKnockout && mode !== 'tables' && (
         <>
           {fixtures.length === 0 && !loading && (
             <div className="empty-state">
