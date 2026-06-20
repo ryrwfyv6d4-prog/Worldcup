@@ -21,11 +21,16 @@ const ALIASES = {
   "ivory coast": "côte d'ivoire",
 };
 
+function stripAccents(s) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
 function teamInTitle(name, title) {
-  const n = name.toLowerCase();
-  if (title.includes(n)) return true;
-  const alias = ALIASES[n];
-  return alias ? title.includes(alias) : false;
+  const t = stripAccents(title);
+  const n = stripAccents(name.toLowerCase());
+  if (t.includes(n)) return true;
+  const alias = ALIASES[name.toLowerCase()];
+  return alias ? t.includes(stripAccents(alias)) : false;
 }
 
 function readCache() {

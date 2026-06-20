@@ -135,8 +135,8 @@ export default {
 
         const hasScore = hs != null && hs !== '' && as_ != null && as_ !== '';
         const cacheKey = hasScore
-          ? `highlights/v8/${home}|${away}|${hs}-${as_}.json`
-          : `highlights/v8/${home}|${away}.json`;
+          ? `highlights/v9/${home}|${away}|${hs}-${as_}.json`
+          : `highlights/v9/${home}|${away}.json`;
 
         // 1. Shared cache hit — zero quota
         const cached = await env.WALL.get(cacheKey);
@@ -163,11 +163,13 @@ export default {
           'czech republic': 'czechia',
           "ivory coast": "côte d'ivoire",
         };
+        const stripAccents = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
         const teamInTitle = (name, title) => {
-          const n = name.toLowerCase();
-          if (title.includes(n)) return true;
-          const alias = ALIASES[n];
-          return alias ? title.includes(alias) : false;
+          const t = stripAccents(title);
+          const n = stripAccents(name.toLowerCase());
+          if (t.includes(n)) return true;
+          const alias = ALIASES[name.toLowerCase()];
+          return alias ? t.includes(stripAccents(alias)) : false;
         };
 
         async function searchChannel(channelId, apiKey) {
