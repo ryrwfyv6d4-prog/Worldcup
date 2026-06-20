@@ -135,8 +135,8 @@ export default {
 
         const hasScore = hs != null && hs !== '' && as_ != null && as_ !== '';
         const cacheKey = hasScore
-          ? `highlights/v5/${home}|${away}|${hs}-${as_}.json`
-          : `highlights/v5/${home}|${away}.json`;
+          ? `highlights/v6/${home}|${away}|${hs}-${as_}.json`
+          : `highlights/v6/${home}|${away}.json`;
 
         // 1. Shared cache hit — zero quota
         const cached = await env.WALL.get(cacheKey);
