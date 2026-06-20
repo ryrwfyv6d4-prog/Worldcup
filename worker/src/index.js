@@ -135,8 +135,8 @@ export default {
 
         const hasScore = hs != null && hs !== '' && as_ != null && as_ !== '';
         const cacheKey = hasScore
-          ? `highlights/v3/${home}|${away}|${hs}-${as_}.json`
-          : `highlights/v3/${home}|${away}.json`;
+          ? `highlights/v4/${home}|${away}|${hs}-${as_}.json`
+          : `highlights/v4/${home}|${away}.json`;
 
         // 1. Shared cache hit — zero quota
         const cached = await env.WALL.get(cacheKey);
@@ -172,7 +172,7 @@ export default {
           return alias ? title.includes(alias) : false;
         };
 
-        async function searchChannel(channelId) {
+        async function searchChannel(channelId, requireScore) {
           try {
             const r = await fetch(
               `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&publishedAfter=${PUBLISHED_AFTER}&key=${key}`
@@ -184,7 +184,7 @@ export default {
               const title = t(i.snippet?.title);
               if (!title.includes('highlight') || !title.includes('2026')) return false;
               if (!teamInTitle(home, title) || !teamInTitle(away, title)) return false;
-              if (hasScore && !title.includes(`${hs}-${as_}`) && !title.includes(`${hs} - ${as_}`)) return false;
+              if (requireScore && hasScore && !title.includes(`${hs}-${as_}`) && !title.includes(`${hs} - ${as_}`)) return false;
               return true;
             });
             return m?.id?.videoId || null;
@@ -193,9 +193,11 @@ export default {
           }
         }
 
-        let videoId = await searchChannel(FIFA_CHANNEL);
+        // FIFA: require score in title to avoid wrong-game matches
+        // SBS: relaxed — they don't include scores in titles
+        let videoId = await searchChannel(FIFA_CHANNEL, true);
         let source = 'fifa';
-        if (!videoId) { videoId = await searchChannel(SBS_CHANNEL); source = 'sbs'; }
+        if (!videoId) { videoId = await searchChannel(SBS_CHANNEL, false); source = 'sbs'; }
 
         // Cache the outcome (positive forever, negative with a timestamp)
         await env.WALL.put(
