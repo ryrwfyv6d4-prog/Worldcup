@@ -796,45 +796,6 @@ body {
   min-width: 22px;
   text-align: right;
 }
-.mc-picks {
-  margin-top: 8px;
-  padding-top: 7px;
-  border-top: 1px solid var(--border);
-}
-.mc-picks-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 6px;
-}
-.mc-pick-chip {
-  font-size: 0.65rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: var(--card-alt);
-  color: var(--text-muted);
-}
-.mc-pick-chip.mine { color: var(--text); font-weight: 700; }
-.mc-pick-chip.correct { background: rgba(22,163,74,0.15); color: var(--green); }
-.mc-pick-chip.wrong { opacity: 0.4; text-decoration: line-through; }
-.mc-pick-btns { display: flex; gap: 5px; }
-.mc-pick-btn {
-  flex: 1;
-  font-size: 1rem;
-  padding: 5px 4px;
-  border-radius: 6px;
-  border: 1.5px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  -webkit-tap-highlight-color: transparent;
-}
-.mc-pick-btn.sel {
-  border-color: var(--gold);
-  background: rgba(196,155,61,0.12);
-}
 
 .match-row { display: flex; align-items: center; gap: 8px; }
 .team-side {

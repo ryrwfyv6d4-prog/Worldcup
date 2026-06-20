@@ -148,7 +148,7 @@ function GroupTables({ fixtures, ownerMap, currentUser, onSelectTeam }) {
   );
 }
 
-function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch, predictions, onPick, participants }) {
+function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) {
   const home = normaliseTeamName(match.homeTeam.name);
   const away = normaliseTeamName(match.awayTeam.name);
   const homeOwner = ownerMap[home];
@@ -161,15 +161,6 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch, pr
   const hs = match.score?.home;
   const as_ = match.score?.away;
   const ytDirect = useYouTubeHighlight(home, away, isDone || isLive, isDone ? hs : null, isDone ? as_ : null);
-
-  const matchPicks = predictions?.[match.id] || {};
-  const myPick = currentUser ? matchPicks[currentUser] : null;
-  const canPick = !isDone && !isLive && new Date(match.utcDate) > new Date() && !!currentUser && !!onPick;
-  const result = isDone
-    ? (match.score.winner === 'HOME_TEAM' ? 'home' : match.score.winner === 'AWAY_TEAM' ? 'away' : 'draw')
-    : null;
-  const hasPicks = Object.keys(matchPicks).length > 0;
-  const showPicks = (participants?.length > 0) && (hasPicks || canPick);
 
   return (
     <div
@@ -218,46 +209,11 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch, pr
         </button>
         {showScore && <span className="mc-score-val">{match.score.away ?? '–'}</span>}
       </div>
-
-      {/* Picks */}
-      {showPicks && (
-        <div className="mc-picks" onClick={(e) => e.stopPropagation()}>
-          {hasPicks && (
-            <div className="mc-picks-row">
-              {(participants || []).map((p) => {
-                const pick = matchPicks[p];
-                if (!pick) return null;
-                const correct = result && pick === result;
-                const wrong = result && pick !== result;
-                const icon = pick === 'home' ? getFlag(home) : pick === 'away' ? getFlag(away) : 'D';
-                return (
-                  <span key={p} className={`mc-pick-chip${correct ? ' correct' : wrong ? ' wrong' : p === currentUser ? ' mine' : ''}`}>
-                    {p} {icon}
-                  </span>
-                );
-              })}
-            </div>
-          )}
-          {canPick && (
-            <div className="mc-pick-btns">
-              {[['home', getFlag(home)], ['draw', 'Draw'], ['away', getFlag(away)]].map(([key, label]) => (
-                <button
-                  key={key}
-                  className={`mc-pick-btn${myPick === key ? ' sel' : ''}`}
-                  onClick={() => onPick(match.id, currentUser, key)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
 
-export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType, onSelectTeam, currentUser, predictions, onPick, participants }) {
+export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType, onSelectTeam, currentUser }) {
   const [stageFilter, setStageFilter] = useState('ALL');
   const [openMatch, setOpenMatch] = useState(null);
   const [showFinished, setShowFinished] = useState(true);
@@ -397,9 +353,6 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
               currentUser={currentUser}
               onSelectTeam={onSelectTeam}
               onOpenMatch={setOpenMatch}
-              predictions={predictions}
-              onPick={onPick}
-              participants={participants}
             />
           ))}
         </div>
