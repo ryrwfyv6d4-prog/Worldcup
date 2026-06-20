@@ -297,7 +297,8 @@ function BracketCard({ def, groupTables, fixtureByNum, ownerMap, currentUser, on
 function GroupTablesSection({ groupTables, ownerMap, currentUser, onSelectTeam }) {
   if (!groupTables.length) return null;
   return (
-    <div className="group-tables-grid">
+    <div className="card group-tables">
+      <div className="group-tables-grid">
       {groupTables.map(({ letter, rows }) => {
         const bracket = R32_BRACKET[letter];
         const p1opp = bracket && rows[0]?.p > 0 ? resolveR32Slot(bracket.win, groupTables) : null;
@@ -350,6 +351,7 @@ function GroupTablesSection({ groupTables, ownerMap, currentUser, onSelectTeam }
         );
       })}
       <p className="hint" style={{ marginTop: 4 }}>Top 2 qualify automatically; best 3rd-placed teams may also advance.</p>
+      </div>
     </div>
   );
 }
