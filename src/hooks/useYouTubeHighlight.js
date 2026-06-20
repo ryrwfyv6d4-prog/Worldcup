@@ -16,14 +16,20 @@ function writeCache(obj) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(obj)); } catch {}
 }
 
-async function searchYT(channelId, query) {
+async function searchYT(channelId, query, hs, as_) {
   const r = await fetch(
     `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&publishedAfter=2026-06-01T00%3A00%3A00Z&key=${YT_KEY}`
   );
   const j = await r.json();
   const items = j.items || [];
   const t = (s) => s?.toLowerCase() || '';
-  const m = items.find((i) => t(i.snippet?.title).includes('highlight') && t(i.snippet?.title).includes('2026'));
+  const hasScore = hs != null && as_ != null;
+  const m = items.find((i) => {
+    const title = t(i.snippet?.title);
+    if (!title.includes('highlight') || !title.includes('2026')) return false;
+    if (hasScore && !title.includes(`${hs}-${as_}`) && !title.includes(`${hs} - ${as_}`)) return false;
+    return true;
+  });
   return m?.id?.videoId || null;
 }
 
@@ -56,8 +62,8 @@ async function resolveVideoId(cacheKey, home, away, hs, as_) {
         const query = hasScore
           ? `Highlights ${home} ${hs}-${as_} ${away} FIFA World Cup 2026`
           : `${home} ${away} FIFA World Cup 2026 highlights`;
-        let id = await searchYT(FIFA_CHANNEL, query);
-        if (!id) id = await searchYT(SBS_CHANNEL, query);
+        let id = await searchYT(FIFA_CHANNEL, query, hs, as_);
+        if (!id) id = await searchYT(SBS_CHANNEL, query, hs, as_);
         if (id) {
           const c = readCache(); c[cacheKey] = id; writeCache(c);
           inFlight.delete(cacheKey);

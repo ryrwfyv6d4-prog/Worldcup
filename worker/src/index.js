@@ -166,7 +166,12 @@ export default {
             const j = await r.json();
             const items = j.items || [];
             const t = (s) => s?.toLowerCase() || '';
-            const m = items.find((i) => t(i.snippet?.title).includes('highlight') && t(i.snippet?.title).includes('2026'));
+            const m = items.find((i) => {
+              const title = t(i.snippet?.title);
+              if (!title.includes('highlight') || !title.includes('2026')) return false;
+              if (hasScore && !title.includes(`${hs}-${as_}`) && !title.includes(`${hs} - ${as_}`)) return false;
+              return true;
+            });
             return m?.id?.videoId || null;
           } catch {
             return null;
