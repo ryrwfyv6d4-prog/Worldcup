@@ -382,7 +382,9 @@ function GroupTablesSection({ groupTables, ownerMap, currentUser, onSelectTeam }
               </tbody>
             </table>
             {(p1opp || p2opp || third?.p > 0) && (
-              <ul className="r32-projections">
+              <div className="r32-proj-block">
+                <span className="bk-proj-tag">currently projected</span>
+                <ul className="r32-projections">
                 {p1opp && rows[0] && <li><b>1st:</b> {getFlag(rows[0].team)} {rows[0].team} vs {getFlag(p1opp)} {p1opp}</li>}
                 {p2opp && rows[1] && <li><b>2nd:</b> {getFlag(rows[1].team)} {rows[1].team} vs {getFlag(p2opp)} {p2opp}</li>}
                 {third?.p > 0 && (
@@ -394,6 +396,7 @@ function GroupTablesSection({ groupTables, ownerMap, currentUser, onSelectTeam }
                   </li>
                 )}
               </ul>
+              </div>
             )}
           </div>
         );
