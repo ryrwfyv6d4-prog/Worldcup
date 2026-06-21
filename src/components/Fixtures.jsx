@@ -88,6 +88,18 @@ const R32_BRACKET = {
   L: { win: { type: 'best3rd', groups: ['E','H','I','J','K'] }, run: { type: 'runner', group: 'K' } },
 };
 
+// Which group-winner each 3rd-place R32 slot faces (derived from R32 bracket above)
+const THIRD_PLACE_SLOTS = [
+  { num: 74, groups: ['A','B','C','D','F'], opponentGroup: 'E' },
+  { num: 77, groups: ['C','D','F','G','H'], opponentGroup: 'I' },
+  { num: 79, groups: ['C','E','F','H','I'], opponentGroup: 'A' },
+  { num: 80, groups: ['E','H','I','J','K'], opponentGroup: 'L' },
+  { num: 81, groups: ['B','E','F','I','J'], opponentGroup: 'D' },
+  { num: 82, groups: ['A','E','H','I','J'], opponentGroup: 'G' },
+  { num: 85, groups: ['E','F','G','I','J'], opponentGroup: 'B' },
+  { num: 87, groups: ['D','E','I','J','L'], opponentGroup: 'K' },
+];
+
 const PAGE_SIZE = 15;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -297,6 +309,27 @@ function BracketCard({ def, groupTables, fixtureByNum, ownerMap, currentUser, on
 
 function GroupTablesSection({ groupTables, ownerMap, currentUser, onSelectTeam }) {
   if (!groupTables.length) return null;
+
+  // Rank all 3rd-place teams across every group to find top 8 qualifiers
+  const allThirds = groupTables
+    .map(({ letter, rows }) => rows[2]?.p > 0 ? { ...rows[2], group: letter } : null)
+    .filter(Boolean)
+    .sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf);
+  const qualifyingThirdGroups = new Set(allThirds.slice(0, 8).map(r => r.group));
+
+  // Greedy R32 slot assignment: process slots in match order, pick best eligible qualifying 3rd
+  const thirdOppMap = {}; // group letter → opponent group letter
+  const usedGroups = new Set();
+  for (const slot of THIRD_PLACE_SLOTS) {
+    const eligible = allThirds.filter(
+      t => slot.groups.includes(t.group) && qualifyingThirdGroups.has(t.group) && !usedGroups.has(t.group)
+    );
+    if (eligible.length) {
+      thirdOppMap[eligible[0].group] = slot.opponentGroup;
+      usedGroups.add(eligible[0].group);
+    }
+  }
+
   return (
     <div className="card group-tables">
       <div className="group-tables-grid">
@@ -304,6 +337,12 @@ function GroupTablesSection({ groupTables, ownerMap, currentUser, onSelectTeam }
         const bracket = R32_BRACKET[letter];
         const p1opp = bracket && rows[0]?.p > 0 ? resolveR32Slot(bracket.win, groupTables) : null;
         const p2opp = bracket && rows[1]?.p > 0 ? resolveR32Slot(bracket.run, groupTables) : null;
+        const third = rows[2];
+        const thirdQualifies = third?.p > 0 && qualifyingThirdGroups.has(letter);
+        const thirdOppGroup = thirdOppMap[letter];
+        const thirdOpp = thirdOppGroup
+          ? groupTables.find(t => t.letter === thirdOppGroup)?.rows[0]?.team
+          : null;
         return (
           <div key={letter} className="group-table">
             <div className="group-table-title">Group {letter}</div>
@@ -342,16 +381,24 @@ function GroupTablesSection({ groupTables, ownerMap, currentUser, onSelectTeam }
                 })}
               </tbody>
             </table>
-            {(p1opp || p2opp) && (
+            {(p1opp || p2opp || third?.p > 0) && (
               <ul className="r32-projections">
                 {p1opp && rows[0] && <li><b>1st:</b> {getFlag(rows[0].team)} {rows[0].team} vs {getFlag(p1opp)} {p1opp}</li>}
                 {p2opp && rows[1] && <li><b>2nd:</b> {getFlag(rows[1].team)} {rows[1].team} vs {getFlag(p2opp)} {p2opp}</li>}
+                {third?.p > 0 && (
+                  <li style={thirdQualifies ? {} : { opacity: 0.45 }}>
+                    <b>3rd:</b> {getFlag(third.team)} {third.team}{' '}
+                    {thirdQualifies
+                      ? <>vs {thirdOpp ? <>{getFlag(thirdOpp)} {thirdOpp}</> : 'TBD'}</>
+                      : <span>— not in top 8</span>}
+                  </li>
+                )}
               </ul>
             )}
           </div>
         );
       })}
-      <p className="hint" style={{ marginTop: 4 }}>Top 2 qualify automatically; best 3rd-placed teams may also advance.</p>
+      <p className="hint" style={{ marginTop: 4 }}>Top 2 qualify automatically · Best 8 of 12 third-placed teams also advance</p>
       </div>
     </div>
   );
