@@ -773,7 +773,7 @@ body {
 .mc-name {
   font-size: 0.9rem;
   font-weight: 700;
-  color: var(--text);
+  color: #0D0A06;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -790,7 +790,7 @@ body {
   font-family: var(--font-display);
   font-size: 1.25rem;
   font-weight: 800;
-  color: var(--text);
+  color: var(--glory-blue);
   margin-left: 10px;
   flex-shrink: 0;
   min-width: 22px;
