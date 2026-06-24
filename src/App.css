@@ -3547,82 +3547,98 @@ body, .app {
 
 .sm-wrap {
   margin-top: 16px;
-  padding: 0 4px;
-}
-
-.sm-pitches {
-  display: flex;
-  gap: 10px;
-}
-
-.sm-half-wrap {
-  flex: 1;
+  padding: 0 2px;
   display: flex;
   flex-direction: column;
+  gap: 12px;
+}
+
+/* Team toggle */
+.sm-toggle {
+  display: flex;
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.sm-toggle-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted-dark);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sm-toggle-btn.active {
+  background: rgba(255,255,255,0.12);
+  color: var(--brass-bright);
+}
+
+/* Stat chips row */
+.sm-stat-chips {
+  display: flex;
   gap: 8px;
+  justify-content: center;
+}
+
+.sm-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.sm-chip-num {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-on-dark);
+  line-height: 1;
+}
+
+.sm-chip.goal  .sm-chip-num { color: #F5C842; }
+.sm-chip.on    .sm-chip-num { color: #4CCF92; }
+
+.sm-chip-label {
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--text-muted-dark);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Pitch */
+.sm-pitch-wrap {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
 }
 
 .sm-svg {
   width: 100%;
   height: auto;
-  border-radius: 6px;
   display: block;
 }
 
-.sm-team-row {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.sm-team-label {
-  font-family: var(--font-display);
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-on-dark);
-  letter-spacing: 0.04em;
-  text-align: center;
-}
-
-.sm-stat-chips {
-  display: flex;
-  gap: 5px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.sm-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 20px;
-  font-family: var(--font-display);
-  font-size: 0.78rem;
-  font-weight: 800;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--text-on-dark);
-}
-
-.sm-chip.goal  { color: #F5C842; border-color: rgba(245,200,66,0.3); }
-.sm-chip.on    { color: #4CAF92; border-color: rgba(76,175,146,0.3); }
-
-.sm-chip-label {
-  font-size: 0.65rem;
-  font-weight: 500;
-  opacity: 0.7;
-  letter-spacing: 0.03em;
-}
-
+/* Legend */
 .sm-legend {
-  margin-top: 12px;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 16px;
+  gap: 8px 16px;
   justify-content: center;
-  padding: 8px 0 4px;
+  padding: 8px 0 2px;
   border-top: 1px solid rgba(255,255,255,0.07);
 }
 
@@ -3630,7 +3646,7 @@ body, .app {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: var(--text-muted-dark);
   font-family: var(--font-display);
   letter-spacing: 0.02em;
