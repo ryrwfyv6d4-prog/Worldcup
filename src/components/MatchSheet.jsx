@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { getFlag } from '../data/worldcup2026.js';
 import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
 import { getBanter } from '../data/matchBanter.js';
@@ -248,7 +249,7 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
     { id: 'lineup', label: 'Lineup' },
   ];
 
-  return (
+  return createPortal(
     <div className="ms-backdrop">
       <div className="ms-topbar">
         <button className="ms-back" onClick={onClose}>← Back</button>
@@ -349,6 +350,7 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
