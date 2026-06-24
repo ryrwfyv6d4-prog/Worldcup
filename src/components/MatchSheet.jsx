@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { getFlag } from '../data/worldcup2026.js';
 import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
@@ -205,6 +205,76 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
   const [phase, setPhase] = useState('loading');
   const [activeTab, setActiveTab] = useState(isDone || isLive ? 'events' : 'lineup');
 
+  const backdropRef = useRef(null);
+  const sheetRef   = useRef(null);
+
+  // Shared: decide whether to close or snap back after a drag gesture
+  const tryDismiss = useCallback((dy, dt) => {
+    const el = backdropRef.current;
+    if (!el) return;
+    el.style.transition = 'transform 0.26s cubic-bezier(0.32,0.72,0,1), opacity 0.26s';
+    if (dy > 110 || dy / Math.max(dt, 1) > 0.45) {
+      el.style.transform = 'translateY(100vh)';
+      el.style.opacity = '0';
+      setTimeout(onClose, 250);
+    } else {
+      el.style.transform = '';
+      el.style.opacity = '';
+      setTimeout(() => { if (el) el.style.transition = ''; }, 280);
+    }
+  }, [onClose]);
+
+  // Topbar drag handle swipe (always intercepts, no scroll conflict)
+  const topDrag = useRef({ on: false, y0: 0, t0: 0 });
+  const onTopStart = (e) => {
+    topDrag.current = { on: true, y0: e.touches[0].clientY, t0: Date.now() };
+    if (backdropRef.current) backdropRef.current.style.transition = 'none';
+  };
+  const onTopMove = (e) => {
+    if (!topDrag.current.on) return;
+    const dy = Math.max(0, e.touches[0].clientY - topDrag.current.y0);
+    const el = backdropRef.current;
+    if (el) { el.style.transform = `translateY(${dy * 0.6}px)`; el.style.opacity = String(Math.max(0.3, 1 - dy / 400)); }
+  };
+  const onTopEnd = (e) => {
+    if (!topDrag.current.on) return;
+    topDrag.current.on = false;
+    tryDismiss(e.changedTouches[0].clientY - topDrag.current.y0, Date.now() - topDrag.current.t0);
+  };
+
+  // Sheet swipe — only fires when scrolled to top
+  useEffect(() => {
+    const el = sheetRef.current;
+    if (!el) return;
+    let y0 = 0, t0 = 0, tracking = false;
+    const onStart = (e) => {
+      y0 = e.touches[0].clientY; t0 = Date.now();
+      tracking = el.scrollTop < 2;
+      if (tracking && backdropRef.current) backdropRef.current.style.transition = 'none';
+    };
+    const onMove = (e) => {
+      if (!tracking) return;
+      const dy = e.touches[0].clientY - y0;
+      if (dy <= 0) { tracking = false; return; }
+      e.preventDefault();
+      const bd = backdropRef.current;
+      if (bd) { bd.style.transform = `translateY(${dy * 0.6}px)`; bd.style.opacity = String(Math.max(0.3, 1 - dy / 400)); }
+    };
+    const onEnd = (e) => {
+      if (!tracking) return;
+      tracking = false;
+      tryDismiss(e.changedTouches[0].clientY - y0, Date.now() - t0);
+    };
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove',  onMove,  { passive: false });
+    el.addEventListener('touchend',   onEnd,   { passive: true });
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove',  onMove);
+      el.removeEventListener('touchend',   onEnd);
+    };
+  }, [tryDismiss]);
+
   useEffect(() => {
     let dead = false;
     (async () => {
@@ -252,11 +322,19 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
   ];
 
   return createPortal(
-    <div className="ms-backdrop">
-      <div className="ms-topbar">
-        <button className="ms-back" onClick={onClose}>← Back</button>
+    <div className="ms-backdrop" ref={backdropRef} onClick={onClose}>
+      <div className="ms-topbar"
+        onTouchStart={onTopStart}
+        onTouchMove={onTopMove}
+        onTouchEnd={onTopEnd}
+      >
+        <button className="ms-back" onClick={e => { e.stopPropagation(); onClose(); }}>
+          <span className="ms-back-chevron">‹</span>Back
+        </button>
+        <div className="ms-drag-handle" />
+        <div className="ms-topbar-end" />
       </div>
-      <div className="ms-sheet" onClick={e => e.stopPropagation()}>
+      <div className="ms-sheet" ref={sheetRef} onClick={e => e.stopPropagation()}>
 
         {/* Score header */}
         <div className="ms-header">
