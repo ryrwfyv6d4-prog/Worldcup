@@ -249,9 +249,11 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
   ];
 
   return (
-    <div className="ms-backdrop" onClick={onClose}>
+    <div className="ms-backdrop">
+      <div className="ms-topbar">
+        <button className="ms-back" onClick={onClose}>← Back</button>
+      </div>
       <div className="ms-sheet" onClick={e => e.stopPropagation()}>
-        <button className="ms-close" onClick={onClose}>‹ Back</button>
 
         {/* Score header */}
         <div className="ms-header">

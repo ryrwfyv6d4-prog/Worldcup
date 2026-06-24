@@ -170,6 +170,7 @@ export default function App() {
   const handleSetTab = (t) => {
     setSelectedTeam(null);
     setTab(t);
+    document.querySelector('.main')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectTeam = (team) => {

@@ -2650,37 +2650,39 @@ body, .app {
   animation: msFade 0.22s ease;
 }
 @keyframes msFade { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.ms-topbar {
+  flex-shrink: 0;
+  padding: calc(var(--safe-top) + 6px) 14px 8px;
+  display: flex;
+  align-items: center;
+  background: rgba(14,11,7,0.96);
+  border-bottom: 1px solid rgba(244,201,94,0.12);
+}
+.ms-back {
+  background: none;
+  border: none;
+  color: var(--text-on-dark);
+  font-family: 'Graduate', serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  padding: 6px 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  -webkit-tap-highlight-color: transparent;
+}
 .ms-sheet {
   flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: calc(var(--safe-top) + 54px) 18px calc(var(--safe-bottom) + 28px);
+  padding: 16px 18px calc(var(--safe-bottom) + 28px);
   background:
     linear-gradient(160deg, rgba(255,243,214,0.07), rgba(255,243,214,0.02) 50%, rgba(255,243,214,0.04)),
     #0E0B07;
 }
 .ms-grab { display: none; }
-.ms-close {
-  position: fixed;
-  top: calc(var(--safe-top) + 10px);
-  left: 14px;
-  z-index: 301;
-  height: 34px;
-  padding: 0 14px 0 10px;
-  border-radius: 17px;
-  border: 1px solid rgba(244,201,94,0.18);
-  background: rgba(14,11,7,0.85);
-  color: var(--text-on-dark);
-  font-family: 'Graduate', serif;
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  -webkit-tap-highlight-color: transparent;
-}
 .ms-header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
