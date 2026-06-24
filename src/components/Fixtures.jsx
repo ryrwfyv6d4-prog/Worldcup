@@ -208,10 +208,7 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
   const ytDirect = useYouTubeHighlight(home, away, isDone || isLive, isDone ? hs : null, isDone ? as_ : null);
 
   return (
-    <div
-      className={`match-card ${isLive ? 'live' : ''} ${hasOwner && !isLive ? 'has-owner' : ''}`}
-      onClick={() => onOpenMatch(match)}
-    >
+    <div className={`match-card ${isLive ? 'live' : ''} ${hasOwner && !isLive ? 'has-owner' : ''}`}>
       <div className="mc-meta">
         <span className="mc-time">
           {isDone || isLive ? formatDateAEST(match.utcDate) : `${formatTimeAEST(match.utcDate)} AEST`}
@@ -221,15 +218,11 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
           {isLive && <span className="status-badge badge-live">{match.liveClock ? `${match.liveClock}'` : 'LIVE'}</span>}
           {isDone && <span className="status-badge badge-done">FT</span>}
           {!isDone && !isLive && <span className="mc-vs">vs</span>}
-          {ytDirect && (
-            <a href={ytDirect} target="_blank" rel="noreferrer" className="match-yt-btn"
-               onClick={(e) => e.stopPropagation()}>▶</a>
-          )}
         </span>
       </div>
       <div className="mc-team-row">
-        <button className="mc-team-btn" onClick={(e) => { e.stopPropagation(); onSelectTeam(home); }}>
-          <span className="mc-flag">{getFlag(home)}</span>
+        <span className="mc-flag">{getFlag(home)}</span>
+        <button className="mc-team-btn" onClick={() => onSelectTeam(home)}>
           <div className="mc-team-info">
             <span className={`mc-name ${homeOwner ? 'owned' : ''}`}>{home}</span>
             {homeOwner && <span className={`mc-owner ${currentUser === homeOwner ? 'me' : ''}`}>{homeOwner}</span>}
@@ -238,14 +231,20 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
         {showScore && <span className="mc-score-val">{match.score.home ?? '–'}</span>}
       </div>
       <div className="mc-team-row">
-        <button className="mc-team-btn" onClick={(e) => { e.stopPropagation(); onSelectTeam(away); }}>
-          <span className="mc-flag">{getFlag(away)}</span>
+        <span className="mc-flag">{getFlag(away)}</span>
+        <button className="mc-team-btn" onClick={() => onSelectTeam(away)}>
           <div className="mc-team-info">
             <span className={`mc-name ${awayOwner ? 'owned' : ''}`}>{away}</span>
             {awayOwner && <span className={`mc-owner ${currentUser === awayOwner ? 'me' : ''}`}>{awayOwner}</span>}
           </div>
         </button>
         {showScore && <span className="mc-score-val">{match.score.away ?? '–'}</span>}
+      </div>
+      <div className="mc-actions">
+        <button className="mc-view-btn" onClick={() => onOpenMatch(match)}>View Game</button>
+        {ytDirect && (
+          <a href={ytDirect} target="_blank" rel="noreferrer" className="mc-hl-btn">▶ Highlights</a>
+        )}
       </div>
     </div>
   );

@@ -750,6 +750,7 @@ body {
 .mc-team-row {
   display: flex;
   align-items: center;
+  gap: 9px;
   padding: 5px 0;
 }
 .mc-team-row + .mc-team-row {
@@ -758,7 +759,6 @@ body {
 .mc-team-btn {
   display: flex;
   align-items: center;
-  gap: 9px;
   flex: 1;
   background: none;
   border: none;
@@ -768,6 +768,48 @@ body {
   min-width: 0;
   -webkit-tap-highlight-color: transparent;
 }
+.mc-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.mc-view-btn {
+  flex: 1;
+  background: none;
+  border: 1.5px solid var(--glory-blue);
+  color: var(--glory-blue);
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: 'Graduate', serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.mc-view-btn:active { background: rgba(46,76,126,0.1); }
+.mc-hl-btn {
+  flex: 1;
+  background: var(--glory-red);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: 'Graduate', serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.mc-hl-btn:active { background: #8f2523; }
 .mc-flag { font-size: 1.5rem; flex-shrink: 0; line-height: 1; }
 .mc-team-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .mc-name {
