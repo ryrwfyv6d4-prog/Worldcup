@@ -40,9 +40,18 @@ function buildRows(formation, starters) {
   return rows.filter(r => r.length);
 }
 
+// ESPN uses various key names across different feeds; try all known aliases.
+function pick(s, ...keys) {
+  for (const k of keys) {
+    const v = s?.[k];
+    if (v != null && v !== '') return v;
+  }
+  return null;
+}
+
 function passAcc(s) {
-  const att = parseInt(s?.passesAttempted) || 0;
-  const cmp = parseInt(s?.passesCompleted) || 0;
+  const att = parseInt(pick(s, 'passesAttempted', 'PA', 'totalPasses', 'passes')) || 0;
+  const cmp = parseInt(pick(s, 'passesCompleted', 'PC', 'completedPasses', 'accuratePasses')) || 0;
   if (!att) return null;
   return Math.round((cmp / att) * 100) + '%';
 }
@@ -53,26 +62,31 @@ function StatsPanel({ player, teamFlag, stats, onClose }) {
   if (!player) return null;
   const s = stats[player.athlete?.id] || {};
   const isGK = (player.position?.abbreviation || '').toUpperCase() === 'GK';
-  const pa = passAcc(s);
-  const yc = parseInt(s.yellowCards) || 0;
-  const rc = parseInt(s.redCards) || 0;
-  const mins = s.minutesPlayed != null ? s.minutesPlayed + "'" : null;
 
-  const hasData = Object.keys(s).length > 0;
+  const goals   = pick(s, 'goals', 'G', 'goalsScored', 'totalGoals');
+  const assists = pick(s, 'assists', 'A', 'goalAssists', 'assistsTotal');
+  const shots   = pick(s, 'shots', 'SH', 'totalShots', 'shotsTotal', 'shotsAttempted');
+  const tackles = pick(s, 'tackles', 'TK', 'totalTackles', 'tacklesTotal', 'tacklesWon');
+  const saves   = pick(s, 'saves', 'SV', 'totalSaves', 'savesTotal', 'goalKeeperSaves');
+  const minsRaw = pick(s, 'minutesPlayed', 'MIN', 'minutes', 'minsPlayed', 'minutesPlaye');
+  const mins    = minsRaw != null ? minsRaw + "'" : null;
+  const yc      = parseInt(pick(s, 'yellowCards', 'YC', 'yellowCard') || 0);
+  const rc      = parseInt(pick(s, 'redCards', 'RC', 'redCard') || 0);
+  const pa      = passAcc(s);
 
   const allCells = isGK
     ? [
-        s.saves     != null ? { val: s.saves,   label: 'Saves',    gold: parseInt(s.saves) > 0 } : null,
-        pa          != null ? { val: pa,         label: 'Pass acc.', gold: false } : null,
-        mins        != null ? { val: mins,       label: 'Minutes',  gold: false } : null,
+        saves   != null ? { val: saves,  label: 'Saves',    gold: parseInt(saves) > 0 } : null,
+        pa      != null ? { val: pa,     label: 'Pass acc.', gold: false } : null,
+        mins    != null ? { val: mins,   label: 'Minutes',  gold: false } : null,
       ]
     : [
-        s.goals     != null ? { val: s.goals,   label: 'Goals',    gold: parseInt(s.goals) > 0 } : null,
-        s.assists   != null ? { val: s.assists,  label: 'Assists',  gold: parseInt(s.assists) > 0 } : null,
-        s.shots     != null ? { val: s.shots,    label: 'Shots',    gold: false } : null,
-        s.tackles   != null ? { val: s.tackles,  label: 'Tackles',  gold: false } : null,
-        pa          != null ? { val: pa,         label: 'Pass acc.', gold: false } : null,
-        mins        != null ? { val: mins,       label: 'Minutes',  gold: false } : null,
+        goals   != null ? { val: goals,   label: 'Goals',    gold: parseInt(goals) > 0 } : null,
+        assists != null ? { val: assists, label: 'Assists',  gold: parseInt(assists) > 0 } : null,
+        shots   != null ? { val: shots,   label: 'Shots',    gold: false } : null,
+        tackles != null ? { val: tackles, label: 'Tackles',  gold: false } : null,
+        pa      != null ? { val: pa,      label: 'Pass acc.', gold: false } : null,
+        mins    != null ? { val: mins,    label: 'Minutes',  gold: false } : null,
       ];
 
   const cells = allCells.filter(Boolean);
@@ -84,7 +98,7 @@ function StatsPanel({ player, teamFlag, stats, onClose }) {
         <div className="sp-info">
           <span className="sp-name">
             {player.athlete?.displayName || '–'}
-            {yc > 0 && <span className="sp-card-chip">🟨</span>}
+            {yc > 0 && <span className="sp-card-chip">🟨{yc > 1 ? ` ×${yc}` : ''}</span>}
             {rc > 0 && <span className="sp-card-chip">🟥</span>}
           </span>
           <span className="sp-pos">{player.position?.displayName}</span>
@@ -119,7 +133,7 @@ function TeamHalf({ side, isHome, statMap, selectedId, onSelect }) {
   const teamName = side.team?.displayName || '';
   const abbr = side.team?.abbreviation || teamName.slice(0, 3).toUpperCase();
   const flag = getFlag(normaliseTeamName(teamName));
-  const isScorer = p => parseInt(statMap[p.athlete?.id]?.goals) > 0;
+  const isScorer = p => parseInt(pick(statMap[p.athlete?.id], 'goals', 'G', 'goalsScored', 'totalGoals')) > 0;
 
   const label = (
     <div className={`fp-team-strip ${isHome ? 'home' : 'away'}`}>
