@@ -6,6 +6,7 @@ import { getBanter } from '../data/matchBanter.js';
 import { espnName } from '../hooks/useFixtures.js';
 import { formatTimeAEST, formatDateAEST } from '../utils/time.js';
 import { useYouTubeHighlight } from '../hooks/useYouTubeHighlight.js';
+import FormationPitch from './FormationPitch.jsx';
 
 const SCOREBOARD = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
 const SUMMARY = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=';
@@ -335,12 +336,24 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
 
           {phase === 'ready' && activeTab === 'lineup' && (
             <>
-              <Lineups rosters={summary.rosters} />
-              {(summary.rosters || []).every(r => (r.roster || []).length === 0) && !isDone && (
-                <p className="ms-fine">Lineups land about an hour before kickoff.</p>
-              )}
-              {venue?.fullName && (
-                <p className="ms-venue">📍 {venue.fullName}{venue.address?.city ? `, ${venue.address.city}` : ''}</p>
+              {(summary.rosters || []).some(r => (r.roster || []).some(p => p.starter)) ? (
+                <FormationPitch
+                  rosters={summary.rosters}
+                  boxscore={summary.boxscore}
+                  home={home}
+                  away={away}
+                  gameInfo={summary.gameInfo}
+                />
+              ) : (
+                <>
+                  <Lineups rosters={summary.rosters} />
+                  {(summary.rosters || []).every(r => (r.roster || []).length === 0) && !isDone && (
+                    <p className="ms-fine">Lineups land about an hour before kickoff.</p>
+                  )}
+                  {venue?.fullName && (
+                    <p className="ms-venue">📍 {venue.fullName}{venue.address?.city ? `, ${venue.address.city}` : ''}</p>
+                  )}
+                </>
               )}
             </>
           )}
