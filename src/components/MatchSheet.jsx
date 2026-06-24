@@ -7,6 +7,7 @@ import { espnName } from '../hooks/useFixtures.js';
 import { formatTimeAEST, formatDateAEST } from '../utils/time.js';
 import { useYouTubeHighlight } from '../hooks/useYouTubeHighlight.js';
 import FormationPitch from './FormationPitch.jsx';
+import ShotMap from './ShotMap.jsx';
 
 const SCOREBOARD = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
 const SUMMARY = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=';
@@ -331,7 +332,17 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
           )}
 
           {phase === 'ready' && activeTab === 'stats' && (
-            <StatBars boxscore={summary.boxscore} />
+            <>
+              <StatBars boxscore={summary.boxscore} />
+              {(isLive || isDone) && (
+                <ShotMap
+                  boxscore={summary.boxscore}
+                  keyEvents={summary.keyEvents}
+                  home={home}
+                  away={away}
+                />
+              )}
+            </>
           )}
 
           {phase === 'ready' && activeTab === 'lineup' && (

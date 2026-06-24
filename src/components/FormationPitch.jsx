@@ -8,7 +8,7 @@ function buildStatMap(boxscorePlayers) {
   const map = {};
   for (const team of (boxscorePlayers || [])) {
     for (const group of (team.statistics || [])) {
-      const names = group.names || [];
+      const names = group.keys || group.names || [];
       for (const entry of (group.athletes || [])) {
         const id = entry.athlete?.id;
         if (!id) continue;
@@ -56,22 +56,26 @@ function StatsPanel({ player, teamFlag, stats, onClose }) {
   const pa = passAcc(s);
   const yc = parseInt(s.yellowCards) || 0;
   const rc = parseInt(s.redCards) || 0;
-  const mins = s.minutesPlayed != null ? s.minutesPlayed + "'" : '–';
+  const mins = s.minutesPlayed != null ? s.minutesPlayed + "'" : null;
 
-  const cells = isGK
+  const hasData = Object.keys(s).length > 0;
+
+  const allCells = isGK
     ? [
-        { val: s.saves ?? '0',  label: 'Saves',    gold: parseInt(s.saves) > 0 },
-        { val: pa ?? '–',       label: 'Pass acc.', gold: false },
-        { val: mins,            label: 'Minutes',  gold: false },
+        s.saves     != null ? { val: s.saves,   label: 'Saves',    gold: parseInt(s.saves) > 0 } : null,
+        pa          != null ? { val: pa,         label: 'Pass acc.', gold: false } : null,
+        mins        != null ? { val: mins,       label: 'Minutes',  gold: false } : null,
       ]
     : [
-        { val: s.goals   ?? '0', label: 'Goals',    gold: parseInt(s.goals) > 0 },
-        { val: s.assists ?? '0', label: 'Assists',  gold: parseInt(s.assists) > 0 },
-        { val: s.shots   ?? '0', label: 'Shots',    gold: false },
-        { val: s.tackles ?? '0', label: 'Tackles',  gold: false },
-        { val: pa ?? '–',        label: 'Pass acc.', gold: false },
-        { val: mins,             label: 'Minutes',  gold: false },
+        s.goals     != null ? { val: s.goals,   label: 'Goals',    gold: parseInt(s.goals) > 0 } : null,
+        s.assists   != null ? { val: s.assists,  label: 'Assists',  gold: parseInt(s.assists) > 0 } : null,
+        s.shots     != null ? { val: s.shots,    label: 'Shots',    gold: false } : null,
+        s.tackles   != null ? { val: s.tackles,  label: 'Tackles',  gold: false } : null,
+        pa          != null ? { val: pa,         label: 'Pass acc.', gold: false } : null,
+        mins        != null ? { val: mins,       label: 'Minutes',  gold: false } : null,
       ];
+
+  const cells = allCells.filter(Boolean);
 
   return (
     <div className="sp-panel">
@@ -88,14 +92,18 @@ function StatsPanel({ player, teamFlag, stats, onClose }) {
         <span className="sp-jersey">#{player.jersey}</span>
         <button className="sp-close" onClick={onClose} aria-label="Close">✕</button>
       </div>
-      <div className={`sp-grid sp-grid-${cells.length}`}>
-        {cells.map(c => (
-          <div key={c.label} className="sp-stat">
-            <span className={`sp-val${c.gold ? ' gold' : ''}`}>{c.val}</span>
-            <span className="sp-label">{c.label}</span>
-          </div>
-        ))}
-      </div>
+      {cells.length > 0 ? (
+        <div className={`sp-grid sp-grid-${Math.min(cells.length, 6)}`}>
+          {cells.map(c => (
+            <div key={c.label} className="sp-stat">
+              <span className={`sp-val${c.gold ? ' gold' : ''}`}>{c.val}</span>
+              <span className="sp-label">{c.label}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="sp-nodata">Stats available after kickoff</p>
+      )}
     </div>
   );
 }
