@@ -144,20 +144,20 @@ body {
   min-height: 0;
   -webkit-overflow-scrolling: touch;
   background: var(--bg);
-  padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 36px);
+  padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
 }
 
 /* ── Bottom nav ── */
 .nav {
   display: flex;
   position: fixed;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: min(calc(100% - 24px), 480px);
+  width: min(100%, 520px);
   z-index: 100;
-  border-radius: 28px;
-  padding: 7px;
+  border-radius: 20px 20px 0 0;
+  padding: 7px 7px calc(7px + env(safe-area-inset-bottom, 0px));
   background:
     linear-gradient(160deg, rgba(255,243,214,0.10), rgba(255,243,214,0.02) 50%, rgba(255,243,214,0.06)),
     rgba(16, 12, 6, 0.82);
@@ -2592,6 +2592,11 @@ body, .app {
 .match-card .team-name { color: var(--text-on-dark); }
 .match-card .score { color: var(--text-on-dark); }
 .match-card .match-date { color: var(--text-faint-dark); }
+.match-card .mc-name { color: var(--text-on-dark); }
+.match-card .mc-name.owned { color: var(--brass-bright); }
+.match-card .mc-score-val { color: var(--brass-bright); }
+.match-card .mc-owner { color: var(--text-muted-dark); }
+.match-card .mc-owner.me { color: var(--brass-bright); }
 .match-card .match-group {
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--hairline);
