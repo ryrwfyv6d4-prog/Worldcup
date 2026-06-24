@@ -21,7 +21,6 @@ function getOwner(team, assignments, drawType) {
   return null;
 }
 
-// Stats worth showing, in display order
 const STAT_LABELS = {
   possessionPct: 'Possession %',
   totalShots: 'Shots',
@@ -33,53 +32,120 @@ const STAT_LABELS = {
   saves: 'Saves',
 };
 
-function StatRows({ boxscore }) {
+// ── Goal summary chips ────────────────────────────────────────────────────────
+
+function GoalSummary({ keyEvents }) {
+  const goals = (keyEvents || [])
+    .map(e => {
+      const t = (e.type?.text || '').toLowerCase();
+      const isGoal = t.includes('goal') || t.includes('penalty - scored');
+      if (!isGoal) return null;
+      return {
+        icon: t.includes('own goal') ? '🥴' : '⚽',
+        clock: e.clock?.displayValue,
+        text: e.shortText || e.text,
+      };
+    })
+    .filter(Boolean);
+  if (!goals.length) return null;
+  return (
+    <div className="ms-goals">
+      {goals.map((g, i) => (
+        <span key={i} className="ms-goal-chip">
+          {g.icon} {g.clock}' {g.text}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// ── Stat bars ─────────────────────────────────────────────────────────────────
+
+function StatBars({ boxscore }) {
   const teams = boxscore?.teams || [];
-  if (teams.length !== 2) return null;
+  if (teams.length !== 2) return <p className="ms-fine">Stats not yet available.</p>;
   const get = (t, key) => {
-    const s = (t.statistics || []).find((x) => x.name === key);
+    const s = (t.statistics || []).find(x => x.name === key);
     return s ? s.displayValue : null;
   };
   const rows = Object.entries(STAT_LABELS)
     .map(([key, label]) => {
-      const h = get(teams[0], key);
-      const a = get(teams[1], key);
-      if (h == null && a == null) return null;
-      return { label, h: h ?? '–', a: a ?? '–' };
+      const hStr = get(teams[0], key);
+      const aStr = get(teams[1], key);
+      if (hStr == null && aStr == null) return null;
+      const hNum = parseFloat(hStr) || 0;
+      const aNum = parseFloat(aStr) || 0;
+      const total = hNum + aNum;
+      const hPct = total > 0 ? (hNum / total) * 100 : 50;
+      return { label, h: hStr ?? '–', a: aStr ?? '–', hPct };
     })
     .filter(Boolean);
-  if (rows.length === 0) return null;
+  if (!rows.length) return <p className="ms-fine">Stats not yet available.</p>;
   return (
-    <div className="ms-section">
-      <div className="ms-eyebrow">Match stats</div>
-      {rows.map((r) => (
-        <div key={r.label} className="ms-stat-row">
-          <span className="ms-stat-val">{r.h}</span>
-          <span className="ms-stat-label">{r.label}</span>
-          <span className="ms-stat-val">{r.a}</span>
+    <div className="ms-statbars">
+      {rows.map(r => (
+        <div key={r.label} className="ms-statbar-row">
+          <div className="ms-statbar-vals">
+            <span className="ms-statbar-num">{r.h}</span>
+            <span className="ms-statbar-label">{r.label}</span>
+            <span className="ms-statbar-num">{r.a}</span>
+          </div>
+          <div className="ms-statbar-track">
+            <div className="ms-statbar-fill" style={{ width: `${r.hPct}%` }} />
+          </div>
         </div>
       ))}
     </div>
   );
 }
 
-function Lineups({ rosters }) {
-  const sides = (rosters || []).filter((r) => (r.roster || []).length > 0);
-  if (sides.length === 0) return null;
+// ── Timeline ──────────────────────────────────────────────────────────────────
+
+const EVENT_ICON = (txt = '') => {
+  const t = txt.toLowerCase();
+  if (t.includes('own goal')) return '🥴';
+  if (t.includes('goal') || t.includes('penalty - scored')) return '⚽';
+  if (t.includes('red')) return '🟥';
+  if (t.includes('yellow')) return '🟨';
+  return null;
+};
+
+function Timeline({ keyEvents }) {
+  const evs = (keyEvents || [])
+    .map(e => ({ icon: EVENT_ICON(e.type?.text), clock: e.clock?.displayValue, text: e.text || e.shortText }))
+    .filter(e => e.icon && e.text);
+  if (!evs.length) return <p className="ms-fine">No key events recorded yet.</p>;
   return (
     <div className="ms-section">
-      <div className="ms-eyebrow">Starting XI</div>
+      {evs.map((e, i) => (
+        <div key={i} className="ms-event">
+          <span className="ms-event-clock">{e.clock}</span>
+          <span>{e.icon}</span>
+          <span className="ms-event-text">{e.text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Lineups ───────────────────────────────────────────────────────────────────
+
+function Lineups({ rosters }) {
+  const sides = (rosters || []).filter(r => (r.roster || []).length > 0);
+  if (!sides.length) return null;
+  return (
+    <div className="ms-section">
       <div className="ms-lineups">
         {sides.map((side, i) => {
-          const starters = (side.roster || []).filter((p) => p.starter);
-          if (starters.length === 0) return null;
+          const starters = (side.roster || []).filter(p => p.starter);
+          if (!starters.length) return null;
           return (
             <div key={i} className="ms-lineup-col">
               <div className="ms-lineup-team">
                 {side.team?.displayName}
                 {side.formation && <span className="ms-formation">{side.formation}</span>}
               </div>
-              {starters.map((p) => (
+              {starters.map(p => (
                 <div key={p.athlete?.id || p.athlete?.displayName} className="ms-player">
                   <span className="ms-jersey">{p.jersey}</span>
                   <span className="ms-player-name">{p.athlete?.shortName || p.athlete?.displayName}</span>
@@ -93,35 +159,8 @@ function Lineups({ rosters }) {
   );
 }
 
-const EVENT_ICON = (txt = '') => {
-  const t = txt.toLowerCase();
-  if (t.includes('own goal')) return '🥴';
-  if (t.includes('goal') || t.includes('penalty - scored')) return '⚽';
-  if (t.includes('red')) return '🟥';
-  if (t.includes('yellow')) return '🟨';
-  return null;
-};
+// ── Odds ──────────────────────────────────────────────────────────────────────
 
-function Timeline({ keyEvents }) {
-  const evs = (keyEvents || [])
-    .map((e) => ({ icon: EVENT_ICON(e.type?.text), clock: e.clock?.displayValue, text: e.text || e.shortText }))
-    .filter((e) => e.icon && e.text);
-  if (evs.length === 0) return null;
-  return (
-    <div className="ms-section">
-      <div className="ms-eyebrow">How it happened</div>
-      {evs.map((e, i) => (
-        <div key={i} className="ms-event">
-          <span className="ms-event-clock">{e.clock}</span>
-          <span>{e.icon}</span>
-          <span className="ms-event-text">{e.text}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// American moneyline → Aussie decimal odds ($ returned per $1 staked)
 function toDecimal(ml) {
   if (ml == null || isNaN(ml)) return null;
   const dec = ml > 0 ? 1 + ml / 100 : 1 + 100 / Math.abs(ml);
@@ -130,14 +169,13 @@ function toDecimal(ml) {
 
 function Odds({ pickcenter, home, away, homeFlag, awayFlag }) {
   const o = (pickcenter || [])[0];
-  if (!o) return null;
+  if (!o) return <p className="ms-fine">No odds available yet.</p>;
   const h = toDecimal(o.homeTeamOdds?.moneyLine);
   const a = toDecimal(o.awayTeamOdds?.moneyLine);
   const d = toDecimal(o.drawOdds?.moneyLine);
-  if (!h && !a && !o.details) return null;
+  if (!h && !a && !o.details) return <p className="ms-fine">No odds available yet.</p>;
   return (
     <div className="ms-section">
-      <div className="ms-eyebrow">The bookies say</div>
       <div className="ms-odds">
         {h && <span className="ms-odds-chip">{homeFlag} {home} <b>{h}</b></span>}
         {d && <span className="ms-odds-chip">Draw <b>{d}</b></span>}
@@ -149,6 +187,8 @@ function Odds({ pickcenter, home, away, homeFlag, awayFlag }) {
   );
 }
 
+// ── MatchSheet ────────────────────────────────────────────────────────────────
+
 export default function MatchSheet({ match, assignments, drawType, onClose, onSelectTeam }) {
   const home = normaliseTeamName(match.homeTeam.name);
   const away = normaliseTeamName(match.awayTeam.name);
@@ -159,7 +199,8 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
   const showScore = isLive || isDone;
 
   const [summary, setSummary] = useState(null);
-  const [phase, setPhase] = useState('loading'); // loading | ready | none
+  const [phase, setPhase] = useState('loading');
+  const [activeTab, setActiveTab] = useState(isDone || isLive ? 'events' : 'lineup');
 
   useEffect(() => {
     let dead = false;
@@ -170,9 +211,9 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
           const r = await fetch(`${SCOREBOARD}?dates=${ymd(base + off * 86400000)}`);
           if (!r.ok) continue;
           const j = await r.json();
-          const ev = (j.events || []).find((e) => {
+          const ev = (j.events || []).find(e => {
             const names = (e.competitions?.[0]?.competitors || [])
-              .map((c) => normaliseTeamName(espnName(c.team?.displayName || '')));
+              .map(c => normaliseTeamName(espnName(c.team?.displayName || '')));
             return names.includes(home) && names.includes(away);
           });
           if (ev) {
@@ -193,21 +234,27 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
   }, [match.id]);
 
   const venue = summary?.gameInfo?.venue;
-  const pickTeam = (t) => { onClose(); onSelectTeam(t); };
+  const pickTeam = t => { onClose(); onSelectTeam(t); };
 
-  const ytDirect = useYouTubeHighlight(home, away, isLive || isDone, isDone ? (match.score?.home ?? null) : null, isDone ? (match.score?.away ?? null) : null);
-  const ytUrl = ytDirect
-    || ((isLive || isDone)
-      ? `https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`
-      : null);
+  const ytDirect = useYouTubeHighlight(
+    home, away, isLive || isDone,
+    isDone ? (match.score?.home ?? null) : null,
+    isDone ? (match.score?.away ?? null) : null,
+  );
+
+  const TABS = [
+    { id: 'events', label: isDone || isLive ? 'Events' : 'Odds' },
+    { id: 'stats',  label: 'Stats'  },
+    { id: 'lineup', label: 'Lineup' },
+  ];
 
   return (
     <div className="ms-backdrop" onClick={onClose}>
-      <div className="ms-sheet" onClick={(e) => e.stopPropagation()}>
+      <div className="ms-sheet" onClick={e => e.stopPropagation()}>
         <div className="ms-grab" />
         <button className="ms-close" onClick={onClose}>✕</button>
 
-        {/* Header */}
+        {/* Score header */}
         <div className="ms-header">
           <button className="ms-team" onClick={() => pickTeam(home)}>
             <span className="ms-flag">{getFlag(home)}</span>
@@ -233,8 +280,8 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
           </button>
         </div>
 
-        {/* Highlights link — direct when API resolved, search fallback otherwise */}
-        {(ytDirect || (isLive || isDone)) && (
+        {/* Highlights */}
+        {(ytDirect || isLive || isDone) && (
           <a
             href={ytDirect || `https://www.youtube.com/@FIFA/search?query=${encodeURIComponent(`${home} v ${away} highlights`)}`}
             target="_blank"
@@ -247,32 +294,59 @@ export default function MatchSheet({ match, assignments, drawType, onClose, onSe
           </a>
         )}
 
-        {/* The history — above the game information, as requested */}
+        {/* Banter */}
         <div className="ms-history">
           <div className="ms-history-label">★ THE HISTORY ★</div>
           <p>{getBanter(home, away)}</p>
         </div>
 
-        {phase === 'loading' && <p className="ms-loading">Ringing ESPN…</p>}
-
-        {phase === 'ready' && (
-          <>
-            {!isDone && !isLive && <Odds pickcenter={summary.pickcenter} home={home} away={away} homeFlag={getFlag(home)} awayFlag={getFlag(away)} />}
-            <Timeline keyEvents={summary.keyEvents} />
-            <StatRows boxscore={summary.boxscore} />
-            <Lineups rosters={summary.rosters} />
-            {(summary.rosters || []).every((r) => (r.roster || []).length === 0) && !isDone && (
-              <p className="ms-fine">Lineups land about an hour before kickoff.</p>
-            )}
-            {venue?.fullName && (
-              <p className="ms-venue">📍 {venue.fullName}{venue.address?.city ? `, ${venue.address.city}` : ''}</p>
-            )}
-          </>
+        {/* Goal chips — prominent, above tabs */}
+        {(isLive || isDone) && summary && (
+          <GoalSummary keyEvents={summary.keyEvents} />
         )}
 
-        {phase === 'none' && (
-          <p className="ms-fine">ESPN has nothing extra on this one yet — check back closer to kickoff.</p>
-        )}
+        {/* Tabs */}
+        <div className="ms-tabs">
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              className={`ms-tab${activeTab === t.id ? ' active' : ''}`}
+              onClick={() => setActiveTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="ms-tab-content">
+          {phase === 'loading' && <p className="ms-loading">Ringing ESPN…</p>}
+
+          {phase === 'ready' && activeTab === 'events' && (
+            isDone || isLive
+              ? <Timeline keyEvents={summary.keyEvents} />
+              : <Odds pickcenter={summary.pickcenter} home={home} away={away} homeFlag={getFlag(home)} awayFlag={getFlag(away)} />
+          )}
+
+          {phase === 'ready' && activeTab === 'stats' && (
+            <StatBars boxscore={summary.boxscore} />
+          )}
+
+          {phase === 'ready' && activeTab === 'lineup' && (
+            <>
+              <Lineups rosters={summary.rosters} />
+              {(summary.rosters || []).every(r => (r.roster || []).length === 0) && !isDone && (
+                <p className="ms-fine">Lineups land about an hour before kickoff.</p>
+              )}
+              {venue?.fullName && (
+                <p className="ms-venue">📍 {venue.fullName}{venue.address?.city ? `, ${venue.address.city}` : ''}</p>
+              )}
+            </>
+          )}
+
+          {phase === 'none' && (
+            <p className="ms-fine">ESPN has nothing extra on this one yet — check back closer to kickoff.</p>
+          )}
+        </div>
       </div>
     </div>
   );

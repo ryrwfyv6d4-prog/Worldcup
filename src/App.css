@@ -2946,6 +2946,93 @@ body, .app {
 
 .ms-odds-chip b { color: var(--text-on-dark); font-weight: 800; margin-left: 2px; }
 
+/* ── Goal chips ── */
+.ms-goals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 16px 14px;
+}
+.ms-goal-chip {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-on-dark);
+  white-space: nowrap;
+}
+
+/* ── Tabs ── */
+.ms-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(244,201,94,0.15);
+  margin: 0 0 0;
+}
+.ms-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted-dark);
+  font-family: 'Graduate', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 10px 4px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  margin-bottom: -1px;
+}
+.ms-tab.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+.ms-tab-content {
+  padding: 14px 16px 8px;
+  min-height: 80px;
+}
+
+/* ── Stat bars ── */
+.ms-statbars { padding: 2px 0; }
+.ms-statbar-row { margin-bottom: 14px; }
+.ms-statbar-vals {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+.ms-statbar-num {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-on-dark);
+  min-width: 32px;
+  font-variant-numeric: tabular-nums;
+}
+.ms-statbar-num:last-child { text-align: right; }
+.ms-statbar-label {
+  flex: 1;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+.ms-statbar-track {
+  height: 5px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.ms-statbar-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 3px 0 0 3px;
+  transition: width 0.5s ease;
+}
+
 .lb-sub-flags { font-size: 0.9rem; letter-spacing: 0.06em; }
 
 
