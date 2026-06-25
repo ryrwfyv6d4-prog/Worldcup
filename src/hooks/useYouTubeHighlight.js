@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { HIGHLIGHT_OVERRIDES } from '../data/highlightOverrides.js';
 
 const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
 const YT_KEYS = [
@@ -19,6 +20,9 @@ const ALIASES = {
   'south korea': 'korea republic',
   'czech republic': 'czechia',
   "ivory coast": "côte d'ivoire",
+  'dr congo': 'congo dr',
+  'cape verde': 'cabo verde',
+  'bosnia & herzegovina': 'bosnia and herzegovina',
 };
 
 function stripAccents(s) {
@@ -60,6 +64,14 @@ async function searchYT(channelId, query, home, away, apiKey) {
 async function resolveVideoId(cacheKey, home, away, hs, as_) {
   const cache = readCache();
   if (cache[cacheKey]) return cache[cacheKey];
+
+  // Static overrides for matches where FIFA's YouTube title uses a different country name
+  const overrideId = HIGHLIGHT_OVERRIDES[`${home}|${away}`];
+  if (overrideId) {
+    const c = readCache(); c[cacheKey] = overrideId; writeCache(c);
+    return overrideId;
+  }
+
   if (inFlight.has(cacheKey)) return inFlight.get(cacheKey);
 
   const hasScore = hs != null && as_ != null;
