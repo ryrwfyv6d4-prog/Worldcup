@@ -162,6 +162,9 @@ export default {
           'south korea': 'korea republic',
           'czech republic': 'czechia',
           "ivory coast": "côte d'ivoire",
+          'dr congo': 'congo dr',
+          'cape verde': 'cabo verde',
+          'bosnia & herzegovina': 'bosnia and herzegovina',
         };
         const stripAccents = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
         const teamInTitle = (name, title) => {
