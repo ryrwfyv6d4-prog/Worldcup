@@ -141,7 +141,7 @@ function TodayMatches({ fixtures, assignments, drawType, onOpenMatch }) {
           <div key={label} className="nest-day-panel">
             <div className="nest-day-label">{label}</div>
             <div className="nest-day-grid">
-              {matches.slice(0, 4).map((f) => (
+              {matches.map((f) => (
                 <MatchGridCard key={f.id} match={f} assignments={assignments} drawType={drawType} onOpenMatch={onOpenMatch} />
               ))}
             </div>
