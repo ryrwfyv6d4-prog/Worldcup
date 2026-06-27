@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import MatchSheet from './MatchSheet.jsx';
 import { getFlag } from '../data/worldcup2026.js';
 import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
@@ -65,6 +65,7 @@ const MODES = [
   { id: 'all',         label: 'All'         },
   { id: 'tables',      label: 'Group Table' },
   { id: 'group-stage', label: 'Group Stage' },
+  { id: 'bracket',     label: 'Bracket'     },
   { id: 'R32',         label: 'R32'         },
   { id: 'R16',         label: 'R16'         },
   { id: 'QF',          label: 'QF'          },
@@ -304,6 +305,217 @@ function BracketCard({ def, groupTables, fixtureByNum, ownerMap, currentUser, on
   );
 }
 
+// ── Bracket tree (classic tournament bracket) ────────────────────────────────
+
+// R32 ordered to follow the bracket tree path — each pair feeds one R16 match
+const BRACKET_TREE = [
+  // Top half → SF1 (M101)
+  //   QF1 (M97): R16-M89 vs R16-M90
+  { round: 'R32', matches: [R32.find(m=>m.num===74), R32.find(m=>m.num===77)] }, // → R16 M89
+  { round: 'R32', matches: [R32.find(m=>m.num===73), R32.find(m=>m.num===75)] }, // → R16 M90
+  //   QF2 (M98): R16-M93 vs R16-M94
+  { round: 'R32', matches: [R32.find(m=>m.num===83), R32.find(m=>m.num===84)] }, // → R16 M93
+  { round: 'R32', matches: [R32.find(m=>m.num===81), R32.find(m=>m.num===82)] }, // → R16 M94
+  // Bottom half → SF2 (M102)
+  //   QF3 (M99): R16-M91 vs R16-M92
+  { round: 'R32', matches: [R32.find(m=>m.num===76), R32.find(m=>m.num===78)] }, // → R16 M91
+  { round: 'R32', matches: [R32.find(m=>m.num===79), R32.find(m=>m.num===80)] }, // → R16 M92
+  //   QF4 (M100): R16-M95 vs R16-M96
+  { round: 'R32', matches: [R32.find(m=>m.num===86), R32.find(m=>m.num===88)] }, // → R16 M95
+  { round: 'R32', matches: [R32.find(m=>m.num===85), R32.find(m=>m.num===87)] }, // → R16 M96
+];
+
+const BRACKET_R16_ORDER = [89, 90, 93, 94, 91, 92, 95, 96];
+const BRACKET_QF_ORDER  = [97, 98, 99, 100];
+const BRACKET_SF_ORDER  = [101, 102];
+
+const DAYS_OF_WEEK = { 'Mon': 'Mon', 'Tue': 'Tue', 'Wed': 'Wed', 'Thu': 'Thu', 'Fri': 'Fri', 'Sat': 'Sat', 'Sun': 'Sun' };
+function addDayOfWeek(dateStr) {
+  const months = { 'Jan':0,'Feb':1,'Mar':2,'Apr':3,'May':4,'Jun':5,'Jul':6,'Aug':7,'Sep':8,'Oct':9,'Nov':10,'Dec':11 };
+  const parts = dateStr.split(' ');
+  const day = parseInt(parts[0]);
+  const mon = months[parts[1]];
+  if (isNaN(day) || mon == null) return dateStr;
+  const d = new Date(2026, mon, day);
+  const dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+  return `${dow} ${dateStr}`;
+}
+
+function BracketTile({ def, groupTables, fixtureByNum, ownerMap, currentUser, onSelectTeam, onOpenMatch }) {
+  const fixture = fixtureByNum[def.num];
+  const isLive = fixture?.status === 'IN_PLAY' || fixture?.status === 'PAUSED';
+  const isDone = fixture?.status === 'FINISHED';
+  const showScore = isDone || isLive;
+
+  const r1 = resolveSlot(def.s1, groupTables, fixtureByNum);
+  const r2 = resolveSlot(def.s2, groupTables, fixtureByNum);
+  const team1 = fixture ? normaliseTeamName(fixture.homeTeam.name) : r1?.team;
+  const team2 = fixture ? normaliseTeamName(fixture.awayTeam.name) : r2?.team;
+  const proj1 = !fixture && r1?.projected;
+  const proj2 = !fixture && r2?.projected;
+  const own1 = team1 ? ownerMap[team1] : null;
+  const own2 = team2 ? ownerMap[team2] : null;
+
+  const winner = isDone
+    ? (fixture.score.winner === 'HOME_TEAM' ? 1 : fixture.score.winner === 'AWAY_TEAM' ? 2 : 0)
+    : 0;
+
+  const cls = `bt-tile${isLive ? ' live' : ''}${isDone ? ' done' : ''}`;
+
+  const Row = ({ team, owner, projected, score, isWinner }) => (
+    <div className={`bt-row${isWinner ? ' winner' : ''}`}
+      onClick={team ? (e) => { e.stopPropagation(); onSelectTeam(team); } : undefined}
+    >
+      {team ? (
+        <>
+          <span className="bt-flag">{getFlag(team)}</span>
+          <span className={`bt-name${projected ? ' proj' : ''}`}>{team}</span>
+        </>
+      ) : (
+        <span className="bt-tbd">{def.s1?.includes('/') || def.s2?.includes('/') ? 'Best 3rd' : 'TBD'}</span>
+      )}
+      <span className={`bt-score${isLive ? ' live' : ''}`}>
+        {showScore ? (score ?? '–') : '–'}
+      </span>
+    </div>
+  );
+
+  return (
+    <div className={cls} onClick={fixture ? () => onOpenMatch(fixture) : undefined}>
+      <Row team={team1} owner={own1} projected={proj1} score={fixture?.score?.home} isWinner={winner === 1} />
+      <Row team={team2} owner={own2} projected={proj2} score={fixture?.score?.away} isWinner={winner === 2} />
+      <div className="bt-meta">
+        <span>{addDayOfWeek(def.date)}</span>
+        {isLive && <span className="bt-live-badge">{fixture.liveClock ? `${fixture.liveClock}'` : 'LIVE'}</span>}
+        {isDone && <span className="bt-ft">FT</span>}
+      </div>
+    </div>
+  );
+}
+
+function BracketColumn({ label, matchDefs, groupTables, fixtureByNum, ownerMap, currentUser, onSelectTeam, onOpenMatch }) {
+  return (
+    <div className="bt-col">
+      <div className="bt-col-label">{label}</div>
+      <div className="bt-col-slots">
+        {matchDefs.map(def => (
+          <div key={def.num} className="bt-slot">
+            <BracketTile
+              def={def}
+              groupTables={groupTables}
+              fixtureByNum={fixtureByNum}
+              ownerMap={ownerMap}
+              currentUser={currentUser}
+              onSelectTeam={onSelectTeam}
+              onOpenMatch={onOpenMatch}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BracketTree({ groupTables, fixtureByNum, ownerMap, currentUser, onSelectTeam, onOpenMatch }) {
+  const wrapRef = useRef(null);
+  const [scale, setScale] = useState(1);
+  const STEPS = [0.55, 0.7, 0.85, 1, 1.15];
+  const stepRef = useRef(3);
+
+  const doZoom = useCallback((dir) => {
+    stepRef.current = Math.max(0, Math.min(STEPS.length - 1, stepRef.current + dir));
+    setScale(STEPS[stepRef.current]);
+  }, []);
+
+  const r32ordered = BRACKET_TREE.flatMap(g => g.matches);
+  const r16ordered = BRACKET_R16_ORDER.map(n => R16.find(m => m.num === n));
+  const qfOrdered  = BRACKET_QF_ORDER.map(n => QF.find(m => m.num === n));
+  const sfOrdered  = BRACKET_SF_ORDER.map(n => SF.find(m => m.num === n));
+
+  const svgRef = useRef(null);
+  const viewportRef = useRef(null);
+
+  const drawConnectors = useCallback(() => {
+    const svg = svgRef.current;
+    const viewport = viewportRef.current;
+    if (!svg || !viewport) return;
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+
+    const wrapRect = wrap.getBoundingClientRect();
+    svg.setAttribute('width', wrap.scrollWidth / scale);
+    svg.setAttribute('height', wrap.scrollHeight / scale);
+    svg.innerHTML = '';
+
+    const cols = wrap.querySelectorAll('.bt-col');
+    for (let ci = 1; ci < cols.length; ci++) {
+      const prevSlots = cols[ci - 1].querySelectorAll('.bt-slot');
+      const curSlots = cols[ci].querySelectorAll('.bt-slot');
+
+      for (let si = 0; si < curSlots.length; si++) {
+        const target = curSlots[si];
+        const f1 = prevSlots[si * 2];
+        const f2 = prevSlots[si * 2 + 1];
+        if (!f1 || !f2 || !target) continue;
+
+        const tR = target.getBoundingClientRect();
+        const f1R = f1.getBoundingClientRect();
+        const f2R = f2.getBoundingClientRect();
+
+        const x1 = (f1R.right - wrapRect.left) / scale;
+        const x2 = (tR.left - wrapRect.left) / scale;
+        const y1 = (f1R.top + f1R.height / 2 - wrapRect.top) / scale;
+        const y2 = (f2R.top + f2R.height / 2 - wrapRect.top) / scale;
+        const yT = (tR.top + tR.height / 2 - wrapRect.top) / scale;
+        const midX = (x1 + x2) / 2;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', `M${x1},${y1} H${midX} V${yT} H${x2}`);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', 'rgba(244,201,94,0.25)');
+        path.setAttribute('stroke-width', '1.5');
+        svg.appendChild(path);
+
+        const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path2.setAttribute('d', `M${x1},${y2} H${midX} V${yT}`);
+        path2.setAttribute('fill', 'none');
+        path2.setAttribute('stroke', 'rgba(244,201,94,0.25)');
+        path2.setAttribute('stroke-width', '1.5');
+        svg.appendChild(path2);
+      }
+    }
+  }, [scale]);
+
+  useEffect(() => {
+    const t = setTimeout(drawConnectors, 100);
+    return () => clearTimeout(t);
+  }, [drawConnectors, scale]);
+
+  useEffect(() => {
+    const ro = new ResizeObserver(() => drawConnectors());
+    if (wrapRef.current) ro.observe(wrapRef.current);
+    return () => ro.disconnect();
+  }, [drawConnectors]);
+
+  return (
+    <div className="bt-viewport" ref={viewportRef}>
+      <div className="bt-wrap" ref={wrapRef} style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+        <svg ref={svgRef} className="bt-svg" />
+        <BracketColumn label="Round of 32" matchDefs={r32ordered} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} />
+        <BracketColumn label="Round of 16" matchDefs={r16ordered} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} />
+        <BracketColumn label="Quarter-finals" matchDefs={qfOrdered} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} />
+        <BracketColumn label="Semi-finals" matchDefs={sfOrdered} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} />
+        <BracketColumn label="Final" matchDefs={FINAL_MATCH} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} />
+      </div>
+      <div className="bt-zoom">
+        <button className="bt-zoom-btn" onClick={() => doZoom(1)}>+</button>
+        <span className="bt-zoom-label">{Math.round(scale * 100)}%</span>
+        <button className="bt-zoom-btn" onClick={() => doZoom(-1)}>−</button>
+      </div>
+    </div>
+  );
+}
+
 // ── Group tables (always-visible grid, no accordion) ─────────────────────────
 
 function GroupTablesSection({ groupTables, ownerMap, currentUser, onSelectTeam }) {
@@ -417,7 +629,7 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
 
   useEffect(() => { setLimit(PAGE_SIZE); }, [mode, showFinished, search]);
 
-  const isKnockout = !['all', 'tables', 'group-stage'].includes(mode);
+  const isKnockout = !['all', 'tables', 'group-stage', 'bracket'].includes(mode);
 
   const ownerMap = useMemo(() => {
     const map = {};
@@ -527,6 +739,18 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
           ownerMap={ownerMap}
           currentUser={currentUser}
           onSelectTeam={onSelectTeam}
+        />
+      )}
+
+      {/* Bracket tree view */}
+      {mode === 'bracket' && (
+        <BracketTree
+          groupTables={groupTables}
+          fixtureByNum={fixtureByNum}
+          ownerMap={ownerMap}
+          currentUser={currentUser}
+          onSelectTeam={onSelectTeam}
+          onOpenMatch={setOpenMatch}
         />
       )}
 

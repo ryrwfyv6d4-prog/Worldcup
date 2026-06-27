@@ -3683,3 +3683,224 @@ body, .app {
   text-align: center;
   font-style: italic;
 }
+
+/* ── Bracket Tree ────────────────────────────────────────────────────────── */
+.bt-viewport {
+  position: relative;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 8px 60px;
+  width: 100%;
+}
+
+.bt-wrap {
+  display: inline-flex;
+  gap: 0;
+  position: relative;
+  align-items: flex-start;
+  min-width: max-content;
+}
+
+.bt-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bt-col {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 150px;
+  z-index: 1;
+  position: relative;
+}
+
+.bt-col-label {
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  padding: 4px 8px 8px;
+  white-space: nowrap;
+  font-family: var(--font-display);
+}
+
+.bt-col-slots {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex: 1;
+  gap: 4px;
+}
+
+.bt-slot {
+  display: flex;
+  align-items: center;
+  padding: 2px 6px;
+}
+
+.bt-tile {
+  background: var(--card);
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  width: 100%;
+  border: 1px solid var(--border);
+  transition: box-shadow 0.15s;
+}
+
+.bt-tile:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+
+.bt-tile.live {
+  border-color: var(--live);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.25);
+}
+
+.bt-tile.done {
+  border-color: var(--border-strong);
+}
+
+.bt-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  min-height: 26px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  font-size: 0.72rem;
+}
+
+.bt-row:last-of-type {
+  border-bottom: none;
+}
+
+.bt-row.winner {
+  background: rgba(226, 169, 59, 0.12);
+}
+
+.bt-row.winner .bt-name {
+  font-weight: 700;
+}
+
+.bt-row.winner .bt-score {
+  font-weight: 700;
+  color: var(--gold-dark);
+}
+
+.bt-flag {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.bt-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.7rem;
+  color: var(--ink);
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+}
+
+.bt-name.proj {
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.bt-score {
+  font-size: 0.72rem;
+  font-weight: 600;
+  min-width: 16px;
+  text-align: right;
+  color: var(--ink);
+  font-family: var(--font-mono);
+}
+
+.bt-score.live {
+  color: var(--live);
+}
+
+.bt-tbd {
+  flex: 1;
+  font-size: 0.65rem;
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.bt-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 7px 3px;
+  font-size: 0.6rem;
+  color: var(--ink-soft);
+  background: rgba(0,0,0,0.03);
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+
+.bt-ft {
+  font-weight: 700;
+  font-size: 0.58rem;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.bt-live-badge {
+  background: var(--live);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.55rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bt-zoom {
+  position: fixed;
+  bottom: 74px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  z-index: 50;
+}
+
+.bt-zoom-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+.bt-zoom-btn:active {
+  background: var(--card-alt);
+}
+
+.bt-zoom-label {
+  font-size: 0.6rem;
+  color: var(--text-on-dark);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
