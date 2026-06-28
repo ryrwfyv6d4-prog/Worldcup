@@ -318,31 +318,8 @@ function BracketCard({ def, groupTables, fixtureByNum, ownerMap, currentUser, on
   );
 }
 
-// ── Bracket tree (classic tournament bracket) ────────────────────────────────
+// ── Bracket view (vertical round-by-round, mobile-first) ────────────────────
 
-// R32 ordered to follow the bracket tree path — each pair feeds one R16 match
-const BRACKET_TREE = [
-  // Top half → SF1 (M101)
-  //   QF1 (M97): R16-M89 vs R16-M90
-  { round: 'R32', matches: [R32.find(m=>m.num===74), R32.find(m=>m.num===77)] }, // → R16 M89
-  { round: 'R32', matches: [R32.find(m=>m.num===73), R32.find(m=>m.num===75)] }, // → R16 M90
-  //   QF2 (M98): R16-M93 vs R16-M94
-  { round: 'R32', matches: [R32.find(m=>m.num===83), R32.find(m=>m.num===84)] }, // → R16 M93
-  { round: 'R32', matches: [R32.find(m=>m.num===81), R32.find(m=>m.num===82)] }, // → R16 M94
-  // Bottom half → SF2 (M102)
-  //   QF3 (M99): R16-M91 vs R16-M92
-  { round: 'R32', matches: [R32.find(m=>m.num===76), R32.find(m=>m.num===78)] }, // → R16 M91
-  { round: 'R32', matches: [R32.find(m=>m.num===79), R32.find(m=>m.num===80)] }, // → R16 M92
-  //   QF4 (M100): R16-M95 vs R16-M96
-  { round: 'R32', matches: [R32.find(m=>m.num===86), R32.find(m=>m.num===88)] }, // → R16 M95
-  { round: 'R32', matches: [R32.find(m=>m.num===85), R32.find(m=>m.num===87)] }, // → R16 M96
-];
-
-const BRACKET_R16_ORDER = [89, 90, 93, 94, 91, 92, 95, 96];
-const BRACKET_QF_ORDER  = [97, 98, 99, 100];
-const BRACKET_SF_ORDER  = [101, 102];
-
-const DAYS_OF_WEEK = { 'Mon': 'Mon', 'Tue': 'Tue', 'Wed': 'Wed', 'Thu': 'Thu', 'Fri': 'Fri', 'Sat': 'Sat', 'Sun': 'Sun' };
 function addDayOfWeek(dateStr) {
   const months = { 'Jan':0,'Feb':1,'Mar':2,'Apr':3,'May':4,'Jun':5,'Jul':6,'Aug':7,'Sep':8,'Oct':9,'Nov':10,'Dec':11 };
   const parts = dateStr.split(' ');
@@ -354,7 +331,37 @@ function addDayOfWeek(dateStr) {
   return `${dow} ${dateStr}`;
 }
 
-function BracketTile({ def, groupTables, fixtureByNum, ownerMap, currentUser, onSelectTeam, onOpenMatch }) {
+// Matches grouped in pairs that feed the next round
+const BRACKET_PAIRS = [
+  { round: 'R32', label: 'Round of 32', feedLabel: 'R16', pairs: [
+    { matches: [74, 77], feedsInto: 89 },
+    { matches: [73, 75], feedsInto: 90 },
+    { matches: [83, 84], feedsInto: 93 },
+    { matches: [81, 82], feedsInto: 94 },
+    { matches: [76, 78], feedsInto: 91 },
+    { matches: [79, 80], feedsInto: 92 },
+    { matches: [86, 88], feedsInto: 95 },
+    { matches: [85, 87], feedsInto: 96 },
+  ]},
+  { round: 'R16', label: 'Round of 16', feedLabel: 'QF', pairs: [
+    { matches: [89, 90], feedsInto: 97 },
+    { matches: [93, 94], feedsInto: 98 },
+    { matches: [91, 92], feedsInto: 99 },
+    { matches: [95, 96], feedsInto: 100 },
+  ]},
+  { round: 'QF', label: 'Quarter-finals', feedLabel: 'SF', pairs: [
+    { matches: [97, 98], feedsInto: 101 },
+    { matches: [99, 100], feedsInto: 102 },
+  ]},
+  { round: 'SF', label: 'Semi-finals', feedLabel: 'Final', pairs: [
+    { matches: [101, 102], feedsInto: 104 },
+  ]},
+  { round: 'Final', label: 'Final', pairs: [
+    { matches: [104] },
+  ]},
+];
+
+function BracketMatchCard({ def, groupTables, fixtureByNum, ownerMap, currentUser, onOpenMatch }) {
   const fixture = fixtureByNum[def.num];
   const isLive = fixture?.status === 'IN_PLAY' || fixture?.status === 'PAUSED';
   const isDone = fixture?.status === 'FINISHED';
@@ -373,177 +380,100 @@ function BracketTile({ def, groupTables, fixtureByNum, ownerMap, currentUser, on
     ? (fixture.score.winner === 'HOME_TEAM' ? 1 : fixture.score.winner === 'AWAY_TEAM' ? 2 : 0)
     : 0;
 
-  const cls = `bt-tile${isLive ? ' live' : ''}${isDone ? ' done' : ''}`;
-
-  const Row = ({ team, owner, projected, score, isWinner }) => (
-    <div className={`bt-row${isWinner ? ' winner' : ''}`}>
-      {team ? (
-        <>
-          <span className="bt-flag">{getFlag(team)}</span>
-          <span className={`bt-name${projected ? ' proj' : ''}`}>{team}</span>
-        </>
-      ) : (
-        <span className="bt-tbd">{def.s1?.includes('/') || def.s2?.includes('/') ? 'Best 3rd' : 'TBD'}</span>
-      )}
+  const TeamRow = ({ team, projected, owner, score, isWinner }) => (
+    <div className={`bt-team${isWinner ? ' winner' : ''}`}>
+      <span className="bt-flag">{team ? getFlag(team) : ''}</span>
+      <span className={`bt-name${projected ? ' proj' : ''}`}>
+        {team || 'TBD'}
+      </span>
+      {owner && <span className={`bt-owner${currentUser === owner ? ' me' : ''}`}>{owner}</span>}
       <span className={`bt-score${isLive ? ' live' : ''}`}>
-        {showScore ? (score ?? '–') : '–'}
+        {showScore ? (score ?? '–') : ''}
       </span>
     </div>
   );
 
   return (
-    <div className={cls} onClick={fixture ? () => onOpenMatch(fixture) : undefined}>
-      <Row team={team1} owner={own1} projected={proj1} score={fixture?.score?.home} isWinner={winner === 1} />
-      <Row team={team2} owner={own2} projected={proj2} score={fixture?.score?.away} isWinner={winner === 2} />
-      <div className="bt-meta">
-        <span>{addDayOfWeek(def.date)}</span>
-        {isLive && <span className="bt-live-badge">{fixture.liveClock ? `${fixture.liveClock}'` : 'LIVE'}</span>}
-        {isDone && <span className="bt-ft">FT</span>}
+    <div
+      className={`bt-match${isLive ? ' live' : ''}${isDone ? ' done' : ''}`}
+      onClick={fixture ? () => onOpenMatch(fixture) : undefined}
+    >
+      <TeamRow team={team1} projected={proj1} owner={own1} score={fixture?.score?.home} isWinner={winner === 1} />
+      <div className="bt-vs-row">
+        <span className="bt-date">{addDayOfWeek(def.date)}</span>
+        <span className="bt-status">
+          {isLive && <span className="bt-live-badge">{fixture.liveClock ? `${fixture.liveClock}'` : 'LIVE'}</span>}
+          {isDone && <span className="bt-ft">FT</span>}
+        </span>
       </div>
+      <TeamRow team={team2} projected={proj2} owner={own2} score={fixture?.score?.away} isWinner={winner === 2} />
     </div>
   );
 }
 
-
-const BRACKET_ROUNDS = [
-  { key: 'all',   label: 'Overview' },
-  { key: 'R32',   label: 'R32'      },
-  { key: 'R16',   label: 'R16'      },
-  { key: 'QF',    label: 'QF'       },
-  { key: 'SF',    label: 'SF'       },
-  { key: 'Final', label: 'Final'    },
-];
+const BRACKET_ROUND_KEYS = ['all', 'R32', 'R16', 'QF', 'SF', 'Final'];
+const BRACKET_ROUND_LABELS = { all: 'All', R32: 'R32', R16: 'R16', QF: 'QF', SF: 'SF', Final: 'Final' };
 
 function BracketTree({ groupTables, fixtureByNum, ownerMap, currentUser, onSelectTeam, onOpenMatch }) {
-  const wrapRef = useRef(null);
-  const viewportRef = useRef(null);
-  const svgRef = useRef(null);
-  const colRefs = useRef([]);
   const [focus, setFocus] = useState('all');
-
-  const r32ordered = BRACKET_TREE.flatMap(g => g.matches);
-  const r16ordered = BRACKET_R16_ORDER.map(n => R16.find(m => m.num === n));
-  const qfOrdered  = BRACKET_QF_ORDER.map(n => QF.find(m => m.num === n));
-  const sfOrdered  = BRACKET_SF_ORDER.map(n => SF.find(m => m.num === n));
-
-  const COL_KEYS = ['R32', 'R16', 'QF', 'SF', 'Final'];
-
-  const getScale = useCallback((key) => {
-    if (key === 'all') return 0.52;
-    if (key === 'R32') return 0.85;
-    if (key === 'R16') return 0.95;
-    return 1;
-  }, []);
-
-  const scale = getScale(focus);
+  const sectionRefs = useRef({});
 
   const scrollToRound = useCallback((key) => {
     setFocus(key);
-    const vp = viewportRef.current;
-    const wrap = wrapRef.current;
-    if (!vp || !wrap) return;
+    if (key === 'all') return;
+    const el = sectionRefs.current[key];
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
-    if (key === 'all') {
-      requestAnimationFrame(() => { vp.scrollLeft = 0; vp.scrollTop = 0; });
-      return;
+  const allDefs = useMemo(() => {
+    const map = {};
+    for (const arr of [R32, R16, QF, SF, FINAL_MATCH]) {
+      for (const d of arr) map[d.num] = d;
     }
+    return map;
+  }, []);
 
-    const colIdx = COL_KEYS.indexOf(key);
-    const col = colRefs.current[colIdx];
-    if (!col) return;
-
-    requestAnimationFrame(() => {
-      const s = getScale(key);
-      const colLeft = col.offsetLeft * s;
-      const colWidth = col.offsetWidth * s;
-      const vpWidth = vp.clientWidth;
-      const targetX = colLeft - Math.max(0, (vpWidth - colWidth) / 2);
-      vp.scrollTo({ left: Math.max(0, targetX), top: 0, behavior: 'smooth' });
-    });
-  }, [getScale]);
-
-  const drawConnectors = useCallback(() => {
-    const svg = svgRef.current;
-    const wrap = wrapRef.current;
-    if (!svg || !wrap) return;
-
-    const wrapRect = wrap.getBoundingClientRect();
-    svg.setAttribute('width', wrap.scrollWidth / scale);
-    svg.setAttribute('height', wrap.scrollHeight / scale);
-    svg.innerHTML = '';
-
-    const cols = wrap.querySelectorAll('.bt-col');
-    for (let ci = 1; ci < cols.length; ci++) {
-      const prevSlots = cols[ci - 1].querySelectorAll('.bt-slot');
-      const curSlots = cols[ci].querySelectorAll('.bt-slot');
-
-      for (let si = 0; si < curSlots.length; si++) {
-        const target = curSlots[si];
-        const f1 = prevSlots[si * 2];
-        const f2 = prevSlots[si * 2 + 1];
-        if (!f1 || !f2 || !target) continue;
-
-        const tR = target.getBoundingClientRect();
-        const f1R = f1.getBoundingClientRect();
-        const f2R = f2.getBoundingClientRect();
-
-        const x1 = (f1R.right - wrapRect.left) / scale;
-        const x2 = (tR.left - wrapRect.left) / scale;
-        const y1 = (f1R.top + f1R.height / 2 - wrapRect.top) / scale;
-        const y2 = (f2R.top + f2R.height / 2 - wrapRect.top) / scale;
-        const yT = (tR.top + tR.height / 2 - wrapRect.top) / scale;
-        const midX = (x1 + x2) / 2;
-
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', `M${x1},${y1} H${midX} V${yT} H${x2}`);
-        path.setAttribute('fill', 'none');
-        path.setAttribute('stroke', 'rgba(244,201,94,0.25)');
-        path.setAttribute('stroke-width', '1.5');
-        svg.appendChild(path);
-
-        const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path2.setAttribute('d', `M${x1},${y2} H${midX} V${yT}`);
-        path2.setAttribute('fill', 'none');
-        path2.setAttribute('stroke', 'rgba(244,201,94,0.25)');
-        path2.setAttribute('stroke-width', '1.5');
-        svg.appendChild(path2);
-      }
-    }
-  }, [scale]);
-
-  useEffect(() => {
-    const t = setTimeout(drawConnectors, 120);
-    return () => clearTimeout(t);
-  }, [drawConnectors, focus]);
-
-  useEffect(() => {
-    const ro = new ResizeObserver(() => drawConnectors());
-    if (wrapRef.current) ro.observe(wrapRef.current);
-    return () => ro.disconnect();
-  }, [drawConnectors]);
-
-  const setColRef = useCallback((i) => (el) => { colRefs.current[i] = el; }, []);
+  const visibleRounds = focus === 'all'
+    ? BRACKET_PAIRS
+    : BRACKET_PAIRS.filter(r => r.round === focus);
 
   return (
     <div className="bt-outer">
       <div className="bt-round-nav">
-        {BRACKET_ROUNDS.map(r => (
+        {BRACKET_ROUND_KEYS.map(k => (
           <button
-            key={r.key}
-            className={`bt-round-pill${focus === r.key ? ' active' : ''}`}
-            onClick={() => scrollToRound(r.key)}
-          >{r.label}</button>
+            key={k}
+            className={`bt-round-pill${focus === k ? ' active' : ''}`}
+            onClick={() => scrollToRound(k)}
+          >{BRACKET_ROUND_LABELS[k]}</button>
         ))}
       </div>
-      <div className="bt-viewport" ref={viewportRef}>
-        <div className="bt-wrap" ref={wrapRef} style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-          <svg ref={svgRef} className="bt-svg" />
-          <div className="bt-col" ref={setColRef(0)}><div className="bt-col-label">Round of 32</div><div className="bt-col-slots">{r32ordered.map(def => <div key={def.num} className="bt-slot"><BracketTile def={def} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} /></div>)}</div></div>
-          <div className="bt-col" ref={setColRef(1)}><div className="bt-col-label">Round of 16</div><div className="bt-col-slots">{r16ordered.map(def => <div key={def.num} className="bt-slot"><BracketTile def={def} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} /></div>)}</div></div>
-          <div className="bt-col" ref={setColRef(2)}><div className="bt-col-label">Quarter-finals</div><div className="bt-col-slots">{qfOrdered.map(def => <div key={def.num} className="bt-slot"><BracketTile def={def} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} /></div>)}</div></div>
-          <div className="bt-col" ref={setColRef(3)}><div className="bt-col-label">Semi-finals</div><div className="bt-col-slots">{sfOrdered.map(def => <div key={def.num} className="bt-slot"><BracketTile def={def} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} /></div>)}</div></div>
-          <div className="bt-col" ref={setColRef(4)}><div className="bt-col-label">Final</div><div className="bt-col-slots">{FINAL_MATCH.map(def => <div key={def.num} className="bt-slot"><BracketTile def={def} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} /></div>)}</div></div>
-        </div>
+      <div className="bt-scroll">
+        {visibleRounds.map(round => (
+          <div key={round.round} className="bt-section" ref={el => { sectionRefs.current[round.round] = el; }}>
+            <div className="bt-section-header">{round.label}</div>
+            {round.pairs.map((pair, pi) => (
+              <div key={pi} className={`bt-pair${pair.matches.length > 1 ? ' has-connector' : ''}`}>
+                {pair.matches.map(num => (
+                  <BracketMatchCard
+                    key={num}
+                    def={allDefs[num]}
+                    groupTables={groupTables}
+                    fixtureByNum={fixtureByNum}
+                    ownerMap={ownerMap}
+                    currentUser={currentUser}
+                    onOpenMatch={onOpenMatch}
+                  />
+                ))}
+                {pair.feedsInto && (
+                  <div className="bt-feeds">
+                    Winners meet in {round.feedLabel}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );

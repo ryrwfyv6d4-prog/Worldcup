@@ -3684,11 +3684,10 @@ body, .app {
   font-style: italic;
 }
 
-/* ── Bracket Tree ────────────────────────────────────────────────────────── */
+/* ── Bracket View (vertical round-by-round) ──────────────────────────────── */
 .bt-outer {
   display: flex;
   flex-direction: column;
-  gap: 0;
 }
 
 .bt-round-nav {
@@ -3722,130 +3721,96 @@ body, .app {
   border-color: var(--gold);
 }
 
-.bt-viewport {
-  position: relative;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 4px 8px 24px;
-  width: 100%;
+.bt-scroll {
+  padding: 0 10px 24px;
 }
 
-.bt-wrap {
-  display: inline-flex;
-  gap: 0;
-  position: relative;
-  align-items: flex-start;
-  min-width: max-content;
+.bt-section {
+  margin-bottom: 8px;
 }
 
-.bt-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.bt-col {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  min-width: 150px;
-  z-index: 1;
-  position: relative;
-}
-
-.bt-col-label {
-  text-align: center;
-  font-size: 0.68rem;
+.bt-section-header {
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--gold);
-  padding: 4px 8px 8px;
-  white-space: nowrap;
+  padding: 12px 4px 6px;
   font-family: var(--font-display);
 }
 
-.bt-col-slots {
+.bt-pair {
+  margin-bottom: 6px;
+}
+
+.bt-pair.has-connector {
+  background: rgba(255,255,255,0.02);
+  border-radius: 8px;
+  border-left: 2px solid rgba(226, 169, 59, 0.2);
+  padding: 4px 0 0 0;
+  margin-bottom: 10px;
+}
+
+.bt-match {
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
-  flex: 1;
-  gap: 4px;
-}
-
-.bt-slot {
-  display: flex;
-  align-items: center;
-  padding: 2px 6px;
-}
-
-.bt-tile {
   background: var(--card);
   border-radius: 6px;
-  overflow: hidden;
-  cursor: pointer;
-  width: 100%;
+  margin: 0 4px 4px;
   border: 1px solid var(--border);
+  cursor: pointer;
   transition: box-shadow 0.15s;
+  overflow: hidden;
 }
 
-.bt-tile:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+.bt-match:active {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
-.bt-tile.live {
+.bt-match.live {
   border-color: var(--live);
-  box-shadow: 0 0 6px rgba(239, 68, 68, 0.25);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.2);
 }
 
-.bt-tile.done {
+.bt-match.done {
   border-color: var(--border-strong);
 }
 
-.bt-row {
+.bt-team {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 7px;
-  min-height: 26px;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-  font-size: 0.72rem;
+  gap: 8px;
+  padding: 8px 10px;
+  min-height: 36px;
 }
 
-.bt-row:last-of-type {
-  border-bottom: none;
+.bt-team.winner {
+  background: rgba(226, 169, 59, 0.1);
 }
 
-.bt-row.winner {
-  background: rgba(226, 169, 59, 0.12);
-}
-
-.bt-row.winner .bt-name {
+.bt-team.winner .bt-name {
   font-weight: 700;
 }
 
-.bt-row.winner .bt-score {
+.bt-team.winner .bt-score {
   font-weight: 700;
   color: var(--gold-dark);
 }
 
 .bt-flag {
-  font-size: 0.9rem;
+  font-size: 1.2rem;
   flex-shrink: 0;
   line-height: 1;
 }
 
 .bt-name {
   flex: 1;
+  font-size: 0.85rem;
+  color: var(--ink);
+  font-family: var(--font-display);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 0.7rem;
-  color: var(--ink);
-  font-family: var(--font-display);
-  letter-spacing: 0.01em;
 }
 
 .bt-name.proj {
@@ -3853,10 +3818,21 @@ body, .app {
   color: var(--ink-soft);
 }
 
-.bt-score {
-  font-size: 0.72rem;
+.bt-owner {
+  font-size: 0.62rem;
+  color: var(--ink-faint);
+  flex-shrink: 0;
+}
+
+.bt-owner.me {
+  color: var(--gold-dark);
   font-weight: 600;
-  min-width: 16px;
+}
+
+.bt-score {
+  font-size: 1rem;
+  font-weight: 600;
+  min-width: 20px;
   text-align: right;
   color: var(--ink);
   font-family: var(--font-mono);
@@ -3866,28 +3842,31 @@ body, .app {
   color: var(--live);
 }
 
-.bt-tbd {
-  flex: 1;
-  font-size: 0.65rem;
-  color: var(--ink-faint);
-  font-style: italic;
-}
-
-.bt-meta {
+.bt-vs-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 2px 7px 3px;
-  font-size: 0.6rem;
+  padding: 0 10px;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.bt-date {
+  font-size: 0.65rem;
   color: var(--ink-soft);
-  background: rgba(0,0,0,0.03);
   font-family: var(--font-display);
   letter-spacing: 0.02em;
+  padding: 3px 0;
+}
+
+.bt-status {
+  display: flex;
+  align-items: center;
 }
 
 .bt-ft {
   font-weight: 700;
-  font-size: 0.58rem;
+  font-size: 0.6rem;
   color: var(--ink-faint);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -3897,10 +3876,19 @@ body, .app {
   background: var(--live);
   color: #fff;
   font-weight: 700;
-  font-size: 0.55rem;
-  padding: 1px 5px;
+  font-size: 0.58rem;
+  padding: 1px 6px;
   border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.bt-feeds {
+  text-align: center;
+  font-size: 0.62rem;
+  color: var(--text-faint-dark);
+  padding: 2px 0 6px;
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
 }
 
