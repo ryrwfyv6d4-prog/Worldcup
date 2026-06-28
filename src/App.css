@@ -3685,11 +3685,48 @@ body, .app {
 }
 
 /* ── Bracket Tree ────────────────────────────────────────────────────────── */
+.bt-outer {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.bt-round-nav {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.bt-round-nav::-webkit-scrollbar { display: none; }
+
+.bt-round-pill {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-on-dark);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.bt-round-pill.active {
+  background: var(--gold);
+  color: var(--bg);
+  border-color: var(--gold);
+}
+
 .bt-viewport {
   position: relative;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 12px 8px 60px;
+  padding: 4px 8px 24px;
   width: 100%;
 }
 
@@ -3867,40 +3904,3 @@ body, .app {
   letter-spacing: 0.04em;
 }
 
-.bt-zoom {
-  position: fixed;
-  bottom: 74px;
-  right: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  z-index: 50;
-}
-
-.bt-zoom-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid var(--border-strong);
-  background: var(--card);
-  color: var(--ink);
-  font-size: 1.1rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-}
-
-.bt-zoom-btn:active {
-  background: var(--card-alt);
-}
-
-.bt-zoom-label {
-  font-size: 0.6rem;
-  color: var(--text-on-dark);
-  font-weight: 600;
-  font-family: var(--font-mono);
-}

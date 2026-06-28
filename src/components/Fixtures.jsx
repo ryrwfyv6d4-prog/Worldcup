@@ -391,54 +391,68 @@ function BracketTile({ def, groupTables, fixtureByNum, ownerMap, currentUser, on
   );
 }
 
-function BracketColumn({ label, matchDefs, groupTables, fixtureByNum, ownerMap, currentUser, onSelectTeam, onOpenMatch }) {
-  return (
-    <div className="bt-col">
-      <div className="bt-col-label">{label}</div>
-      <div className="bt-col-slots">
-        {matchDefs.map(def => (
-          <div key={def.num} className="bt-slot">
-            <BracketTile
-              def={def}
-              groupTables={groupTables}
-              fixtureByNum={fixtureByNum}
-              ownerMap={ownerMap}
-              currentUser={currentUser}
-              onSelectTeam={onSelectTeam}
-              onOpenMatch={onOpenMatch}
-            />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+
+const BRACKET_ROUNDS = [
+  { key: 'all',   label: 'Overview' },
+  { key: 'R32',   label: 'R32'      },
+  { key: 'R16',   label: 'R16'      },
+  { key: 'QF',    label: 'QF'       },
+  { key: 'SF',    label: 'SF'       },
+  { key: 'Final', label: 'Final'    },
+];
 
 function BracketTree({ groupTables, fixtureByNum, ownerMap, currentUser, onSelectTeam, onOpenMatch }) {
   const wrapRef = useRef(null);
-  const [scale, setScale] = useState(1);
-  const STEPS = [0.55, 0.7, 0.85, 1, 1.15];
-  const stepRef = useRef(3);
-
-  const doZoom = useCallback((dir) => {
-    stepRef.current = Math.max(0, Math.min(STEPS.length - 1, stepRef.current + dir));
-    setScale(STEPS[stepRef.current]);
-  }, []);
+  const viewportRef = useRef(null);
+  const svgRef = useRef(null);
+  const colRefs = useRef([]);
+  const [focus, setFocus] = useState('all');
 
   const r32ordered = BRACKET_TREE.flatMap(g => g.matches);
   const r16ordered = BRACKET_R16_ORDER.map(n => R16.find(m => m.num === n));
   const qfOrdered  = BRACKET_QF_ORDER.map(n => QF.find(m => m.num === n));
   const sfOrdered  = BRACKET_SF_ORDER.map(n => SF.find(m => m.num === n));
 
-  const svgRef = useRef(null);
-  const viewportRef = useRef(null);
+  const COL_KEYS = ['R32', 'R16', 'QF', 'SF', 'Final'];
+
+  const getScale = useCallback((key) => {
+    if (key === 'all') return 0.52;
+    if (key === 'R32') return 0.85;
+    if (key === 'R16') return 0.95;
+    return 1;
+  }, []);
+
+  const scale = getScale(focus);
+
+  const scrollToRound = useCallback((key) => {
+    setFocus(key);
+    const vp = viewportRef.current;
+    const wrap = wrapRef.current;
+    if (!vp || !wrap) return;
+
+    if (key === 'all') {
+      requestAnimationFrame(() => { vp.scrollLeft = 0; vp.scrollTop = 0; });
+      return;
+    }
+
+    const colIdx = COL_KEYS.indexOf(key);
+    const col = colRefs.current[colIdx];
+    if (!col) return;
+
+    requestAnimationFrame(() => {
+      const s = getScale(key);
+      const colLeft = col.offsetLeft * s;
+      const colWidth = col.offsetWidth * s;
+      const vpWidth = vp.clientWidth;
+      const targetX = colLeft - Math.max(0, (vpWidth - colWidth) / 2);
+      vp.scrollTo({ left: Math.max(0, targetX), top: 0, behavior: 'smooth' });
+    });
+  }, [getScale]);
 
   const drawConnectors = useCallback(() => {
     const svg = svgRef.current;
-    const viewport = viewportRef.current;
-    if (!svg || !viewport) return;
     const wrap = wrapRef.current;
-    if (!wrap) return;
+    if (!svg || !wrap) return;
 
     const wrapRect = wrap.getBoundingClientRect();
     svg.setAttribute('width', wrap.scrollWidth / scale);
@@ -485,9 +499,9 @@ function BracketTree({ groupTables, fixtureByNum, ownerMap, currentUser, onSelec
   }, [scale]);
 
   useEffect(() => {
-    const t = setTimeout(drawConnectors, 100);
+    const t = setTimeout(drawConnectors, 120);
     return () => clearTimeout(t);
-  }, [drawConnectors, scale]);
+  }, [drawConnectors, focus]);
 
   useEffect(() => {
     const ro = new ResizeObserver(() => drawConnectors());
@@ -495,20 +509,28 @@ function BracketTree({ groupTables, fixtureByNum, ownerMap, currentUser, onSelec
     return () => ro.disconnect();
   }, [drawConnectors]);
 
+  const setColRef = useCallback((i) => (el) => { colRefs.current[i] = el; }, []);
+
   return (
-    <div className="bt-viewport" ref={viewportRef}>
-      <div className="bt-wrap" ref={wrapRef} style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-        <svg ref={svgRef} className="bt-svg" />
-        <BracketColumn label="Round of 32" matchDefs={r32ordered} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} />
-        <BracketColumn label="Round of 16" matchDefs={r16ordered} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} />
-        <BracketColumn label="Quarter-finals" matchDefs={qfOrdered} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} />
-        <BracketColumn label="Semi-finals" matchDefs={sfOrdered} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} />
-        <BracketColumn label="Final" matchDefs={FINAL_MATCH} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} />
+    <div className="bt-outer">
+      <div className="bt-round-nav">
+        {BRACKET_ROUNDS.map(r => (
+          <button
+            key={r.key}
+            className={`bt-round-pill${focus === r.key ? ' active' : ''}`}
+            onClick={() => scrollToRound(r.key)}
+          >{r.label}</button>
+        ))}
       </div>
-      <div className="bt-zoom">
-        <button className="bt-zoom-btn" onClick={() => doZoom(1)}>+</button>
-        <span className="bt-zoom-label">{Math.round(scale * 100)}%</span>
-        <button className="bt-zoom-btn" onClick={() => doZoom(-1)}>−</button>
+      <div className="bt-viewport" ref={viewportRef}>
+        <div className="bt-wrap" ref={wrapRef} style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+          <svg ref={svgRef} className="bt-svg" />
+          <div className="bt-col" ref={setColRef(0)}><div className="bt-col-label">Round of 32</div><div className="bt-col-slots">{r32ordered.map(def => <div key={def.num} className="bt-slot"><BracketTile def={def} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} /></div>)}</div></div>
+          <div className="bt-col" ref={setColRef(1)}><div className="bt-col-label">Round of 16</div><div className="bt-col-slots">{r16ordered.map(def => <div key={def.num} className="bt-slot"><BracketTile def={def} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} /></div>)}</div></div>
+          <div className="bt-col" ref={setColRef(2)}><div className="bt-col-label">Quarter-finals</div><div className="bt-col-slots">{qfOrdered.map(def => <div key={def.num} className="bt-slot"><BracketTile def={def} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} /></div>)}</div></div>
+          <div className="bt-col" ref={setColRef(3)}><div className="bt-col-label">Semi-finals</div><div className="bt-col-slots">{sfOrdered.map(def => <div key={def.num} className="bt-slot"><BracketTile def={def} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} /></div>)}</div></div>
+          <div className="bt-col" ref={setColRef(4)}><div className="bt-col-label">Final</div><div className="bt-col-slots">{FINAL_MATCH.map(def => <div key={def.num} className="bt-slot"><BracketTile def={def} groupTables={groupTables} fixtureByNum={fixtureByNum} ownerMap={ownerMap} currentUser={currentUser} onSelectTeam={onSelectTeam} onOpenMatch={onOpenMatch} /></div>)}</div></div>
+        </div>
       </div>
     </div>
   );
