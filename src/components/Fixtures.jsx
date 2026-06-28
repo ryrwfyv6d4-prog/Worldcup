@@ -153,6 +153,11 @@ function resolveR32Slot(slot, tables) {
   return null;
 }
 
+const DEF_BY_NUM = {};
+for (const arr of [R32, R16, QF, SF, FINAL_MATCH]) {
+  for (const d of arr) DEF_BY_NUM[d.num] = d;
+}
+
 function resolveSlot(slot, groupTables, fixtureByNum) {
   if (!slot) return null;
 
@@ -185,6 +190,14 @@ function resolveSlot(slot, groupTables, fixtureByNum) {
         ? normaliseTeamName(fix.homeTeam.name)
         : normaliseTeamName(fix.awayTeam.name);
       return { team: w, projected: false };
+    }
+    if (fix && fix.status !== 'FINISHED') {
+      return { team: normaliseTeamName(fix.homeTeam.name), projected: true };
+    }
+    const def = DEF_BY_NUM[n];
+    if (def) {
+      const home = resolveSlot(def.s1, groupTables, fixtureByNum);
+      if (home) return { team: home.team, projected: true };
     }
     return null;
   }
