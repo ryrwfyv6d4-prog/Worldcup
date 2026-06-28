@@ -363,9 +363,7 @@ function BracketTile({ def, groupTables, fixtureByNum, ownerMap, currentUser, on
   const cls = `bt-tile${isLive ? ' live' : ''}${isDone ? ' done' : ''}`;
 
   const Row = ({ team, owner, projected, score, isWinner }) => (
-    <div className={`bt-row${isWinner ? ' winner' : ''}`}
-      onClick={team ? (e) => { e.stopPropagation(); onSelectTeam(team); } : undefined}
-    >
+    <div className={`bt-row${isWinner ? ' winner' : ''}`}>
       {team ? (
         <>
           <span className="bt-flag">{getFlag(team)}</span>
