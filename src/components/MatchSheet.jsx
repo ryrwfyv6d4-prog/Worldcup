@@ -193,6 +193,17 @@ function Odds({ pickcenter, home, away, homeFlag, awayFlag }) {
 // ── MatchSheet ────────────────────────────────────────────────────────────────
 
 export default function MatchSheet({ match, assignments, drawType, onClose, onSelectTeam }) {
+  if (!match?.homeTeam?.name || !match?.awayTeam?.name) {
+    return createPortal(
+      <div className="ms-backdrop" onClick={onClose}>
+        <div className="ms-sheet" onClick={e => e.stopPropagation()}>
+          <p className="ms-fine" style={{ padding: 24 }}>Match data unavailable.</p>
+          <button className="ms-back" onClick={onClose} style={{ margin: '0 auto', display: 'block' }}>Close</button>
+        </div>
+      </div>,
+      document.body
+    );
+  }
   const home = normaliseTeamName(match.homeTeam.name);
   const away = normaliseTeamName(match.awayTeam.name);
   const homeOwner = getOwner(home, assignments, drawType);
