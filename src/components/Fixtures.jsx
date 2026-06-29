@@ -375,6 +375,7 @@ function BracketMatchCard({ def, groupTables, fixtureByNum, ownerMap, currentUse
   const proj2 = !fixture && r2?.projected;
   const own1 = team1 ? ownerMap[team1] : null;
   const own2 = team2 ? ownerMap[team2] : null;
+  const anyProjected = proj1 || proj2;
 
   const winner = isDone
     ? (fixture.score.winner === 'HOME_TEAM' ? 1 : fixture.score.winner === 'AWAY_TEAM' ? 2 : 0)
@@ -395,7 +396,7 @@ function BracketMatchCard({ def, groupTables, fixtureByNum, ownerMap, currentUse
 
   return (
     <div
-      className={`bt-match${isLive ? ' live' : ''}${isDone ? ' done' : ''}`}
+      className={`bt-match${isLive ? ' live' : ''}${isDone ? ' done' : ''}${anyProjected ? ' projected' : ''}`}
       onClick={fixture ? () => onOpenMatch(fixture) : undefined}
     >
       <TeamRow team={team1} projected={proj1} owner={own1} score={fixture?.score?.home} isWinner={winner === 1} />
@@ -404,6 +405,7 @@ function BracketMatchCard({ def, groupTables, fixtureByNum, ownerMap, currentUse
         <span className="bt-status">
           {isLive && <span className="bt-live-badge">{fixture.liveClock ? `${fixture.liveClock}'` : 'LIVE'}</span>}
           {isDone && <span className="bt-ft">FT</span>}
+          {!isDone && !isLive && anyProjected && <span className="bt-proj-tag">projected</span>}
         </span>
       </div>
       <TeamRow team={team2} projected={proj2} owner={own2} score={fixture?.score?.away} isWinner={winner === 2} />
@@ -449,6 +451,9 @@ function BracketTree({ groupTables, fixtureByNum, ownerMap, currentUser, onSelec
         ))}
       </div>
       <div className="bt-scroll">
+        <p className="bt-hint">
+          <i>Projected</i> matchups based on current group standings. Updates as results come in.
+        </p>
         {visibleRounds.map(round => (
           <div key={round.round} className="bt-section" ref={el => { sectionRefs.current[round.round] = el; }}>
             <div className="bt-section-header">{round.label}</div>

@@ -3892,3 +3892,29 @@ body, .app {
   letter-spacing: 0.02em;
 }
 
+.bt-match.projected {
+  border-style: dashed;
+  border-color: rgba(226, 169, 59, 0.25);
+}
+
+.bt-proj-tag {
+  font-size: 0.58rem;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bt-hint {
+  font-size: 0.68rem;
+  color: var(--text-muted-dark);
+  padding: 4px 4px 8px;
+  line-height: 1.4;
+}
+
+.bt-hint i {
+  color: var(--gold);
+  font-style: italic;
+}
+
