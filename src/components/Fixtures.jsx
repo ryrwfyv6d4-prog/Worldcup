@@ -305,7 +305,7 @@ function BracketCard({ def, groupTables, fixtureByNum, ownerMap, currentUser, on
   return (
     <div className={`match-card${isLive ? ' live' : ''}${hasOwner && !isLive ? ' has-owner' : ''}`}>
       <div className="mc-meta">
-        <span className="mc-time">{def.date}</span>
+        <span className="mc-time">{fixture?.utcDate ? formatDateAEST(fixture.utcDate) : def.date}</span>
         <span className="mc-meta-right">
           {isLive && <span className="status-badge badge-live">{fixture.liveClock ? `${fixture.liveClock}'` : 'LIVE'}</span>}
           {isDone && <span className="status-badge badge-done">FT</span>}
@@ -319,17 +319,6 @@ function BracketCard({ def, groupTables, fixtureByNum, ownerMap, currentUser, on
 }
 
 // ── Bracket view (vertical round-by-round, mobile-first) ────────────────────
-
-function addDayOfWeek(dateStr) {
-  const months = { 'Jan':0,'Feb':1,'Mar':2,'Apr':3,'May':4,'Jun':5,'Jul':6,'Aug':7,'Sep':8,'Oct':9,'Nov':10,'Dec':11 };
-  const parts = dateStr.split(' ');
-  const day = parseInt(parts[0]);
-  const mon = months[parts[1]];
-  if (isNaN(day) || mon == null) return dateStr;
-  const d = new Date(2026, mon, day);
-  const dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
-  return `${dow} ${dateStr}`;
-}
 
 // Matches grouped in pairs that feed the next round
 const BRACKET_PAIRS = [
@@ -401,7 +390,7 @@ function BracketMatchCard({ def, groupTables, fixtureByNum, ownerMap, currentUse
     >
       <TeamRow team={team1} projected={proj1} owner={own1} score={fixture?.score?.home} isWinner={winner === 1} />
       <div className="bt-vs-row">
-        <span className="bt-date">{addDayOfWeek(def.date)}</span>
+        <span className="bt-date">{fixture?.utcDate ? formatDateAEST(fixture.utcDate) : def.date}</span>
         <span className="bt-status">
           {isLive && <span className="bt-live-badge">{fixture.liveClock ? `${fixture.liveClock}'` : 'LIVE'}</span>}
           {isDone && <span className="bt-ft">FT</span>}
