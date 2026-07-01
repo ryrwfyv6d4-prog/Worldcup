@@ -3918,3 +3918,148 @@ body, .app {
   font-style: italic;
 }
 
+/* ── Graveyard — The Fallen ── */
+.gy-section {
+  margin-top: 20px;
+  padding: 20px 0;
+}
+
+.gy-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.gy-cross {
+  font-size: 1.4rem;
+  color: var(--ink-faint);
+  opacity: 0.6;
+}
+
+.gy-title {
+  font-family: 'Graduate', serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.25em;
+  color: var(--text-muted-dark);
+  text-transform: uppercase;
+}
+
+.gy-subtitle {
+  display: none;
+}
+
+.gy-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gy-tomb {
+  background: var(--bg-elevated);
+  border: 1px solid rgba(82, 62, 28, 0.18);
+  border-radius: var(--radius);
+  padding: 18px 16px 14px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.gy-tomb::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(82, 62, 28, 0.3), transparent);
+}
+
+.gy-tomb-top {
+  font-size: 1.2rem;
+  color: var(--ink-faint);
+  opacity: 0.4;
+  margin-bottom: 6px;
+}
+
+.gy-tomb-name {
+  font-family: 'Graduate', serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+  color: var(--text-on-dark);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.gy-tomb-date {
+  font-family: 'Graduate', serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  color: var(--text-muted-dark);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.gy-tomb-epitaph {
+  font-style: italic;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-faint-dark);
+  margin-bottom: 12px;
+  padding: 0 8px;
+}
+
+.gy-tomb-teams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.gy-team-badge {
+  background: rgba(36, 27, 14, 0.5);
+  border: 1px solid rgba(82, 62, 28, 0.22);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.72rem;
+  color: var(--text-muted-dark);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: background 0.15s;
+}
+
+.gy-team-badge:active {
+  background: rgba(82, 62, 28, 0.3);
+}
+
+.gy-team-stage {
+  font-size: 0.58rem;
+  font-family: 'Graduate', serif;
+  letter-spacing: 0.06em;
+  color: #8b3a3a;
+  text-transform: uppercase;
+}
+
+.gy-tomb-base {
+  font-family: 'Graduate', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+  color: var(--ink-faint);
+  opacity: 0.35;
+  text-transform: uppercase;
+}
+
+.gy-footer {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-faint-dark);
+  margin-top: 14px;
+  font-style: italic;
+}
+
