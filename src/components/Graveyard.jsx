@@ -13,47 +13,64 @@ const STAGE_LABELS = {
 const STAGE_ORDER = ['GROUP_STAGE', 'LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS'];
 
 const EPITAPHS = [
-  name => `${name}'s campaign lasted longer than Italy's involvement in either World War. Just.`,
-  name => `${name} has been evacuated from the tournament. Dunkirk had better logistics.`,
-  name => `${name}'s dreams lie at the bottom of the ocean, torpedoed without warning.`,
-  name => `Like the Maginot Line, ${name}'s defence looked good on paper.`,
-  name => `${name} has unconditionally surrendered. No terms were offered.`,
-  name => `${name}'s campaign has ended. The retreat was less orderly than Stalingrad.`,
-  name => `Mission failed. ${name} is Missing In Action, presumed drinking.`,
-  name => `${name} went down faster than the Bismarck.`,
-  name => `${name}'s war is over. Send care packages (beer).`,
-  name => `${name} fought on the beaches, fought on the landing grounds, then got absolutely pumped.`,
-  name => `${name}'s strategy made the charge at Gallipoli look well-planned.`,
-  name => `${name} tried to fight a war on multiple fronts. It went about as well as last time.`,
-  name => `Attention all personnel: ${name} has been dishonourably discharged from the tournament.`,
-  name => `${name}'s campaign has been carpet-bombed into oblivion.`,
-  name => `${name} has fallen. We shall remember them at the pub.`,
+  name => `${name} has been escorted from US soil. Do not attempt to re-enter.`,
+  name => `${name}'s visa has been revoked. Reason: being absolutely shithouse at football.`,
+  name => `ICE agents confirmed ${name}'s teams had no right to remain in the tournament.`,
+  name => `${name} tried to claim asylum in the knockout rounds. Application denied.`,
+  name => `${name} has been removed from the premises. Their luggage will not be forwarded.`,
+  name => `TSA flagged ${name}'s campaign at the border. Nothing of value was found.`,
+  name => `${name} has been placed on a one-way flight home. Middle seat. No recline.`,
+  name => `${name}'s green card has been shredded. The American Dream is over.`,
+  name => `By executive order, ${name} is hereby banned from all future tournaments.`,
+  name => `${name} didn't send their best teams. They sent teams with problems. They're gone now.`,
+  name => `${name}'s campaign built no wall. The goals just walked right in.`,
+  name => `Homeland Security has classified ${name}'s campaign as a national embarrassment.`,
+  name => `${name} entered the tournament legally but is leaving in handcuffs.`,
+  name => `The deportation flight for ${name} departs immediately. Peanuts will not be served.`,
+  name => `${name} thought they were here for the American Dream. It was the American Nightmare.`,
 ];
 
-function isTeamEliminated(team, fixtures) {
-  const group = Object.entries(GROUPS).find(([, teams]) => teams.includes(team));
-  if (group) {
-    const groupLetter = group[0];
-    const groupFixtures = fixtures.filter(
-      f => f.stage === 'GROUP_STAGE' && f.group === groupLetter && f.status === 'FINISHED'
+function buildGroupStandings(fixtures) {
+  const groups = {};
+  for (const [letter, teams] of Object.entries(GROUPS)) {
+    const gFixtures = fixtures.filter(
+      f => f.stage === 'GROUP_STAGE' && f.group === letter && f.status === 'FINISHED'
     );
-    if (groupFixtures.length === 6) {
-      const standings = {};
-      for (const t of group[1]) standings[t] = { pts: 0, gd: 0, gf: 0 };
-      for (const m of groupFixtures) {
-        const h = normaliseTeamName(m.homeTeam.name);
-        const a = normaliseTeamName(m.awayTeam.name);
-        if (!standings[h] || !standings[a]) continue;
-        standings[h].gf += m.score.home; standings[h].gd += m.score.home - m.score.away;
-        standings[a].gf += m.score.away; standings[a].gd += m.score.away - m.score.home;
-        if (m.score.winner === 'HOME_TEAM') { standings[h].pts += 3; }
-        else if (m.score.winner === 'AWAY_TEAM') { standings[a].pts += 3; }
-        else { standings[h].pts += 1; standings[a].pts += 1; }
-      }
-      const sorted = Object.entries(standings)
-        .sort(([, a], [, b]) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
-      if (sorted[3][0] === team) return 'GROUP_STAGE';
+    if (gFixtures.length < 6) continue;
+    const standings = {};
+    for (const t of teams) standings[t] = { pts: 0, gd: 0, gf: 0 };
+    for (const m of gFixtures) {
+      const h = normaliseTeamName(m.homeTeam.name);
+      const a = normaliseTeamName(m.awayTeam.name);
+      if (!standings[h] || !standings[a]) continue;
+      standings[h].gf += m.score.home; standings[h].gd += m.score.home - m.score.away;
+      standings[a].gf += m.score.away; standings[a].gd += m.score.away - m.score.home;
+      if (m.score.winner === 'HOME_TEAM') { standings[h].pts += 3; }
+      else if (m.score.winner === 'AWAY_TEAM') { standings[a].pts += 3; }
+      else { standings[h].pts += 1; standings[a].pts += 1; }
     }
+    const sorted = Object.entries(standings)
+      .sort(([, a], [, b]) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
+    groups[letter] = sorted.map(([team, stats], pos) => ({ team, ...stats, pos }));
+  }
+  return groups;
+}
+
+function getEliminatedThirds(groupStandings) {
+  const completedGroups = Object.keys(groupStandings);
+  if (completedGroups.length < 12) return new Set();
+  const thirds = completedGroups.map(g => groupStandings[g][2]);
+  thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
+  return new Set(thirds.slice(8).map(t => t.team));
+}
+
+function isTeamEliminated(team, fixtures, groupStandings, eliminatedThirds) {
+  for (const rows of Object.values(groupStandings)) {
+    const entry = rows.find(r => r.team === team);
+    if (!entry) continue;
+    if (entry.pos === 3) return 'GROUP_STAGE';
+    if (entry.pos === 2 && eliminatedThirds.has(team)) return 'GROUP_STAGE';
+    break;
   }
   for (const f of fixtures) {
     if (f.stage === 'GROUP_STAGE' || f.status !== 'FINISHED') continue;
@@ -69,6 +86,8 @@ function isTeamEliminated(team, fixtures) {
 
 export default function Graveyard({ assignments, drawType, fixtures, onSelectTeam }) {
   const fallen = useMemo(() => {
+    const groupStandings = buildGroupStandings(fixtures);
+    const eliminatedThirds = getEliminatedThirds(groupStandings);
     const result = [];
     let idx = 0;
     for (const name of Object.keys(assignments)) {
@@ -76,7 +95,7 @@ export default function Graveyard({ assignments, drawType, fixtures, onSelectTea
       if (!teams.length) continue;
       const teamStatuses = teams.map(t => ({
         team: t,
-        eliminatedAt: isTeamEliminated(t, fixtures),
+        eliminatedAt: isTeamEliminated(t, fixtures, groupStandings, eliminatedThirds),
       }));
       const allDead = teamStatuses.every(ts => ts.eliminatedAt !== null);
       if (!allDead) continue;
@@ -99,32 +118,33 @@ export default function Graveyard({ assignments, drawType, fixtures, onSelectTea
   return (
     <div className="page">
       <div className="page-header">
-        <h2>The Fallen</h2>
+        <h2>Deportations</h2>
       </div>
 
       {fallen.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">⚰️</div>
-          <p>No casualties yet — all campaigns still active.</p>
-          <p className="gy-hint-sub">Once all of someone's teams are knocked out, they'll be honoured here.</p>
+          <div className="empty-icon">🛂</div>
+          <p>All visas still valid — no deportations yet.</p>
+          <p className="gy-hint-sub">Once all of someone's teams are eliminated, they'll be removed from the country.</p>
         </div>
       ) : (
         <>
           <div className="gy-banner">
-            <div className="gy-banner-cross">✠</div>
+            <div className="gy-banner-cross">🇺🇸</div>
             <div className="gy-banner-text">
-              <span className="gy-banner-count">{fallen.length}</span> campaign{fallen.length !== 1 ? 's' : ''} lost
+              <span className="gy-banner-count">{fallen.length}</span> deported
             </div>
-            <div className="gy-banner-cross">✠</div>
+            <div className="gy-banner-cross">🇺🇸</div>
           </div>
 
           <div className="gy-grid">
             {fallen.map((f) => (
               <div key={f.name} className="gy-tomb">
-                <div className="gy-tomb-top">✠</div>
+                <div className="gy-tomb-top">🛂</div>
+                <div className="gy-tomb-stamp">DEPORTATION ORDER</div>
                 <div className="gy-tomb-name">{f.name}</div>
                 <div className="gy-tomb-date">
-                  Fell in the {STAGE_LABELS[f.bestStage] || f.bestStage}
+                  Visa revoked: {STAGE_LABELS[f.bestStage] || f.bestStage}
                 </div>
                 <div className="gy-tomb-epitaph">"{f.epitaph}"</div>
                 <div className="gy-tomb-teams">
@@ -136,17 +156,17 @@ export default function Graveyard({ assignments, drawType, fixtures, onSelectTea
                     >
                       {getFlag(team)} {team}
                       <span className="gy-team-stage">
-                        KIA: {STAGE_LABELS[eliminatedAt] || '???'}
+                        DEPORTED: {STAGE_LABELS[eliminatedAt] || '???'}
                       </span>
                     </button>
                   ))}
                 </div>
-                <div className="gy-tomb-base">R.I.P.</div>
+                <div className="gy-tomb-base">VISA DENIED</div>
               </div>
             ))}
           </div>
 
-          <p className="gy-footer">🍺 Pour one out for the lads</p>
+          <p className="gy-footer">✈️ Flight home now boarding</p>
         </>
       )}
     </div>
