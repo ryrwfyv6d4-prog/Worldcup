@@ -645,12 +645,12 @@ body {
 .filter-btn {
   flex-shrink: 0;
   white-space: nowrap;
-  padding: 7px 14px;
+  padding: 8px 16px;
   border: 1.5px solid var(--navy-light);
   border-radius: 20px;
   background: var(--bg-elevated);
   color: var(--text-muted-dark);
-  font-size: 0.8rem;
+  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -732,7 +732,7 @@ body {
   align-items: center;
   gap: 5px;
   margin-bottom: 7px;
-  font-size: 0.7rem;
+  font-size: 0.76rem;
   color: var(--text-muted);
 }
 .mc-meta-right {
@@ -813,7 +813,7 @@ body {
 .mc-flag { font-size: 1.5rem; flex-shrink: 0; line-height: 1; }
 .mc-team-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .mc-name {
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #0D0A06;
   white-space: nowrap;
@@ -822,7 +822,7 @@ body {
 }
 .mc-name.owned { color: var(--gold-dark); }
 .mc-owner {
-  font-size: 0.62rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-muted);
   margin-top: 1px;
@@ -1959,7 +1959,7 @@ h1, h2, h3, .app-title, .app-year, .lb-name, .lb-pts,
   list-style: none;
   background: rgba(0,0,0,0.04);
   border-radius: 6px;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   line-height: 1.7;
 }
 .r32-projections li { opacity: 0.85; }
@@ -1976,7 +1976,7 @@ h1, h2, h3, .app-title, .app-year, .lb-name, .lb-pts,
 }
 .bk-projected { opacity: 0.7; font-style: italic; }
 .bk-proj-tag {
-  font-size: 0.6rem;
+  font-size: 0.66rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1992,21 +1992,21 @@ h1, h2, h3, .app-title, .app-year, .lb-name, .lb-pts,
   flex: 1;
 }
 .group-table-title {
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--gold);
   margin-bottom: 4px;
 }
-.group-table table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-.group-table th { font-size: 0.62rem; text-transform: uppercase; opacity: 0.6; padding: 2px 4px; text-align: left; }
-.group-table td { padding: 4px; border-top: 1px solid var(--navy-light); }
+.group-table table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.group-table th { font-size: 0.68rem; text-transform: uppercase; opacity: 0.6; padding: 2px 4px; text-align: left; }
+.group-table td { padding: 5px 4px; border-top: 1px solid var(--navy-light); }
 .group-table .num { text-align: center; width: 26px; }
 .group-table .pts { font-weight: 800; }
 .group-table tr.qualifying td:first-child { border-left: 3px solid var(--green); }
 .group-table tr.mine { background: var(--gold-glow); }
-.group-table .owner-tag { font-size: 0.64rem; opacity: 0.7; }
+.group-table .owner-tag { font-size: 0.7rem; opacity: 0.7; }
 
 /* ================================================================
    THE EAGLE'S NEST — theme layer (overrides base dark theme)
@@ -2610,8 +2610,8 @@ body, .app {
 /* day headers become Graduate eyebrows */
 .day-header {
   font-family: 'Graduate', serif;
-  font-size: 0.58rem;
-  letter-spacing: 0.28em;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
   font-weight: 400;
   color: var(--brass);
   border-bottom: 0;
@@ -3730,7 +3730,7 @@ body, .app {
 }
 
 .bt-section-header {
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -3805,7 +3805,7 @@ body, .app {
 
 .bt-name {
   flex: 1;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: var(--ink);
   font-family: var(--font-display);
   white-space: nowrap;
@@ -3819,7 +3819,7 @@ body, .app {
 }
 
 .bt-owner {
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   color: var(--ink-faint);
   flex-shrink: 0;
 }
@@ -3852,7 +3852,7 @@ body, .app {
 }
 
 .bt-date {
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   color: var(--ink-soft);
   font-family: var(--font-display);
   letter-spacing: 0.02em;
@@ -3866,7 +3866,7 @@ body, .app {
 
 .bt-ft {
   font-weight: 700;
-  font-size: 0.6rem;
+  font-size: 0.66rem;
   color: var(--ink-faint);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -3876,7 +3876,7 @@ body, .app {
   background: var(--live);
   color: #fff;
   font-weight: 700;
-  font-size: 0.58rem;
+  font-size: 0.64rem;
   padding: 1px 6px;
   border-radius: 4px;
   text-transform: uppercase;
@@ -3885,7 +3885,7 @@ body, .app {
 
 .bt-feeds {
   text-align: center;
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   color: var(--text-faint-dark);
   padding: 2px 0 6px;
   font-family: var(--font-display);
@@ -3898,7 +3898,7 @@ body, .app {
 }
 
 .bt-proj-tag {
-  font-size: 0.58rem;
+  font-size: 0.64rem;
   font-weight: 600;
   font-style: italic;
   color: var(--ink-faint);
@@ -3907,7 +3907,7 @@ body, .app {
 }
 
 .bt-hint {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: var(--text-muted-dark);
   padding: 4px 4px 8px;
   line-height: 1.4;

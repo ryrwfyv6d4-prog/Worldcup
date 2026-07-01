@@ -53,24 +53,10 @@ const FINAL_MATCH = [
   { num: 104, s1: 'W101', s2: 'W102', date: '19 Jul' },
 ];
 
-const KNOCKOUT_ROUNDS = [
-  { id: 'R32',   label: 'R32',   full: 'Round of 32',    matches: R32        },
-  { id: 'R16',   label: 'R16',   full: 'Round of 16',    matches: R16        },
-  { id: 'QF',    label: 'QF',    full: 'Quarter-finals', matches: QF         },
-  { id: 'SF',    label: 'SF',    full: 'Semi-finals',    matches: SF         },
-  { id: 'FINAL', label: 'Final', full: 'Final',          matches: FINAL_MATCH},
-];
-
 const MODES = [
-  { id: 'all',         label: 'All'         },
-  { id: 'tables',      label: 'Group Table' },
-  { id: 'group-stage', label: 'Group Stage' },
-  { id: 'bracket',     label: 'Bracket'     },
-  { id: 'R32',         label: 'R32'         },
-  { id: 'R16',         label: 'R16'         },
-  { id: 'QF',          label: 'QF'          },
-  { id: 'SF',          label: 'SF'          },
-  { id: 'FINAL',       label: 'Final'       },
+  { id: 'all',     label: 'Matches' },
+  { id: 'tables',  label: 'Groups'  },
+  { id: 'bracket', label: 'Bracket' },
 ];
 
 // R32 projections for group table footer
@@ -260,60 +246,6 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
           <a href={ytDirect} target="_blank" rel="noreferrer" className="mc-hl-btn">▶ Highlights</a>
         )}
       </div>
-    </div>
-  );
-}
-
-// ── BracketCard ───────────────────────────────────────────────────────────────
-
-function BracketCard({ def, groupTables, fixtureByNum, ownerMap, currentUser, onSelectTeam }) {
-  const fixture = fixtureByNum[def.num];
-  const isLive = fixture?.status === 'IN_PLAY' || fixture?.status === 'PAUSED';
-  const isDone = fixture?.status === 'FINISHED';
-  const showScore = isDone || isLive;
-
-  const r1 = resolveSlot(def.s1, groupTables, fixtureByNum);
-  const r2 = resolveSlot(def.s2, groupTables, fixtureByNum);
-
-  const team1 = fixture ? normaliseTeamName(fixture.homeTeam.name) : r1?.team;
-  const team2 = fixture ? normaliseTeamName(fixture.awayTeam.name) : r2?.team;
-  const proj1 = !fixture && r1?.projected;
-  const proj2 = !fixture && r2?.projected;
-
-  const own1 = team1 ? ownerMap[team1] : null;
-  const own2 = team2 ? ownerMap[team2] : null;
-  const hasOwner = !!(own1 || own2);
-  const anyProjected = proj1 || proj2;
-
-  const TeamRow = ({ team, owner, projected, score }) => (
-    <div className="mc-team-row">
-      {team ? (
-        <button className="mc-team-btn" onClick={(e) => { e.stopPropagation(); onSelectTeam(team); }}>
-          <span className="mc-flag">{getFlag(team)}</span>
-          <div className="mc-team-info">
-            <span className={`mc-name${owner ? ' owned' : ''}${projected ? ' bk-projected' : ''}`}>{team}</span>
-            {owner && <span className={`mc-owner${currentUser === owner ? ' me' : ''}`}>{owner}</span>}
-          </div>
-        </button>
-      ) : (
-        <span className="bk-tbd">TBD</span>
-      )}
-      {showScore && <span className="mc-score-val">{score ?? '–'}</span>}
-    </div>
-  );
-
-  return (
-    <div className={`match-card${isLive ? ' live' : ''}${hasOwner && !isLive ? ' has-owner' : ''}`}>
-      <div className="mc-meta">
-        <span className="mc-time">{fixture?.utcDate ? formatDateAEST(fixture.utcDate) : def.date}</span>
-        <span className="mc-meta-right">
-          {isLive && <span className="status-badge badge-live">{fixture.liveClock ? `${fixture.liveClock}'` : 'LIVE'}</span>}
-          {isDone && <span className="status-badge badge-done">FT</span>}
-          {!isDone && !isLive && anyProjected && <span className="bk-proj-tag">projected</span>}
-        </span>
-      </div>
-      <TeamRow team={team1} owner={own1} projected={proj1} score={fixture?.score?.home} />
-      <TeamRow team={team2} owner={own2} projected={proj2} score={fixture?.score?.away} />
     </div>
   );
 }
@@ -578,15 +510,13 @@ function GroupTablesSection({ groupTables, ownerMap, currentUser, onSelectTeam }
 // ── Fixtures page ─────────────────────────────────────────────────────────────
 
 export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType, onSelectTeam, currentUser }) {
-  const [mode, setMode] = useState('tables');
+  const [mode, setMode] = useState('all');
   const [openMatch, setOpenMatch] = useState(null);
-  const [showFinished, setShowFinished] = useState(true);
+  const [showFinished, setShowFinished] = useState(false);
   const [search, setSearch] = useState('');
   const [limit, setLimit] = useState(PAGE_SIZE);
 
   useEffect(() => { setLimit(PAGE_SIZE); }, [mode, showFinished, search]);
-
-  const isKnockout = !['all', 'tables', 'group-stage', 'bracket'].includes(mode);
 
   const ownerMap = useMemo(() => {
     const map = {};
@@ -606,13 +536,11 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
     return map;
   }, [fixtures]);
 
-  const currentKnockout = KNOCKOUT_ROUNDS.find((r) => r.id === mode);
-
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let list = fixtures;
-    if (mode === 'group-stage') list = list.filter((f) => f.stage === 'GROUP_STAGE');
-    if (!showFinished) list = list.filter((f) => f.status !== 'FINISHED');
+    // When searching, include finished games — you're looking for a team's story
+    if (!showFinished && !q) list = list.filter((f) => f.status !== 'FINISHED');
     if (q) {
       list = list.filter((f) => {
         const home = normaliseTeamName(f.homeTeam.name).toLowerCase();
@@ -669,8 +597,8 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         ))}
       </div>
 
-      {/* Search + show-finished toggle (match list modes only) */}
-      {!isKnockout && mode !== 'tables' && fixtures.length > 0 && (
+      {/* Search + show-finished toggle (match list mode only) */}
+      {mode === 'all' && fixtures.length > 0 && (
         <div className="filter-bar">
           <div className="search-row">
             <input
@@ -711,26 +639,8 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         />
       )}
 
-      {/* Knockout bracket */}
-      {isKnockout && currentKnockout && (
-        <>
-          <div className="bk-round-title">{currentKnockout.full}</div>
-          {currentKnockout.matches.map((def) => (
-            <BracketCard
-              key={def.num}
-              def={def}
-              groupTables={groupTables}
-              fixtureByNum={fixtureByNum}
-              ownerMap={ownerMap}
-              currentUser={currentUser}
-              onSelectTeam={onSelectTeam}
-            />
-          ))}
-        </>
-      )}
-
-      {/* Match list (all + group-stage modes) */}
-      {!isKnockout && mode !== 'tables' && (
+      {/* Match list */}
+      {mode === 'all' && (
         <>
           {fixtures.length === 0 && !loading && (
             <div className="empty-state">
