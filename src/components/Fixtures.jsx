@@ -3,6 +3,7 @@ import MatchSheet from './MatchSheet.jsx';
 import { getFlag } from '../data/worldcup2026.js';
 import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
 import { formatTimeAEST, formatDateAEST } from '../utils/time.js';
+import { tla } from '../utils/tla.js';
 import { useYouTubeHighlight } from '../hooks/useYouTubeHighlight.js';
 
 // ── Bracket data (official 2026 FIFA draw) ────────────────────────────────────
@@ -144,51 +145,64 @@ for (const arr of [R32, R16, QF, SF, FINAL_MATCH]) {
   for (const d of arr) DEF_BY_NUM[d.num] = d;
 }
 
-function resolveSlot(slot, groupTables, fixtureByNum) {
-  if (!slot) return null;
+// Honest slot resolution — never guesses a winner.
+// Returns { type: 'team', team }        — confirmed (group decided or match won)
+//         { type: 'either', teams }     — match not played yet: both possibilities
+//         { type: 'tbd', label }        — can't be narrowed to two teams yet
+function isGroupComplete(table) {
+  return !!table && table.rows.length === 4 && table.rows.every((r) => r.p >= 3);
+}
+
+function resolveSide(slot, groupTables, fixtureByNum) {
+  if (!slot) return { type: 'tbd', label: 'TBD' };
 
   const posMatch = slot.match(/^([12])([A-L])$/);
   if (posMatch) {
-    const pos = parseInt(posMatch[1]) - 1;
-    const letter = posMatch[2];
-    const table = groupTables.find((t) => t.letter === letter);
-    if (table?.rows[pos]?.p > 0) return { team: table.rows[pos].team, projected: true };
-    return null;
+    const table = groupTables.find((t) => t.letter === posMatch[2]);
+    if (isGroupComplete(table)) {
+      return { type: 'team', team: table.rows[parseInt(posMatch[1]) - 1].team };
+    }
+    return { type: 'tbd', label: `${posMatch[1] === '1' ? '1st' : '2nd'} Grp ${posMatch[2]}` };
   }
 
   const thirdMatch = slot.match(/^3([A-L](?:\/[A-L])*)$/);
   if (thirdMatch) {
     const letters = thirdMatch[1].split('/');
-    const thirds = letters
-      .map((g) => groupTables.find((t) => t.letter === g)?.rows[2])
-      .filter((r) => r && r.p > 0);
-    if (!thirds.length) return null;
-    thirds.sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf);
-    return { team: thirds[0].team, projected: true };
+    const tables = letters.map((g) => groupTables.find((t) => t.letter === g));
+    if (tables.every(isGroupComplete)) {
+      const thirds = tables.map((t) => t.rows[2]);
+      thirds.sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf);
+      return { type: 'team', team: thirds[0].team };
+    }
+    return { type: 'tbd', label: '3rd place' };
   }
 
   const winnerMatch = slot.match(/^W(\d+)$/);
   if (winnerMatch) {
     const n = parseInt(winnerMatch[1]);
     const fix = fixtureByNum[n];
-    if (fix?.status === 'FINISHED') {
-      const w = fix.score.winner === 'HOME_TEAM'
-        ? normaliseTeamName(fix.homeTeam.name)
-        : normaliseTeamName(fix.awayTeam.name);
-      return { team: w, projected: false };
+    if (fix?.status === 'FINISHED' && fix.score?.winner && fix.score.winner !== 'DRAW') {
+      const w = fix.score.winner === 'HOME_TEAM' ? fix.homeTeam.name : fix.awayTeam.name;
+      return { type: 'team', team: normaliseTeamName(w) };
     }
-    if (fix && fix.status !== 'FINISHED') {
-      return { team: normaliseTeamName(fix.homeTeam.name), projected: true };
+    if (fix) {
+      return {
+        type: 'either',
+        teams: [normaliseTeamName(fix.homeTeam.name), normaliseTeamName(fix.awayTeam.name)],
+      };
     }
     const def = DEF_BY_NUM[n];
     if (def) {
-      const home = resolveSlot(def.s1, groupTables, fixtureByNum);
-      if (home) return { team: home.team, projected: true };
+      const a = resolveSide(def.s1, groupTables, fixtureByNum);
+      const b = resolveSide(def.s2, groupTables, fixtureByNum);
+      if (a.type === 'team' && b.type === 'team') {
+        return { type: 'either', teams: [a.team, b.team] };
+      }
     }
-    return null;
+    return { type: 'tbd', label: `Winner M${n}` };
   }
 
-  return null;
+  return { type: 'tbd', label: slot };
 }
 
 // ── MatchCard ─────────────────────────────────────────────────────────────────
@@ -282,125 +296,186 @@ const BRACKET_PAIRS = [
   ]},
 ];
 
-function BracketMatchCard({ def, groupTables, fixtureByNum, ownerMap, currentUser, onOpenMatch }) {
+// Windows: each pairs a round with where its winners go
+const SW_WINDOWS = BRACKET_PAIRS.slice(0, 4); // R32|R16, R16|QF, QF|SF, SF|Final
+const SW_PILLS = [
+  { label: 'R32',   window: 0 },
+  { label: 'R16',   window: 1 },
+  { label: 'QF',    window: 2 },
+  { label: 'SF',    window: 3 },
+  { label: 'Final', window: 3 },
+];
+
+function SwSideRow({ side, score, showScore, isWinner, isLoser, ownerMap, currentUser }) {
+  if (side.type === 'team') {
+    const owner = ownerMap[side.team];
+    return (
+      <div className={`sw-row${isWinner ? ' winner' : ''}${isLoser ? ' loser' : ''}`}>
+        <span className="sw-flag">{getFlag(side.team)}</span>
+        <span className="sw-name">{side.team}</span>
+        {owner && <span className={`sw-owner${currentUser === owner ? ' me' : ''}`}>{owner}</span>}
+        {showScore && <span className="sw-score">{score ?? '–'}</span>}
+      </div>
+    );
+  }
+  if (side.type === 'either') {
+    return (
+      <div className="sw-row either">
+        <span className="sw-either-team">{getFlag(side.teams[0])} {tla(side.teams[0])}</span>
+        <span className="sw-or">or</span>
+        <span className="sw-either-team">{getFlag(side.teams[1])} {tla(side.teams[1])}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="sw-row tbd">
+      <span className="sw-tbd-label">{side.label}</span>
+    </div>
+  );
+}
+
+function SwMatchCard({ def, groupTables, fixtureByNum, ownerMap, currentUser, onOpenMatch, isFinal }) {
   const fixture = fixtureByNum[def.num];
   const isLive = fixture?.status === 'IN_PLAY' || fixture?.status === 'PAUSED';
   const isDone = fixture?.status === 'FINISHED';
   const showScore = isDone || isLive;
 
-  const r1 = resolveSlot(def.s1, groupTables, fixtureByNum);
-  const r2 = resolveSlot(def.s2, groupTables, fixtureByNum);
-  const team1 = fixture ? normaliseTeamName(fixture.homeTeam.name) : r1?.team;
-  const team2 = fixture ? normaliseTeamName(fixture.awayTeam.name) : r2?.team;
-  const proj1 = !fixture && r1?.projected;
-  const proj2 = !fixture && r2?.projected;
-  const own1 = team1 ? ownerMap[team1] : null;
-  const own2 = team2 ? ownerMap[team2] : null;
-  const anyProjected = proj1 || proj2;
+  const sideA = fixture
+    ? { type: 'team', team: normaliseTeamName(fixture.homeTeam.name) }
+    : resolveSide(def.s1, groupTables, fixtureByNum);
+  const sideB = fixture
+    ? { type: 'team', team: normaliseTeamName(fixture.awayTeam.name) }
+    : resolveSide(def.s2, groupTables, fixtureByNum);
 
   const winner = isDone
     ? (fixture.score.winner === 'HOME_TEAM' ? 1 : fixture.score.winner === 'AWAY_TEAM' ? 2 : 0)
     : 0;
-
-  const TeamRow = ({ team, projected, owner, score, isWinner }) => (
-    <div className={`bt-team${isWinner ? ' winner' : ''}`}>
-      <span className="bt-flag">{team ? getFlag(team) : ''}</span>
-      <span className={`bt-name${projected ? ' proj' : ''}`}>
-        {team || 'TBD'}
-      </span>
-      {owner && <span className={`bt-owner${currentUser === owner ? ' me' : ''}`}>{owner}</span>}
-      <span className={`bt-score${isLive ? ' live' : ''}`}>
-        {showScore ? (score ?? '–') : ''}
-      </span>
-    </div>
-  );
+  const undecided = sideA.type !== 'team' || sideB.type !== 'team';
 
   return (
     <div
-      className={`bt-match${isLive ? ' live' : ''}${isDone ? ' done' : ''}${anyProjected ? ' projected' : ''}`}
+      className={`sw-match${isLive ? ' live' : ''}${undecided && !fixture ? ' pending' : ''}${isFinal ? ' final' : ''}`}
       onClick={fixture ? () => onOpenMatch(fixture) : undefined}
     >
-      <TeamRow team={team1} projected={proj1} owner={own1} score={fixture?.score?.home} isWinner={winner === 1} />
-      <div className="bt-vs-row">
-        <span className="bt-date">{fixture?.utcDate ? formatDateAEST(fixture.utcDate) : def.date}</span>
-        <span className="bt-status">
-          {isLive && <span className="bt-live-badge">{fixture.liveClock ? `${fixture.liveClock}'` : 'LIVE'}</span>}
-          {isDone && <span className="bt-ft">FT</span>}
-          {!isDone && !isLive && anyProjected && <span className="bt-proj-tag">projected</span>}
+      <SwSideRow
+        side={sideA} score={fixture?.score?.home} showScore={showScore}
+        isWinner={winner === 1} isLoser={winner === 2}
+        ownerMap={ownerMap} currentUser={currentUser}
+      />
+      <SwSideRow
+        side={sideB} score={fixture?.score?.away} showScore={showScore}
+        isWinner={winner === 2} isLoser={winner === 1}
+        ownerMap={ownerMap} currentUser={currentUser}
+      />
+      <div className="sw-meta">
+        <span>{isFinal ? '🏆 ' : ''}{fixture?.utcDate ? formatDateAEST(fixture.utcDate) : def.date}</span>
+        <span>
+          {isLive && <span className="sw-live-badge">{fixture.liveClock ? `${fixture.liveClock}'` : 'LIVE'}</span>}
+          {isDone && <span className="sw-ft">FT</span>}
         </span>
       </div>
-      <TeamRow team={team2} projected={proj2} owner={own2} score={fixture?.score?.away} isWinner={winner === 2} />
     </div>
   );
 }
 
-const BRACKET_ROUND_KEYS = ['all', 'R32', 'R16', 'QF', 'SF', 'Final'];
-const BRACKET_ROUND_LABELS = { all: 'All', R32: 'R32', R16: 'R16', QF: 'QF', SF: 'SF', Final: 'Final' };
+function SwipeBracket({ groupTables, fixtureByNum, ownerMap, currentUser, onOpenMatch }) {
+  const viewportRef = useRef(null);
+  const [active, setActive] = useState(0);
+  const initialised = useRef(false);
 
-function BracketTree({ groupTables, fixtureByNum, ownerMap, currentUser, onSelectTeam, onOpenMatch }) {
-  const [focus, setFocus] = useState('all');
-  const sectionRefs = useRef({});
-
-  const scrollToRound = useCallback((key) => {
-    setFocus(key);
-    if (key === 'all') return;
-    const el = sectionRefs.current[key];
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
-
-  const allDefs = useMemo(() => {
-    const map = {};
-    for (const arr of [R32, R16, QF, SF, FINAL_MATCH]) {
-      for (const d of arr) map[d.num] = d;
+  // Open on the deepest window whose left round still has games to play
+  useEffect(() => {
+    if (initialised.current) return;
+    const hasFixtures = Object.keys(fixtureByNum).length > 0;
+    if (!hasFixtures) return;
+    initialised.current = true;
+    let idx = 0;
+    while (idx < SW_WINDOWS.length - 1) {
+      const nums = SW_WINDOWS[idx].pairs.flatMap((p) => p.matches);
+      const allDone = nums.every((n) => fixtureByNum[n]?.status === 'FINISHED');
+      if (!allDone) break;
+      idx++;
     }
-    return map;
+    if (idx > 0 && viewportRef.current) {
+      const w = viewportRef.current.clientWidth;
+      viewportRef.current.scrollTo({ left: idx * w * 0.92, behavior: 'instant' });
+      setActive(idx);
+    }
+  }, [fixtureByNum]);
+
+  const handleScroll = useCallback(() => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const idx = Math.min(
+      SW_WINDOWS.length - 1,
+      Math.round(vp.scrollLeft / (vp.clientWidth * 0.92))
+    );
+    setActive((prev) => (prev === idx ? prev : idx));
   }, []);
 
-  const visibleRounds = focus === 'all'
-    ? BRACKET_PAIRS
-    : BRACKET_PAIRS.filter(r => r.round === focus);
+  const jumpTo = useCallback((idx) => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    vp.scrollTo({ left: idx * vp.clientWidth * 0.92, behavior: 'smooth' });
+  }, []);
 
   return (
-    <div className="bt-outer">
-      <div className="bt-round-nav">
-        {BRACKET_ROUND_KEYS.map(k => (
-          <button
-            key={k}
-            className={`bt-round-pill${focus === k ? ' active' : ''}`}
-            onClick={() => scrollToRound(k)}
-          >{BRACKET_ROUND_LABELS[k]}</button>
-        ))}
+    <div className="sw-outer">
+      <div className="sw-pills">
+        {SW_PILLS.map((p) => {
+          const isActive = p.label === SW_WINDOWS[active].round;
+          const isPeek = p.label === SW_WINDOWS[active].feedLabel;
+          return (
+            <button
+              key={p.label}
+              className={`sw-pill${isActive ? ' active' : ''}${isPeek ? ' peek' : ''}`}
+              onClick={() => jumpTo(p.window)}
+            >{p.label}</button>
+          );
+        })}
+        <span className="sw-swipe-hint">← swipe →</span>
       </div>
-      <div className="bt-scroll">
-        <p className="bt-hint">
-          <i>Projected</i> matchups based on current group standings. Updates as results come in.
-        </p>
-        {visibleRounds.map(round => (
-          <div key={round.round} className="bt-section" ref={el => { sectionRefs.current[round.round] = el; }}>
-            <div className="bt-section-header">{round.label}</div>
-            {round.pairs.map((pair, pi) => (
-              <div key={pi} className={`bt-pair${pair.matches.length > 1 ? ' has-connector' : ''}`}>
-                {pair.matches.map(num => (
-                  <BracketMatchCard
-                    key={num}
-                    def={allDefs[num]}
+
+      <div className="sw-viewport" ref={viewportRef} onScroll={handleScroll}>
+        {SW_WINDOWS.map((win) => (
+          <div key={win.round} className="sw-window">
+            <div className="sw-col-hdrs">
+              <span className="sw-col-hdr">{win.label}</span>
+              <span className="sw-col-hdr dim">{win.feedLabel === 'Final' ? 'Final' : win.feedLabel}</span>
+            </div>
+            {win.pairs.map((pair) => (
+              <div key={pair.feedsInto} className="sw-pair-row">
+                <div className="sw-left">
+                  {pair.matches.map((num) => (
+                    <SwMatchCard
+                      key={num}
+                      def={DEF_BY_NUM[num]}
+                      groupTables={groupTables}
+                      fixtureByNum={fixtureByNum}
+                      ownerMap={ownerMap}
+                      currentUser={currentUser}
+                      onOpenMatch={onOpenMatch}
+                    />
+                  ))}
+                </div>
+                <div className="sw-conn"><div className="sw-conn-line" /></div>
+                <div className="sw-next">
+                  <SwMatchCard
+                    def={DEF_BY_NUM[pair.feedsInto]}
                     groupTables={groupTables}
                     fixtureByNum={fixtureByNum}
                     ownerMap={ownerMap}
                     currentUser={currentUser}
                     onOpenMatch={onOpenMatch}
+                    isFinal={pair.feedsInto === 104}
                   />
-                ))}
-                {pair.feedsInto && (
-                  <div className="bt-feeds">
-                    Winners meet in {round.feedLabel}
-                  </div>
-                )}
+                </div>
               </div>
             ))}
           </div>
         ))}
       </div>
+      <p className="sw-hint">Undecided spots show both possible teams — no guesswork.</p>
     </div>
   );
 }
@@ -627,14 +702,13 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         />
       )}
 
-      {/* Bracket tree view */}
+      {/* Swipeable bracket */}
       {mode === 'bracket' && (
-        <BracketTree
+        <SwipeBracket
           groupTables={groupTables}
           fixtureByNum={fixtureByNum}
           ownerMap={ownerMap}
           currentUser={currentUser}
-          onSelectTeam={onSelectTeam}
           onOpenMatch={setOpenMatch}
         />
       )}
