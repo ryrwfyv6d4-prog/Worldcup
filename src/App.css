@@ -3919,36 +3919,38 @@ body, .app {
 }
 
 /* ── Graveyard — The Fallen ── */
-.gy-section {
-  margin-top: 20px;
-  padding: 20px 0;
-}
-
-.gy-header {
+.gy-banner {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  text-align: center;
+  gap: 14px;
+  padding: 14px 0 18px;
 }
 
-.gy-cross {
-  font-size: 1.4rem;
+.gy-banner-cross {
+  font-size: 1.2rem;
   color: var(--ink-faint);
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
-.gy-title {
+.gy-banner-text {
   font-family: 'Graduate', serif;
-  font-size: 0.85rem;
-  letter-spacing: 0.25em;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
   color: var(--text-muted-dark);
   text-transform: uppercase;
 }
 
-.gy-subtitle {
-  display: none;
+.gy-banner-count {
+  font-size: 1.1rem;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.gy-hint-sub {
+  font-size: 0.78rem;
+  color: var(--text-faint-dark);
+  margin-top: 8px;
 }
 
 .gy-grid {

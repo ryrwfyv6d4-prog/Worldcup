@@ -6,6 +6,7 @@ import Fixtures from './components/Fixtures.jsx';
 import Settings from './components/Settings.jsx';
 import TeamDetail from './components/TeamDetail.jsx';
 import TheWall from './components/TheWall.jsx';
+import Graveyard from './components/Graveyard.jsx';
 import WhoAmIModal from './components/WhoAmIModal.jsx';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { useFixtures } from './hooks/useFixtures.js';
@@ -248,6 +249,14 @@ export default function App() {
                 drawType={drawType}
                 onSelectTeam={handleSelectTeam}
                 currentUser={resolvedUser}
+              />
+            )}
+            {tab === 'fallen' && (
+              <Graveyard
+                assignments={assignments}
+                drawType={drawType}
+                fixtures={fixtures}
+                onSelectTeam={handleSelectTeam}
               />
             )}
             {tab === 'wall' && (
