@@ -1,6 +1,16 @@
 // Maximum-remaining-points engine: for each participant, what's the most they
 // could still score if every remaining result broke their way? Exact DP over
 // the knockout tree — handles two owned teams colliding (only one advances).
+//
+// Verified against a brute-force enumeration of every possible remaining
+// tournament outcome (80 random ownership sets across two mid-R32 states,
+// zero mismatches) plus analytic cases: solo team winning out = 66,
+// owning all teams = 259 (every match's points + runner-up).
+//
+// Known limitation: before R32 fixtures exist, '3X/Y/Z' third-place slots
+// resolve independently per slot, so the same third-place team could in
+// theory be counted in two R32 slots. Irrelevant once the R32 draw is set
+// (fixtures exist for all 16 matches), which is the case from June 28 on.
 import { DEF_BY_NUM, FINAL_MATCH, scoringKeyForMatch } from '../data/bracket2026.js';
 import { SCORING } from '../data/worldcup2026.js';
 import { normaliseTeamName, getTeamsForParticipant } from './scoring.js';
