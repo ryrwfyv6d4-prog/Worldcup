@@ -146,7 +146,8 @@ export function useFixtures(apiKey) { // apiKey kept for API compat but unused
           awayScore: awayC.score != null && awayC.score !== '' ? Number(awayC.score) : null,
           homePens: homeC.shootoutScore != null ? Number(homeC.shootoutScore) : null,
           awayPens: awayC.shootoutScore != null ? Number(awayC.shootoutScore) : null,
-          clock: e.status ? e.status.displayClock : null,
+          // displayClock arrives as "67'" — strip the quote; consumers add their own
+          clock: e.status?.displayClock ? String(e.status.displayClock).replace(/'+$/, '') : null,
         };
       }).filter(Boolean);
       setEspnGames(games);

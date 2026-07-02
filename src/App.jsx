@@ -8,8 +8,11 @@ import TeamDetail from './components/TeamDetail.jsx';
 import TheWall from './components/TheWall.jsx';
 import Graveyard from './components/Graveyard.jsx';
 import WhoAmIModal from './components/WhoAmIModal.jsx';
+import LiveTicker from './components/LiveTicker.jsx';
+import MatchSheet from './components/MatchSheet.jsx';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { useFixtures } from './hooks/useFixtures.js';
+import { snapshotScores, detectScoreEvents } from './utils/liveEvents.js';
 
 const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
 
@@ -25,8 +28,41 @@ export default function App() {
   // wallReactions stored in cloud state so they survive tab switches without a new Worker endpoint
   const [wallReactions, setWallReactions] = useLocalStorage('wall_reactions_v1', {});
   const [showWhoAmI, setShowWhoAmI] = useState(false);
+  const [tickerMatch, setTickerMatch] = useState(null);
+  const [toasts, setToasts] = useState([]);
+  const [tickerFlash, setTickerFlash] = useState(false);
+  const [hdrCollapsed, setHdrCollapsed] = useState(false);
+  const prevScoresRef = useRef(null);
 
   const { fixtures, loading, error, lastFetched, refresh } = useFixtures();
+
+  // Goal / full-time moments — diff each fixtures update against the last
+  useEffect(() => {
+    if (!fixtures.length) return;
+    const events = detectScoreEvents(prevScoresRef.current, fixtures);
+    prevScoresRef.current = snapshotScores(fixtures);
+    if (!events.length) return;
+    const stamped = events.map((e, i) => ({
+      id: `${Date.now()}-${i}`,
+      text: e.type === 'goal' ? `⚽ GOAL — ${e.score}` : `🏁 FULL TIME — ${e.score}`,
+      fixture: e.fixture,
+    }));
+    setToasts((t) => [...t, ...stamped]);
+    if (events.some((e) => e.type === 'goal')) {
+      setTickerFlash(true);
+      setTimeout(() => setTickerFlash(false), 2500);
+      try { navigator.vibrate?.([90, 60, 90]); } catch { /* not supported */ }
+    }
+    for (const s of stamped) {
+      setTimeout(() => setToasts((t) => t.filter((x) => x.id !== s.id)), 6000);
+    }
+  }, [fixtures]);
+
+  // Collapse the masthead once scrolled; hysteresis avoids jitter
+  const handleMainScroll = useCallback((e) => {
+    const y = e.currentTarget.scrollTop;
+    setHdrCollapsed((c) => (c ? y > 12 : y > 48));
+  }, []);
 
   // Guard: prevent accidentally overwriting a draw that lived in the cloud
   // with empty state on a device that hasn't loaded the draw locally yet.
@@ -187,7 +223,7 @@ export default function App() {
   const resolvedUser = currentUser === '__guest__' ? null : currentUser;
 
   return (
-    <div className="app">
+    <div className={`app${hdrCollapsed ? ' hdr-collapsed' : ''}`}>
       <div className="bunting" aria-hidden="true">
         {Array.from({ length: 12 }).map((_, i) => <span key={i} />)}
       </div>
@@ -199,7 +235,7 @@ export default function App() {
         </p>
       </header>
 
-      <main className="main">
+      <main className="main" onScroll={handleMainScroll}>
         {selectedTeam ? (
           <TeamDetail
             team={selectedTeam}
@@ -280,7 +316,32 @@ export default function App() {
         )}
       </main>
 
+      {toasts.length > 0 && (
+        <div className="goal-toasts">
+          {toasts.map((t) => (
+            <button key={t.id} className="goal-toast" onClick={() => {
+              setToasts((x) => x.filter((y) => y.id !== t.id));
+              setTickerMatch(t.fixture);
+            }}>
+              {t.text}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <LiveTicker fixtures={fixtures} onOpen={setTickerMatch} flash={tickerFlash} />
+
       <Navigation tab={tab} setTab={handleSetTab} />
+
+      {tickerMatch && (
+        <MatchSheet
+          match={tickerMatch}
+          assignments={assignments}
+          drawType={drawType}
+          onClose={() => setTickerMatch(null)}
+          onSelectTeam={(team) => { setTickerMatch(null); handleSelectTeam(team); }}
+        />
+      )}
 
       {showWhoAmI && (
         <WhoAmIModal participants={participants} onSelect={handleSelectUser} />
