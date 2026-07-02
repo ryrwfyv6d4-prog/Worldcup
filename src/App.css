@@ -1914,6 +1914,13 @@ h1, h2, h3, .app-title, .app-year, .lb-name, .lb-pts,
   color: var(--green-on-dark);
   white-space: nowrap;
 }
+.lb-max {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
 .your-next {
   background: linear-gradient(135deg, var(--navy-light), var(--navy));
   border: 1px solid var(--gold);
@@ -2174,6 +2181,7 @@ body, .app {
 .tag.front { background: var(--glory-blue); }
 .tag.disaster { background: var(--glory-red); }
 .tag.you { background: var(--brass); color: #3a2a08; }
+.tag.cooked { background: #1E1B16; color: #B22234; border: 1px solid #B22234; }
 
 .lb-chev { color: #b3a584; font-size: 0.8rem; flex-shrink: 0; transition: transform 0.15s; margin-left: 4px; }
 .lb-chev.open { transform: rotate(90deg); color: var(--glory-red); }
@@ -4075,3 +4083,136 @@ body, .app {
   font-style: italic;
 }
 
+
+/* ── Pot strip ── */
+.pot-strip {
+  background: var(--poster);
+  border: 1px solid var(--poster-edge);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  color: var(--ink);
+}
+.pot-head {
+  font-family: 'Graduate', serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pot-sub {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+.pot-prizes {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.pot-prize {
+  flex: 1;
+  background: var(--card-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.pot-amt {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--gold-dark);
+}
+.pot-lab {
+  font-family: 'Graduate', serif;
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+.pot-holder {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.pot-owing {
+  margin-top: 10px;
+  font-size: 0.74rem;
+  font-style: italic;
+  color: #B22234;
+  border-top: 1px dashed var(--border);
+  padding-top: 8px;
+}
+
+/* ── Calendar export ── */
+.filter-bar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ics-btn {
+  background: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  color: var(--text-muted-dark);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.ics-btn:active { background: rgba(226, 169, 59, 0.15); }
+
+/* ── Graveyard extras ── */
+.gy-tomb-detainee {
+  font-family: 'Graduate', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: #B22234;
+  margin-bottom: 8px;
+}
+.gy-tomb-facts {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.gy-tomb-facts b {
+  font-family: 'Graduate', serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+}
+.gy-unpaid { color: #B22234; font-style: italic; }
+.gy-share-btn {
+  background: none;
+  border: 1.5px solid #B22234;
+  color: #B22234;
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  font-family: 'Graduate', serif;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  margin-bottom: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+.gy-share-btn:active { background: rgba(178, 34, 52, 0.1); }

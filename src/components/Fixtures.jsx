@@ -1,58 +1,12 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import MatchSheet from './MatchSheet.jsx';
 import { getFlag } from '../data/worldcup2026.js';
+import { DEF_BY_NUM, BRACKET_PAIRS } from '../data/bracket2026.js';
 import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
 import { formatTimeAEST, formatDateAEST } from '../utils/time.js';
 import { tla } from '../utils/tla.js';
+import { downloadFixturesIcs } from '../utils/ics.js';
 import { useYouTubeHighlight } from '../hooks/useYouTubeHighlight.js';
-
-// ── Bracket data (official 2026 FIFA draw) ────────────────────────────────────
-
-const R32 = [
-  { num: 73,  s1: '2A',         s2: '2B',         date: '28 Jun' },
-  { num: 74,  s1: '1E',         s2: '3A/B/C/D/F', date: '29 Jun' },
-  { num: 75,  s1: '1F',         s2: '2C',         date: '29 Jun' },
-  { num: 76,  s1: '1C',         s2: '2F',         date: '29 Jun' },
-  { num: 77,  s1: '1I',         s2: '3C/D/F/G/H', date: '30 Jun' },
-  { num: 78,  s1: '2E',         s2: '2I',         date: '30 Jun' },
-  { num: 79,  s1: '1A',         s2: '3C/E/F/H/I', date: '30 Jun' },
-  { num: 80,  s1: '1L',         s2: '3E/H/I/J/K', date: '1 Jul'  },
-  { num: 81,  s1: '1D',         s2: '3B/E/F/I/J', date: '1 Jul'  },
-  { num: 82,  s1: '1G',         s2: '3A/E/H/I/J', date: '1 Jul'  },
-  { num: 83,  s1: '2K',         s2: '2L',         date: '2 Jul'  },
-  { num: 84,  s1: '1H',         s2: '2J',         date: '2 Jul'  },
-  { num: 85,  s1: '1B',         s2: '3E/F/G/I/J', date: '2 Jul'  },
-  { num: 86,  s1: '1J',         s2: '2H',         date: '3 Jul'  },
-  { num: 87,  s1: '1K',         s2: '3D/E/I/J/L', date: '3 Jul'  },
-  { num: 88,  s1: '2D',         s2: '2G',         date: '3 Jul'  },
-];
-
-const R16 = [
-  { num: 89,  s1: 'W74', s2: 'W77', date: '4 Jul' },
-  { num: 90,  s1: 'W73', s2: 'W75', date: '4 Jul' },
-  { num: 91,  s1: 'W76', s2: 'W78', date: '5 Jul' },
-  { num: 92,  s1: 'W79', s2: 'W80', date: '5 Jul' },
-  { num: 93,  s1: 'W83', s2: 'W84', date: '6 Jul' },
-  { num: 94,  s1: 'W81', s2: 'W82', date: '6 Jul' },
-  { num: 95,  s1: 'W86', s2: 'W88', date: '7 Jul' },
-  { num: 96,  s1: 'W85', s2: 'W87', date: '7 Jul' },
-];
-
-const QF = [
-  { num: 97,  s1: 'W89', s2: 'W90', date: '9 Jul'  },
-  { num: 98,  s1: 'W93', s2: 'W94', date: '10 Jul' },
-  { num: 99,  s1: 'W91', s2: 'W92', date: '11 Jul' },
-  { num: 100, s1: 'W95', s2: 'W96', date: '11 Jul' },
-];
-
-const SF = [
-  { num: 101, s1: 'W97',  s2: 'W98',  date: '14 Jul' },
-  { num: 102, s1: 'W99',  s2: 'W100', date: '15 Jul' },
-];
-
-const FINAL_MATCH = [
-  { num: 104, s1: 'W101', s2: 'W102', date: '19 Jul' },
-];
 
 const MODES = [
   { id: 'all',     label: 'Matches' },
@@ -138,11 +92,6 @@ function resolveR32Slot(slot, tables) {
     return thirds[0].team;
   }
   return null;
-}
-
-const DEF_BY_NUM = {};
-for (const arr of [R32, R16, QF, SF, FINAL_MATCH]) {
-  for (const d of arr) DEF_BY_NUM[d.num] = d;
 }
 
 // Honest slot resolution — never guesses a winner.
@@ -264,40 +213,10 @@ function MatchCard({ match, ownerMap, currentUser, onSelectTeam, onOpenMatch }) 
   );
 }
 
-// ── Bracket view (vertical round-by-round, mobile-first) ────────────────────
-
-// Matches grouped in pairs that feed the next round
-const BRACKET_PAIRS = [
-  { round: 'R32', label: 'Round of 32', feedLabel: 'R16', pairs: [
-    { matches: [74, 77], feedsInto: 89 },
-    { matches: [73, 75], feedsInto: 90 },
-    { matches: [83, 84], feedsInto: 93 },
-    { matches: [81, 82], feedsInto: 94 },
-    { matches: [76, 78], feedsInto: 91 },
-    { matches: [79, 80], feedsInto: 92 },
-    { matches: [86, 88], feedsInto: 95 },
-    { matches: [85, 87], feedsInto: 96 },
-  ]},
-  { round: 'R16', label: 'Round of 16', feedLabel: 'QF', pairs: [
-    { matches: [89, 90], feedsInto: 97 },
-    { matches: [93, 94], feedsInto: 98 },
-    { matches: [91, 92], feedsInto: 99 },
-    { matches: [95, 96], feedsInto: 100 },
-  ]},
-  { round: 'QF', label: 'Quarter-finals', feedLabel: 'SF', pairs: [
-    { matches: [97, 98], feedsInto: 101 },
-    { matches: [99, 100], feedsInto: 102 },
-  ]},
-  { round: 'SF', label: 'Semi-finals', feedLabel: 'Final', pairs: [
-    { matches: [101, 102], feedsInto: 104 },
-  ]},
-  { round: 'Final', label: 'Final', pairs: [
-    { matches: [104] },
-  ]},
-];
+// ── Swipeable bracket ─────────────────────────────────────────────────────────
 
 // Windows: each pairs a round with where its winners go
-const SW_WINDOWS = BRACKET_PAIRS.slice(0, 4); // R32|R16, R16|QF, QF|SF, SF|Final
+const SW_WINDOWS = BRACKET_PAIRS; // R32|R16, R16|QF, QF|SF, SF|Final
 const SW_PILLS = [
   { label: 'R32',   window: 0 },
   { label: 'R16',   window: 1 },
@@ -685,10 +604,29 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
             />
             {search && <button className="search-clear" onClick={() => setSearch('')}>✕</button>}
           </div>
-          <label className="toggle-label">
-            <input type="checkbox" checked={showFinished} onChange={(e) => setShowFinished(e.target.checked)} />
-            <span>Show finished</span>
-          </label>
+          <div className="filter-bar-row">
+            <label className="toggle-label">
+              <input type="checkbox" checked={showFinished} onChange={(e) => setShowFinished(e.target.checked)} />
+              <span>Show finished</span>
+            </label>
+            <button
+              className="ics-btn"
+              onClick={() => {
+                const myTeams = currentUser
+                  ? getTeamsForParticipant(currentUser, assignments, drawType)
+                  : [];
+                const upcoming = fixtures.filter((f) => f.status !== 'FINISHED' && f.utcDate);
+                const mine = upcoming.filter((f) =>
+                  myTeams.includes(normaliseTeamName(f.homeTeam.name)) ||
+                  myTeams.includes(normaliseTeamName(f.awayTeam.name))
+                );
+                const list = mine.length ? mine : upcoming;
+                downloadFixturesIcs(list, mine.length ? 'my-world-cup-games.ics' : 'world-cup-games.ics');
+              }}
+            >
+              📆 {currentUser ? 'My games' : 'Games'} → calendar
+            </button>
+          </div>
         </div>
       )}
 

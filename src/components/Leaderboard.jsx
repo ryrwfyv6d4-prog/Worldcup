@@ -6,10 +6,44 @@ import ActivityFeed from './ActivityFeed.jsx';
 import MatchSheet from './MatchSheet.jsx';
 import { formatTimeAEST, formatDateAEST } from '../utils/time.js';
 import { useYouTubeHighlight } from '../hooks/useYouTubeHighlight.js';
+import { computeOutlook } from '../utils/potential.js';
+import { computePot, ENTRY_FEE } from '../data/pot.js';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 const EMOJIS = ['😂', '🔥', '❤️', '😭', '👏', '🍻'];
 
+
+function PotStrip({ board }) {
+  const pot = computePot(board.map((e) => e.name));
+  if (!board.length || pot.total === 0) return null;
+  const holders = {
+    first: board[0]?.name,
+    second: board[1]?.name,
+    last: board[board.length - 1]?.name,
+  };
+  return (
+    <section className="pot-strip">
+      <div className="pot-head">
+        💰 THE POT — ${pot.total}
+        <span className="pot-sub">${ENTRY_FEE} a head · {pot.paidCount} paid up</span>
+      </div>
+      <div className="pot-prizes">
+        {pot.prizes.map((p) => (
+          <div key={p.key} className="pot-prize">
+            <span className="pot-amt">${p.amount}</span>
+            <span className="pot-lab">{p.label}</span>
+            <span className="pot-holder">{holders[p.key] || '—'}</span>
+          </div>
+        ))}
+      </div>
+      {pot.owing.length > 0 && (
+        <div className="pot-owing">
+          🔒 {pot.owing.join(', ')} still owe{pot.owing.length === 1 ? 's' : ''} ${ENTRY_FEE} — no pay, no payout
+        </div>
+      )}
+    </section>
+  );
+}
 
 function formatCountdown(ms) {
   if (ms <= 0) return 'Kicking off now';
@@ -521,6 +555,13 @@ export default function Leaderboard({
   const hasAssignments = Object.keys(assignments).length > 0;
   const hasResults = fixtures.some((f) => f.status === 'FINISHED');
 
+  // Points ceiling + mathematical elimination per player
+  const outlook = useMemo(() => {
+    const totals = {};
+    for (const e of board) totals[e.name] = e.total;
+    return computeOutlook(assignments, drawType, fixtures, totals);
+  }, [assignments, drawType, fixtures, board]);
+
   if (!hasAssignments) {
     return (
       <div className="page">
@@ -559,6 +600,8 @@ export default function Leaderboard({
       />
       <TodayMatches fixtures={fixtures} assignments={assignments} drawType={drawType} onOpenMatch={setOpenMatch} />
 
+      <PotStrip board={board} />
+
       <div className="leaderboard">
         {board.map((entry, i) => {
           const reactions = lbReactions[entry.name] || {};
@@ -588,6 +631,7 @@ export default function Leaderboard({
                     {isMe && <span className="tag you">YOU</span>}
                     {hasResults && i === 0 && <span className="tag front">FRONT RUNNER</span>}
                     {hasResults && i === board.length - 1 && <span className="tag disaster">TOTAL DISASTER</span>}
+                    {hasResults && outlook[entry.name]?.cooked && <span className="tag cooked">COOKED</span>}
                   </span>
                   <span className="lb-sub">
                     <span className="lb-sub-flags">{entry.teams.map((t) => getFlag(t)).join(' ')}</span>
@@ -599,6 +643,9 @@ export default function Leaderboard({
                 <span className="lb-pts">
                   {entry.total}<small>pts</small>
                   {todayPts > 0 && <span className="lb-today">+{todayPts} today</span>}
+                  {hasResults && outlook[entry.name] && !outlook[entry.name].cooked && (
+                    <span className="lb-max">max {outlook[entry.name].ceiling}</span>
+                  )}
                 </span>
                 <span className={`lb-chev ${isExpanded ? 'open' : ''}`}>{'\u25B8'}</span>
               </div>
