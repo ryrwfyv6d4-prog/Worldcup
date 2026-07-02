@@ -501,6 +501,20 @@ function GroupTablesSection({ groupTables, ownerMap, currentUser, onSelectTeam }
   );
 }
 
+function SkeletonList({ count = 6 }) {
+  return (
+    <div aria-hidden="true">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="skel-card">
+          <div className="skel-bar w40" />
+          <div className="skel-bar w75" />
+          <div className="skel-bar w60" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Fixtures page ─────────────────────────────────────────────────────────────
 
 export default function Fixtures({ fixtures, loading, error, lastFetched, onRefresh, assignments, drawType, onSelectTeam, currentUser }) {
@@ -630,6 +644,8 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
         </div>
       )}
 
+      {loading && fixtures.length === 0 && mode !== 'all' && <SkeletonList count={4} />}
+
       {/* Group tables */}
       {mode === 'tables' && (
         <GroupTablesSection
@@ -666,13 +682,8 @@ export default function Fixtures({ fixtures, loading, error, lastFetched, onRefr
               <p>No matches found{search ? ` for "${search}"` : ''}</p>
             </div>
           )}
-          {loading && (
-            <div className="loading">
-              <div className="spinner" />
-              <p>Loading fixtures…</p>
-            </div>
-          )}
-          {!loading && Array.from(grouped.entries()).map(([day, matches]) => (
+          {loading && fixtures.length === 0 && <SkeletonList />}
+          {fixtures.length > 0 && Array.from(grouped.entries()).map(([day, matches]) => (
             <div key={day} className="day-group">
               <div className="day-header">{day}</div>
               {matches.map((m) => (

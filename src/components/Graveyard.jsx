@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { GROUPS, getFlag } from '../data/worldcup2026.js';
-import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
+import { getFlag } from '../data/worldcup2026.js';
+import { computeFallen } from '../utils/elimination.js';
 import { UNPAID } from '../data/pot.js';
 
 const STAGE_LABELS = {
@@ -54,60 +54,6 @@ const DEPORTED_VIA = [
 ];
 
 const nameHash = (name) => [...name].reduce((h, c) => h + c.charCodeAt(0), 0);
-
-function isTeamEliminated(team, fixtures, groupStandings, eliminatedThirds) {
-  for (const rows of Object.values(groupStandings)) {
-    const entry = rows.find(r => r.team === team);
-    if (!entry) continue;
-    if (entry.pos === 3) return 'GROUP_STAGE';
-    if (entry.pos === 2 && eliminatedThirds.has(team)) return 'GROUP_STAGE';
-    break;
-  }
-  for (const f of fixtures) {
-    if (f.stage === 'GROUP_STAGE' || f.status !== 'FINISHED') continue;
-    const h = normaliseTeamName(f.homeTeam.name);
-    const a = normaliseTeamName(f.awayTeam.name);
-    if (h !== team && a !== team) continue;
-    const isHome = h === team;
-    const lost = (isHome && f.score.winner === 'AWAY_TEAM') || (!isHome && f.score.winner === 'HOME_TEAM');
-    if (lost) return f.stage;
-  }
-  return null;
-}
-
-function buildGroupStandings(fixtures) {
-  const groups = {};
-  for (const [letter, teams] of Object.entries(GROUPS)) {
-    const gFixtures = fixtures.filter(
-      f => f.stage === 'GROUP_STAGE' && f.group === letter && f.status === 'FINISHED'
-    );
-    if (gFixtures.length < 6) continue;
-    const standings = {};
-    for (const t of teams) standings[t] = { pts: 0, gd: 0, gf: 0 };
-    for (const m of gFixtures) {
-      const h = normaliseTeamName(m.homeTeam.name);
-      const a = normaliseTeamName(m.awayTeam.name);
-      if (!standings[h] || !standings[a]) continue;
-      standings[h].gf += m.score.home; standings[h].gd += m.score.home - m.score.away;
-      standings[a].gf += m.score.away; standings[a].gd += m.score.away - m.score.home;
-      if (m.score.winner === 'HOME_TEAM') { standings[h].pts += 3; }
-      else if (m.score.winner === 'AWAY_TEAM') { standings[a].pts += 3; }
-      else { standings[h].pts += 1; standings[a].pts += 1; }
-    }
-    const sorted = Object.entries(standings)
-      .sort(([, a], [, b]) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
-    groups[letter] = sorted.map(([team, stats], pos) => ({ team, ...stats, pos }));
-  }
-  return groups;
-}
-
-function getEliminatedThirds(groupStandings) {
-  const completedGroups = Object.keys(groupStandings);
-  if (completedGroups.length < 12) return new Set();
-  const thirds = completedGroups.map(g => groupStandings[g][2]);
-  thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
-  return new Set(thirds.slice(8).map(t => t.team));
-}
 
 // ── Booking-photo share card ─────────────────────────────────────────────────
 
@@ -202,38 +148,23 @@ async function shareDeportationCard(f) {
 
 export default function Graveyard({ assignments, drawType, fixtures, onSelectTeam }) {
   const fallen = useMemo(() => {
-    const groupStandings = buildGroupStandings(fixtures);
-    const eliminatedThirds = getEliminatedThirds(groupStandings);
-    const result = [];
-    let idx = 0;
-    for (const name of Object.keys(assignments)) {
-      const teams = getTeamsForParticipant(name, assignments, drawType);
-      if (!teams.length) continue;
-      const teamStatuses = teams.map(t => ({
-        team: t,
-        eliminatedAt: isTeamEliminated(t, fixtures, groupStandings, eliminatedThirds),
-      }));
-      const allDead = teamStatuses.every(ts => ts.eliminatedAt !== null);
-      if (!allDead) continue;
-      const bestStage = teamStatuses.reduce((best, ts) => {
+    return computeFallen(assignments, drawType, fixtures).map((f, idx) => {
+      const bestStage = f.teams.reduce((best, ts) => {
         const bi = STAGE_ORDER.indexOf(best);
         const ti = STAGE_ORDER.indexOf(ts.eliminatedAt);
         return ti > bi ? ts.eliminatedAt : best;
       }, 'GROUP_STAGE');
-      const h = nameHash(name);
-      result.push({
-        name,
-        teams: teamStatuses,
+      const h = nameHash(f.name);
+      return {
+        ...f,
         bestStage,
-        epitaph: EPITAPHS[idx % EPITAPHS.length](name),
+        epitaph: EPITAPHS[idx % EPITAPHS.length](f.name),
         facility: FACILITIES[h % FACILITIES.length],
         via: DEPORTED_VIA[h % DEPORTED_VIA.length],
         detainee: 1000 + (h % 9000),
-        unpaid: UNPAID.includes(name),
-      });
-      idx++;
-    }
-    return result;
+        unpaid: UNPAID.includes(f.name),
+      };
+    });
   }, [assignments, drawType, fixtures]);
 
   return (

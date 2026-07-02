@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Navigation from './components/Navigation.jsx';
 import Draw from './components/Draw.jsx';
 import Leaderboard from './components/Leaderboard.jsx';
@@ -13,6 +13,7 @@ import MatchSheet from './components/MatchSheet.jsx';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { useFixtures } from './hooks/useFixtures.js';
 import { snapshotScores, detectScoreEvents } from './utils/liveEvents.js';
+import { computeFallen } from './utils/elimination.js';
 
 const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
 
@@ -62,6 +63,65 @@ export default function App() {
   const handleMainScroll = useCallback((e) => {
     const y = e.currentTarget.scrollTop;
     setHdrCollapsed((c) => (c ? y > 12 : y > 48));
+  }, []);
+
+  // Nav badges
+  const liveCount = useMemo(
+    () => fixtures.filter((f) => f.status === 'IN_PLAY' || f.status === 'PAUSED').length,
+    [fixtures]
+  );
+  const deportedCount = useMemo(
+    () => computeFallen(assignments, drawType, fixtures).length,
+    [assignments, drawType, fixtures]
+  );
+
+  // Pull-to-refresh on the main scroll container
+  const mainRef = useRef(null);
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
+  const [pullPx, setPullPx] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    let startY = 0, startX = 0, pulling = false, px = 0;
+    const onStart = (e) => {
+      if (el.scrollTop > 0) { pulling = false; return; }
+      startY = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
+      pulling = true; px = 0;
+    };
+    const onMove = (e) => {
+      if (!pulling) return;
+      const dy = e.touches[0].clientY - startY;
+      const dx = e.touches[0].clientX - startX;
+      if (Math.abs(dx) > Math.abs(dy)) { pulling = false; setPullPx(0); return; }
+      if (dy <= 0 || el.scrollTop > 0) { if (px) { px = 0; setPullPx(0); } return; }
+      e.preventDefault();
+      px = Math.min(110, dy * 0.45);
+      setPullPx(px);
+    };
+    const onEnd = async () => {
+      if (!pulling) return;
+      pulling = false;
+      if (px > 62) {
+        setRefreshing(true);
+        setPullPx(56);
+        try { await refreshRef.current(); } catch { /* network best-effort */ }
+        setRefreshing(false);
+        setPullPx(0);
+      } else {
+        setPullPx(0);
+      }
+    };
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchend', onEnd);
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+      el.removeEventListener('touchend', onEnd);
+    };
   }, []);
 
   // Guard: prevent accidentally overwriting a draw that lived in the cloud
@@ -235,7 +295,17 @@ export default function App() {
         </p>
       </header>
 
-      <main className="main" onScroll={handleMainScroll}>
+      <div
+        className={`ptr-spinner${refreshing ? ' spinning' : ''}`}
+        style={{
+          opacity: pullPx > 6 ? Math.min(1, pullPx / 56) : 0,
+          transform: `translateX(-50%) translateY(${pullPx}px) rotate(${pullPx * 3.2}deg)`,
+        }}
+        aria-hidden="true"
+      >
+        🦅
+      </div>
+      <main className="main" ref={mainRef} onScroll={handleMainScroll}>
         {selectedTeam ? (
           <TeamDetail
             team={selectedTeam}
@@ -331,7 +401,7 @@ export default function App() {
 
       <LiveTicker fixtures={fixtures} onOpen={setTickerMatch} flash={tickerFlash} />
 
-      <Navigation tab={tab} setTab={handleSetTab} />
+      <Navigation tab={tab} setTab={handleSetTab} liveCount={liveCount} deportedCount={deportedCount} />
 
       {tickerMatch && (
         <MatchSheet

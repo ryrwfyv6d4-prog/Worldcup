@@ -4329,3 +4329,84 @@ body, .app {
 .hdr-collapsed .masthead-eagle { max-height: 0; opacity: 0; overflow: hidden; }
 .hdr-collapsed .masthead .app-title { font-size: 0.95rem; }
 .hdr-collapsed .masthead-est { max-height: 0; opacity: 0; overflow: hidden; margin: 0; }
+
+/* ── Nav badges ── */
+.nav-badge {
+  position: absolute;
+  top: -3px;
+  right: -7px;
+}
+.nav-badge.live {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--live, #EF4444);
+  box-shadow: 0 0 0 2px rgba(16, 12, 6, 0.9);
+  animation: ltPulse 1.2s ease infinite;
+}
+.nav-badge.count {
+  min-width: 15px;
+  height: 15px;
+  border-radius: 8px;
+  background: #B22234;
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 15px;
+  text-align: center;
+  padding: 0 3px;
+  box-shadow: 0 0 0 2px rgba(16, 12, 6, 0.9);
+}
+.nav-icon { position: relative; }
+
+/* ── Pull-to-refresh ── */
+.ptr-spinner {
+  position: fixed;
+  top: calc(var(--safe-top) + 96px);
+  left: 50%;
+  z-index: 80;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--poster);
+  border: 1.5px solid var(--gold);
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  transition: opacity 0.15s;
+  will-change: transform;
+}
+.ptr-spinner.spinning { animation: ptrSpin 0.8s linear infinite; }
+@keyframes ptrSpin {
+  from { transform: translateX(-50%) translateY(56px) rotate(0deg); }
+  to { transform: translateX(-50%) translateY(56px) rotate(360deg); }
+}
+
+/* ── Skeleton loading ── */
+.skel-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 8px;
+  opacity: 0.55;
+}
+.skel-bar {
+  height: 14px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  background: linear-gradient(
+    90deg,
+    rgba(82, 62, 28, 0.12) 25%,
+    rgba(82, 62, 28, 0.22) 50%,
+    rgba(82, 62, 28, 0.12) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+.skel-bar:last-child { margin-bottom: 0; }
+.skel-bar.w40 { width: 40%; height: 10px; }
+.skel-bar.w75 { width: 75%; }
+.skel-bar.w60 { width: 60%; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }

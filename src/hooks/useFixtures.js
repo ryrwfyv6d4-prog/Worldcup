@@ -288,6 +288,6 @@ export function useFixtures(apiKey) { // apiKey kept for API compat but unused
   const merged = useMemo(() => mergeEspn(fixtures, espnGames), [fixtures, espnGames]);
   mergedRef.current = merged;
 
-  return { fixtures: merged, teams, loading, error, lastFetched, refresh: () => { fetchData(true); fetchEspn(); } };
+  return { fixtures: merged, teams, loading, error, lastFetched, refresh: () => Promise.all([fetchData(true), fetchEspn()]) };
 }
 

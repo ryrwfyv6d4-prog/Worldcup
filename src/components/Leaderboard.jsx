@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { buildLeaderboard } from '../utils/scoring.js';
 import { SCORING, SCORING_LABELS, getFlag } from '../data/worldcup2026.js';
 import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
@@ -12,6 +12,33 @@ import { computePot, ENTRY_FEE } from '../data/pot.js';
 const MEDALS = ['🥇', '🥈', '🥉'];
 const EMOJIS = ['😂', '🔥', '❤️', '😭', '👏', '🍻'];
 
+
+// Animate a number towards its new value (ease-out cubic)
+function useCountUp(value) {
+  const [display, setDisplay] = useState(value);
+  const prevRef = useRef(value);
+  useEffect(() => {
+    const from = prevRef.current;
+    if (from === value) return;
+    prevRef.current = value;
+    const start = performance.now();
+    const dur = 900;
+    let raf;
+    const step = (t) => {
+      const p = Math.min(1, (t - start) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setDisplay(Math.round(from + (value - from) * eased));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return display;
+}
+
+function AnimatedPts({ value }) {
+  return <>{useCountUp(value)}</>;
+}
 
 function PotStrip({ board }) {
   const pot = computePot(board.map((e) => e.name));
@@ -555,6 +582,24 @@ export default function Leaderboard({
   const hasAssignments = Object.keys(assignments).length > 0;
   const hasResults = fixtures.some((f) => f.status === 'FINISHED');
 
+  // FLIP: when rows change vertical position (rank moves), slide them there
+  const rowRefs = useRef(new Map());
+  const prevRects = useRef(new Map());
+  useLayoutEffect(() => {
+    for (const [name, el] of rowRefs.current) {
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      const old = prevRects.current.get(name);
+      if (old && Math.abs(old.top - rect.top) > 4 && el.animate) {
+        el.animate(
+          [{ transform: `translateY(${old.top - rect.top}px)` }, { transform: 'none' }],
+          { duration: 550, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }
+        );
+      }
+      prevRects.current.set(name, rect);
+    }
+  });
+
   // Points ceiling + mathematical elimination per player
   const outlook = useMemo(() => {
     const totals = {};
@@ -613,6 +658,7 @@ export default function Leaderboard({
           return (
             <div
               key={entry.name}
+              ref={(el) => { rowRefs.current.set(entry.name, el); }}
               className={`lb-row ${isMe ? 'me' : ''}`}
               onClick={() => setExpanded(isExpanded ? null : entry.name)}
             >
@@ -641,7 +687,7 @@ export default function Leaderboard({
                   </span>
                 </div>
                 <span className="lb-pts">
-                  {entry.total}<small>pts</small>
+                  <AnimatedPts value={entry.total} /><small>pts</small>
                   {todayPts > 0 && <span className="lb-today">+{todayPts} today</span>}
                   {hasResults && outlook[entry.name] && !outlook[entry.name].cooked && (
                     <span className="lb-max">max {outlook[entry.name].ceiling}</span>

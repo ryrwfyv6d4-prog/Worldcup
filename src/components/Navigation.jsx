@@ -16,7 +16,7 @@ const ICONS = {
   ),
 };
 
-export default function Navigation({ tab, setTab }) {
+export default function Navigation({ tab, setTab, liveCount = 0, deportedCount = 0 }) {
   const tabs = [
     { id: 'leaderboard', label: 'Polls' },
     { id: 'fixtures', label: 'Fixtures' },
@@ -35,7 +35,13 @@ export default function Navigation({ tab, setTab }) {
           className={`nav-btn ${activeId === t.id ? 'active' : ''}`}
           onClick={() => setTab(t.id)}
         >
-          <span className="nav-icon">{ICONS[t.id]}</span>
+          <span className="nav-icon">
+            {ICONS[t.id]}
+            {t.id === 'leaderboard' && liveCount > 0 && <span className="nav-badge live" />}
+            {t.id === 'fallen' && deportedCount > 0 && (
+              <span className="nav-badge count">{deportedCount}</span>
+            )}
+          </span>
           <span className="nav-label">{t.label}</span>
         </button>
       ))}
