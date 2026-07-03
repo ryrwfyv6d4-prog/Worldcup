@@ -170,12 +170,131 @@ const PAIRS = {
     "Croatia became a nation in 1991 after a brutal war; Ghana became one in 1957 with a speech at midnight. Both made the World Cup look easy immediately, which 200-year-old federations find very annoying.",
   'Ghana|Panama':
     "Connected by the worst route in history — the Atlantic triangle ran through both. Five centuries later they meet as equals at a World Cup in the hemisphere that profited. Football doesn't fix history, but the symbolism is free.",
+
+  // ── Round of 32 (actual 2026 draw) ──
+  'Canada|South Africa':
+    "Both spent a century as Britain's favourite children — one got peacekeeping medals and apologies, the other got apartheid and an arms embargo. The Commonwealth: a family where some kids got bikes and some got sanctions. Tonight the estate gets settled.",
+  'Germany|Paraguay':
+    "Paraguay once declared war on Brazil, Argentina and Uruguay simultaneously — a decision so catastrophically confident it cost most of the male population. Germany looked at that record and said 'twice, and bigger.' History's two most committed 'we can take them' nations, finally taking each other.",
+  'Morocco|Netherlands':
+    "The Dutch imported Moroccan workers in the 60s to do the jobs nobody wanted; two generations on, half this Dutch squad has family at both ends of the fixture. Less an international than a custody hearing. The pre-match handshakes take forty minutes and someone's auntie is disappointed either way.",
+  'Brazil|Japan':
+    "The largest Japanese community outside Japan lives in São Paulo — shipped over from 1908 to cut coffee when slavery's paperwork expired but the job description didn't. A century later their descendants watch this fixture with two flags and no good options.",
+  'France|Sweden':
+    "Napoleon's own marshal, Bernadotte, defected to become King of Sweden in 1810 — then declared war on France. The greatest act of leaving a group chat in history. His descendants still hold the Swedish throne. France still hasn't unblocked him.",
+  'Ivory Coast|Norway':
+    "Norway found oil in the sea and gave every citizen a pension. Ivory Coast grows 40% of the world's cocoa and somehow owes money on it. Same planet, very different invoices. The chocolate section of Oslo's supermarkets is playing away tonight.",
+  'Ecuador|Mexico':
+    "Two nations that lost half their map to a neighbour and were told to be flattered by the attention. Mexico's went to Washington in 1848; Ecuador's went to Peru in 1941 while the referees looked away. Tonight, at long last, a border dispute with VAR.",
+  'DR Congo|England':
+    "Leopold ran the Congo as a private slaughterhouse while Britain wrote strongly worded reports about it — colonialism peer-reviewing colonialism, one star, would not recommend. The Leopards versus the inventors of looking concerned. Neutrals tonight: the entire planet.",
+  'Bosnia & Herzegovina|USA':
+    "America bombed its way into ending the Bosnian war in 1995, which Bosnians will tell you was three years late and still the only time the cavalry actually arrived. The favour gets repaid the Balkan way tonight: a deep block, a 1-0, and no thank-you note.",
+  'Belgium|Senegal':
+    "Belgium's African record is the worst document in the colonial archive, and the colonial archive is not a good archive. Senegal spent that same century dying in French uniforms and getting massacred over back pay at Thiaroye. Two survivors of Europe's worst impulses — one of which is Europe.",
+  'Croatia|Portugal':
+    "Two coastal operations of very different sizes: Portugal mapped the planet; Ragusa — Croatian Dubrovnik — mapped the loopholes in everyone else's blockades. Both got rich on other people's cargo. Tonight's cargo is a spot in the next round, and neither intends to pay duty.",
+  'Austria|Spain':
+    "The Habsburgs ran both crowns through two centuries of strategic inbreeding, until Spain's Charles II — chin like a boot, family tree like a ladder — died heirless in 1700 and triggered a world war over the paperwork. Tonight's the family reunion. The genetics have improved; the midfield is debatable.",
+  'Algeria|Switzerland':
+    "Algeria fought 132 years of French rule; Switzerland banked France's side of the receipts. Every empire needs a vault and the Alps never asked questions. The ledger plays the safe tonight. Expect Switzerland to hold everything, as per policy.",
+  'Argentina|Cape Verde':
+    "The world champions versus ten volcanic islands whose main export is their own population. Argentina has more World Cups than Cape Verde has stadiums. But Argentina knows exactly what small islands can do to a confident nation — ask them about 1982. Actually, don't.",
+  'Colombia|Ghana':
+    "Gold Coast and El Dorado: both named by Europeans after the stuff they were about to remove. Five centuries on, the gold sits in London and the debt stayed local. Two nations still being lectured about diversifying their economies by the people who took the diversity.",
+  'Australia|Egypt':
+    "The Anzacs trained in Cairo before Gallipoli, raced donkeys around the pyramids and carved their names into 4,000-year-old stone like absolute tourists. Egypt mostly forgave them, because most of them didn't come home. A century later: the rematch nobody's great-grandfather got.",
+
+  // ── Round of 16 (confirmed + possible) ──
+  'France|Paraguay':
+    "France's colonial ledger somehow never reached Paraguay, making this the rare France fixture with no outstanding invoices. Paraguay survived the deadliest war in the Americas and two dictators named López. France survived — no. Too easy. We're above it. (Are we?)",
+  'Canada|Morocco':
+    "The two nicest reputations in world football: one earned by peacekeeping, one earned by knocking out European giants while their fans cleaned the stadium behind them. Somebody's clean image dies tonight, and the other one will apologise for it.",
+  'Brazil|Norway':
+    "Brazil has played Norway four times and never won — the five-time champions' only unsolved opponent is a nation that mostly exports salmon and pension advice. Someone in Oslo has had Brazil's number since 1998 and keeps it in a fjord.",
+  'England|Mexico':
+    "Mexico hosted in 1970 and watched England's world champions melt in the Guadalajara heat while locals banged drums outside their hotel until 4am. Fifty-six years later England still files it under 'lessons learned.' The drums are already booked and the forecast says warm.",
+  'DR Congo|Mexico':
+    "Silver through Veracruz, cobalt through everywhere — two nations whose ground built everyone else's fortunes. Your phone contains both countries; neither has seen the receipt. Winner gets a quarter-final. The invoice remains outstanding.",
+  'Portugal|Spain':
+    "Iberia's siblings split the entire planet at Tordesillas in 1494 — drew a line down the Atlantic like children dividing a bedroom, except the bedroom was Earth. Spain took the silver, Portugal took the spice routes, everyone else took 400 years of unsolicited visitors. Tonight the line finally gets a winner.",
+  'Austria|Portugal':
+    "Two retired empires: one lost its entire coastline and kept the naval anthem, the other lost the world's biggest colonial map and kept the melancholy. Austria has no sea; Portugal is essentially nothing but coast. Sadness in two different time signatures.",
+  'Croatia|Spain':
+    "Habsburg cousins: Croatia spent centuries as Vienna's military frontier — a human shield with farming rights — while Spain served as the dynasty's cash machine. Both perfected dying for someone else's family business. Tonight, refreshingly, they compete for their own.",
+  'Austria|Croatia':
+    "Vienna ran Croatia's border for four centuries and staffed half its army with Croatian officers and all of its best moustaches. The empire's HR department meets its old security detail. Expect deep organisation, zero romance, and one 25-yarder out of pure spite.",
+  'Belgium|USA':
+    "Flanders fields hold thousands of Americans who died evicting Germany from Belgium, and Belgian chocolate and guilt have flowed west ever since. Meanwhile FN Herstal quietly arms half of America — the world's politest arms dealer versus its very best customer.",
+  'Senegal|USA':
+    "Gorée Island's Door of No Return points across the Atlantic directly at America — the two ends of history's worst supply chain, meeting at a World Cup in the destination country. One team can visit the memorials. The other one's economy was the exhibit.",
+  'Belgium|Bosnia & Herzegovina':
+    "One country's crimes happened far away in the Congo and turned a profit; the other's tragedy happened in Europe, on television, while everyone watched and drafted memos. Brussels writes the rules now. Sarajevo remembers what happens while the rules are being drafted.",
+  'Bosnia & Herzegovina|Senegal':
+    "A Bosnian and a Senegalese soldier could have faced each other in 1917 — one drafted by Vienna, one by Paris, neither consulted. Their great-grandsons meet on grass, in their own shirts, under their own flags. Progress is slow, but it does occasionally score.",
+  'Argentina|Australia':
+    "Two settler nations at opposite ends of the Pacific, both convinced they're European, both wrong. Argentina has never lost to Australia at a World Cup — but Australia won the 1988 Bicentennial Gold Cup, a trophy celebrating colonisation itself. You could not script this fixture darker if you tried.",
+  'Argentina|Egypt':
+    "One civilisation is 5,000 years old; the other treats its 1913 GDP ranking as a personality. Messi is already remembered like a pharaoh — worshipped, embalmed in statistics, surrounded by people trying to get into the tomb. Tonight the actual pharaohs' descendants check the security.",
+  'Australia|Cape Verde':
+    "One was founded as a British prison, the other as a Portuguese slave depot — both open conversations with 'you'll never guess how we started.' Two nations of beaches, diaspora, and grievances with Lisbon and London respectively. The prison colony is favourite; the depot has less to lose.",
+  'Cape Verde|Egypt':
+    "The pharaohs built monuments to eternity; Cape Verde built boats to leave. The oldest state on Earth versus one of the newest, five thousand years of paperwork between them. The ball, mercifully, respects neither carbon dating nor visa queues.",
+  'Colombia|Switzerland':
+    "Where did Colombia's most controversial export economy historically keep its profits? In the other team's basement, is where. Producer meets distributor at last — the most honest fixture of the round, listed by UEFA as 'neutral ground.'",
+  'Ghana|Switzerland':
+    "Most of the world's gold — including Ghana's — passes through Swiss refineries, where it gets a stamp and loses its accent. The mine plays the safe tonight. The safe is favourite. That, in one sentence, is the entire twentieth century.",
+  'Algeria|Colombia':
+    "The 20th century used one as a colonial battleground and the other as a drug-war theatre, then billed both for damages. They produced Zidane's bloodline and García Márquez's typewriter anyway. Magic realism versus le football champagne — realism is magic where these two are from.",
+  'Algeria|Ghana':
+    "Africa's first nation to break free by ballot meets the one that needed 132 years and a war of independence. Nkrumah's Ghana and the FLN's Algeria sheltered and funded each other's revolutions — tonight is two liberation movements comparing notes, with a whistle.",
+
+  // ── Deeper rounds (likely collisions) ──
+  'France|Morocco':
+    "The 2022 semi-final again: protectorate versus metropole, half the Moroccan squad born in France and playing against their own birth certificates. Paris deployed riot police for the last one. Everyone is older now, wiser, and exactly as unhinged.",
+  'Canada|France':
+    "France traded Canada away to Britain in 1763, deciding a sugar island mattered more than Quebec — the worst swap in imperial history until someone invents fantasy football. Seven million abandoned francophones would like a word, and the word is in joual, and France will pretend not to understand it.",
+  'Canada|Paraguay':
+    "The hemisphere's two most underrated war records: Canada stormed Vimy Ridge and got remembered as polite; Paraguay fought three countries at once and got remembered as a warning label. Underdogs with body counts. Someone's niceness is a front.",
+  'Morocco|Paraguay':
+    "Two nations no empire could digest: Morocco outlasted the Ottomans and the French; Paraguay survived a war that should have deleted it from the map. The tournament's great endurance artists, meeting in a fixture that is legally guaranteed to reach penalties.",
+  'Brazil|England':
+    "England invented the game and Brazil made it art, and 1970 settled the argument so thoroughly that England spent five decades studying the tape. Gordon Banks made the save of the century that day and England still lost — the most English sentence ever written.",
+  'Brazil|Mexico':
+    "Mexico's quarter-final curse meets its favourite executioner. Brazil ended El Tri's last two World Cups, one of them via Neymar's theatrical genius and all of them via Mexican lawyers drafting complaints to FIFA. Somewhere, Memo Ochoa is stretching. Just in case.",
+  'England|Norway':
+    "The Vikings ran England for a century under the Danegeld — history's original protection racket — and Norwegian still lives inside English like a sleeper cell: 'knife,' 'ransack,' 'berserk.' Tonight the longships return, funded by a sovereign wealth fund and a 9-goal striker.",
+  'Argentina|Brazil':
+    "South America's forever war, waged without weapons since 1828 and without mercy since. Pelé or Maradona — a question that has ended marriages on two continents. The Superclásico at a World Cup: somewhere a Uruguayan whispers 'we won it first' and nobody hears him. Again.",
+  'Argentina|England':
+    "1986: the Hand of God and the Goal of the Century, four minutes apart, four years after the Falklands. Maradona called it 'pickpocketing an Englishman.' England brought VAR this time — closing the stable door forty years after the horse robbed you at sea.",
+  'Argentina|France':
+    "The 2022 final was the greatest match ever played, and both nations have spent four years refusing to emotionally process it. Argentine fans wrote songs about Mbappé; the Argentine keeper saved his changed-nothing hat-trick for the trophy photos. The rematch was inevitable. It's here.",
+  'England|France':
+    "A thousand years of taking turns burning each other's coastlines, briefly interrupted by two world wars of deeply awkward alliance. The Hundred Years' War ran 116 years because neither side could admit it was over — the exact energy this fixture's penalty shootout will have.",
+  'Brazil|France':
+    "1998: Ronaldo's mystery seizure hours before the final, a defeat so strange Brazil held an actual parliamentary inquiry into a football match. 2006: Zidane declined the inquiry and answered with his instep. France owns Brazil at World Cups. Brazil owns the transcripts.",
+  'England|Spain':
+    "The Armada sank in 1588 and England has done victory laps for 437 years, quietly omitting that its own counter-Armada sank the following year. Gibraltar is still parked on Spain's foot like an abandoned shopping trolley. The Euro 2024 final gets its rematch, with imperial baggage.",
+  'France|Spain':
+    "Napoleon put his brother on Spain's throne; Spain responded by inventing the word 'guerrilla' specifically to remove him. Goya painted what happened next, and it is not in the gift shop. Two footballing aristocracies, one genuinely deranged historical grudge.",
+  'Mexico|USA':
+    "The border derby at the World Cup they're co-hosting — divorced parents splitting the wedding bill. One took half the other's territory in 1848 and now argues about the fence around it. 'Dos a cero' is an American folk song; 'Cielito Lindo' is the answer. Canada will watch politely from the spare room.",
 };
 
 const FALLBACKS = [
-  "These two nations have never fought a war against each other, which historians describe as 'a missed opportunity for this paragraph.' Ninety minutes to settle a rivalry that doesn't exist yet. Best kind.",
-  "No shared wars, no border disputes, no stolen artefacts in either's museums from the other — a genuinely clean bilateral record, which at a World Cup is the most suspicious thing imaginable.",
-  "History kept these two apart. Geography kept these two apart. FIFA's knockout bracket, a more powerful force than either, has finally intervened.",
+  "These two nations have never fought a war against each other, which historians attribute to distance, disinterest, and neither being able to afford the shipping. Ninety minutes to make up for lost time.",
+  "No shared wars, no disputed borders, no stolen exhibits in either's museums from the other — a bilateral record so clean it's frankly suspicious. Interpol has been notified. Kickoff is on schedule.",
+  "History kept them apart. Geography kept them apart. FIFA, a more powerful force than either, said 'be there Tuesday.'",
+  "Diplomatic relations: cordial. Trade: negligible. Grudges: none on file. Tonight two nations invent a rivalry from absolutely nothing, which is how every good one started.",
+  "Their empires never overlapped, their wars never intersected, and their diasporas mostly met at other people's taxi ranks. Football: finally giving these two a reason.",
+  "The history books contain nothing on this fixture — which the losing team will, by 11pm tonight, describe as 'the good old days.'",
+  "Somewhere in an archive there is exactly one strongly worded letter between these two foreign ministries, circa 1907, concerning fishing rights. Tonight it escalates.",
+  "Two nations with no shared history and therefore no excuses. Whatever happens out there tonight is original sin.",
+  "Never allies, never enemies, never within artillery range of each other. The 20th century somehow missed this matchup, and the 20th century missed nothing. Long overdue.",
+  "No colonial paperwork connects these two — a World Cup rarity, like meeting a stranger at a family reunion. They'll be properly related by full time.",
+  "The United Nations seats them fourteen desks apart and they have never once passed a note. Tonight, in front of eighty thousand people, the note gets passed. It says 'you're going home.'",
+  "War never happened here because someone's navy would have had to pack lunch. The distance has finally been closed by the only institution more expansionist than any empire: the World Cup group stage's paperwork.",
 ];
 
 const norm = (s) => (s || '').trim();
