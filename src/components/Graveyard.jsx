@@ -1,6 +1,10 @@
 import { useMemo } from 'react';
 import { getFlag } from '../data/worldcup2026.js';
-import { computeFallen } from '../utils/elimination.js';
+import {
+  computeFallen, buildGroupStandings, getEliminatedThirds, isTeamEliminated,
+} from '../utils/elimination.js';
+import { normaliseTeamName, getTeamsForParticipant } from '../utils/scoring.js';
+import { formatDateAEST, formatTimeAEST } from '../utils/time.js';
 import { UNPAID } from '../data/pot.js';
 
 const STAGE_LABELS = {
@@ -255,6 +259,50 @@ async function shareDeportationCard(f) {
   URL.revokeObjectURL(a.href);
 }
 
+const DEATH_ROW_LINES = [
+  name => `${name}'s file is on the warden's desk. The van is idling outside.`,
+  name => `${name} has been asked to keep their affairs in order and their boots by the door.`,
+  name => `Housekeeping has been told not to bother refreshing ${name}'s room.`,
+  name => `${name}'s seat on the flight home is being held. Middle. Rear. Near the toilet.`,
+  name => `The paperwork on ${name} is complete. It's just waiting for a signature and a scoreline.`,
+  name => `${name} is one bad afternoon from a courtesy shuttle to the airport.`,
+];
+
+// Participants not yet deported, ranked by how close the van is:
+// alive-team count ascending. Each alive team carries its next fixture.
+function computeDeathRow(assignments, drawType, fixtures, fallenNames) {
+  const groupStandings = buildGroupStandings(fixtures);
+  const eliminatedThirds = getEliminatedThirds(groupStandings);
+  const out = [];
+  for (const name of Object.keys(assignments)) {
+    if (fallenNames.has(name)) continue;
+    const teams = getTeamsForParticipant(name, assignments, drawType);
+    if (!teams.length) continue;
+    const alive = teams.filter(
+      (t) => isTeamEliminated(t, fixtures, groupStandings, eliminatedThirds) === null
+    );
+    if (alive.length === 0 || alive.length > 2) continue;
+    const withFixtures = alive.map((team) => {
+      const next = fixtures
+        .filter((f) => f.status !== 'FINISHED' && f.utcDate)
+        .filter((f) => {
+          const h = normaliseTeamName(f.homeTeam.name);
+          const a = normaliseTeamName(f.awayTeam.name);
+          return h === team || a === team;
+        })
+        .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))[0] || null;
+      const opponent = next
+        ? (normaliseTeamName(next.homeTeam.name) === team
+          ? normaliseTeamName(next.awayTeam.name)
+          : normaliseTeamName(next.homeTeam.name))
+        : null;
+      return { team, opponent, utcDate: next?.utcDate || null };
+    });
+    out.push({ name, alive: withFixtures, count: alive.length });
+  }
+  return out.sort((a, b) => a.count - b.count || a.name.localeCompare(b.name));
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Graveyard({ assignments, drawType, fixtures, onSelectTeam }) {
@@ -278,11 +326,45 @@ export default function Graveyard({ assignments, drawType, fixtures, onSelectTea
     });
   }, [assignments, drawType, fixtures]);
 
+  const deathRow = useMemo(
+    () => computeDeathRow(assignments, drawType, fixtures, new Set(fallen.map((f) => f.name))),
+    [assignments, drawType, fixtures, fallen]
+  );
+
   return (
     <div className="page">
       <div className="page-header">
         <h2>Deportations</h2>
       </div>
+
+      {deathRow.length > 0 && (
+        <div className="gy-dr">
+          <div className="gy-dr-header">🚔 DEATH ROW — REMOVAL PENDING</div>
+          {deathRow.map((d) => (
+            <div key={d.name} className={`gy-dr-card${d.count === 1 ? ' critical' : ''}`}>
+              <div className="gy-dr-top">
+                <span className="gy-dr-name">{d.name}</span>
+                <span className="gy-dr-count">
+                  {d.count === 1 ? 'LAST TEAM STANDING' : `${d.count} TEAMS LEFT BREATHING`}
+                </span>
+              </div>
+              {d.alive.map(({ team, opponent, utcDate }) => (
+                <button key={team} className="gy-dr-fixture" onClick={() => onSelectTeam(team)}>
+                  <span className="gy-dr-team">{getFlag(team)} {team}</span>
+                  <span className="gy-dr-hearing">
+                    {opponent
+                      ? <>removal hearing: vs {getFlag(opponent)} {opponent} · {formatDateAEST(utcDate)}, {formatTimeAEST(utcDate)}</>
+                      : 'removal hearing: next round, opponent pending'}
+                  </span>
+                </button>
+              ))}
+              <div className="gy-dr-line">
+                {DEATH_ROW_LINES[nameHash(d.name) % DEATH_ROW_LINES.length](d.name)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {fallen.length === 0 ? (
         <div className="empty-state">

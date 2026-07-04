@@ -4410,3 +4410,78 @@ body, .app {
 .skel-bar.w75 { width: 75%; }
 .skel-bar.w60 { width: 60%; }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* ── Death row (removal pending) ── */
+.gy-dr { margin-bottom: 18px; }
+.gy-dr-header {
+  font-family: 'Graduate', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  color: #E05252;
+  text-transform: uppercase;
+  padding: 2px 2px 10px;
+}
+.gy-dr-card {
+  background: var(--bg-elevated);
+  border: 1.5px dashed rgba(178, 34, 52, 0.45);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.gy-dr-card.critical {
+  border-style: solid;
+  box-shadow: 0 0 12px rgba(178, 34, 52, 0.18);
+}
+.gy-dr-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.gy-dr-name {
+  font-family: 'Graduate', serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  color: var(--text-on-dark);
+  text-transform: uppercase;
+}
+.gy-dr-count {
+  font-family: 'Graduate', serif;
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+  color: #E05252;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.gy-dr-fixture {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(82, 62, 28, 0.3);
+  border-radius: 8px;
+  padding: 8px 11px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+.gy-dr-team {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--text-on-dark);
+}
+.gy-dr-hearing {
+  font-size: 0.72rem;
+  color: var(--text-muted-dark);
+}
+.gy-dr-line {
+  font-size: 0.74rem;
+  font-style: italic;
+  color: var(--text-faint-dark);
+  padding-top: 4px;
+}
