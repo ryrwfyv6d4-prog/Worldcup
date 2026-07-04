@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { getFlag } from '../data/worldcup2026.js';
 import {
   computeFallen, buildGroupStandings, getEliminatedThirds, isTeamEliminated,
@@ -259,8 +259,8 @@ async function shareDeportationCard(f) {
   URL.revokeObjectURL(a.href);
 }
 
-const DEATH_ROW_LINES = [
-  name => `${name}'s file is on the warden's desk. The van is idling outside.`,
+const INVESTIGATION_LINES = [
+  name => `${name}'s file is open on the case officer's desk. The van is idling outside.`,
   name => `${name} has been asked to keep their affairs in order and their boots by the door.`,
   name => `Housekeeping has been told not to bother refreshing ${name}'s room.`,
   name => `${name}'s seat on the flight home is being held. Middle. Rear. Near the toilet.`,
@@ -270,7 +270,7 @@ const DEATH_ROW_LINES = [
 
 // Participants not yet deported, ranked by how close the van is:
 // alive-team count ascending. Each alive team carries its next fixture.
-function computeDeathRow(assignments, drawType, fixtures, fallenNames) {
+function computeInvestigations(assignments, drawType, fixtures, fallenNames) {
   const groupStandings = buildGroupStandings(fixtures);
   const eliminatedThirds = getEliminatedThirds(groupStandings);
   const out = [];
@@ -326,10 +326,13 @@ export default function Graveyard({ assignments, drawType, fixtures, onSelectTea
     });
   }, [assignments, drawType, fixtures]);
 
-  const deathRow = useMemo(
-    () => computeDeathRow(assignments, drawType, fixtures, new Set(fallen.map((f) => f.name))),
+  const investigations = useMemo(
+    () => computeInvestigations(assignments, drawType, fixtures, new Set(fallen.map((f) => f.name))),
     [assignments, drawType, fixtures, fallen]
   );
+
+  const [view, setView] = useState('deported');
+  const [openCase, setOpenCase] = useState(null);
 
   return (
     <div className="page">
@@ -337,89 +340,119 @@ export default function Graveyard({ assignments, drawType, fixtures, onSelectTea
         <h2>Deportations</h2>
       </div>
 
-      {deathRow.length > 0 && (
-        <div className="gy-dr">
-          <div className="gy-dr-header">🚔 DEATH ROW — REMOVAL PENDING</div>
-          {deathRow.map((d) => (
-            <div key={d.name} className={`gy-dr-card${d.count === 1 ? ' critical' : ''}`}>
-              <div className="gy-dr-top">
-                <span className="gy-dr-name">{d.name}</span>
-                <span className="gy-dr-count">
-                  {d.count === 1 ? 'LAST TEAM STANDING' : `${d.count} TEAMS LEFT BREATHING`}
-                </span>
-              </div>
-              {d.alive.map(({ team, opponent, utcDate }) => (
-                <button key={team} className="gy-dr-fixture" onClick={() => onSelectTeam(team)}>
-                  <span className="gy-dr-team">{getFlag(team)} {team}</span>
-                  <span className="gy-dr-hearing">
-                    {opponent
-                      ? <>removal hearing: vs {getFlag(opponent)} {opponent} · {formatDateAEST(utcDate)}, {formatTimeAEST(utcDate)}</>
-                      : 'removal hearing: next round, opponent pending'}
-                  </span>
-                </button>
-              ))}
-              <div className="gy-dr-line">
-                {DEATH_ROW_LINES[nameHash(d.name) % DEATH_ROW_LINES.length](d.name)}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="stage-filters">
+        <button
+          className={`filter-btn ${view === 'deported' ? 'active' : ''}`}
+          onClick={() => setView('deported')}
+        >
+          Deported{fallen.length > 0 ? ` (${fallen.length})` : ''}
+        </button>
+        <button
+          className={`filter-btn ${view === 'investigations' ? 'active' : ''}`}
+          onClick={() => setView('investigations')}
+        >
+          Investigations{investigations.length > 0 ? ` (${investigations.length})` : ''}
+        </button>
+      </div>
 
-      {fallen.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">🛂</div>
-          <p>All visas still valid — no deportations yet.</p>
-          <p className="gy-hint-sub">Once all of someone's teams are eliminated, they'll be removed from the country.</p>
-        </div>
-      ) : (
-        <>
-          <div className="gy-banner">
-            <div className="gy-banner-cross">🇺🇸</div>
-            <div className="gy-banner-text">
-              <span className="gy-banner-count">{fallen.length}</span> deported
-            </div>
-            <div className="gy-banner-cross">🇺🇸</div>
+      {view === 'investigations' && (
+        investigations.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">🕵️</div>
+            <p>No active investigations.</p>
+            <p className="gy-hint-sub">Everyone left is either safe for now, or already on the plane.</p>
           </div>
-
-          <div className="gy-grid">
-            {fallen.map((f) => (
-              <div key={f.name} className="gy-tomb">
-                <div className="gy-tomb-top">🛂</div>
-                <div className="gy-tomb-stamp">DEPORTATION ORDER</div>
-                <div className="gy-tomb-name">{f.name}</div>
-                <div className="gy-tomb-detainee">DETAINEE #{f.detainee}</div>
-                <div className="gy-tomb-facts">
-                  <div><b>Facility:</b> {f.facility}</div>
-                  <div><b>Removed via:</b> {f.via}</div>
-                  <div><b>Visa revoked:</b> {STAGE_LABELS[f.bestStage] || f.bestStage}</div>
-                  {f.unpaid && <div className="gy-unpaid"><b>Legal representation:</b> denied — entry fee unpaid</div>}
+        ) : (
+          <div className="gy-dr">
+            <div className="gy-dr-header">🕵️ ACTIVE CASES — REMOVAL PROCEEDINGS</div>
+            {investigations.map((d) => (
+              <div key={d.name} className={`gy-dr-card${d.count === 1 ? ' critical' : ''}`}>
+                <div className="gy-dr-top">
+                  <span className="gy-dr-name">{d.name}</span>
+                  <span className="gy-dr-count">
+                    {d.count === 1 ? 'REMOVAL IMMINENT' : 'UNDER SURVEILLANCE'}
+                  </span>
                 </div>
-                <div className="gy-tomb-epitaph">"{f.epitaph}"</div>
-                <div className="gy-tomb-teams">
-                  {f.teams.map(({ team, eliminatedAt }) => (
-                    <button
-                      key={team}
-                      className="gy-team-badge"
-                      onClick={() => onSelectTeam(team)}
-                    >
-                      {getFlag(team)} {team}
-                      <span className="gy-team-stage">
-                        DEPORTED: {STAGE_LABELS[eliminatedAt] || '???'}
-                      </span>
-                    </button>
-                  ))}
+                {d.alive.map(({ team, opponent, utcDate }) => (
+                  <button key={team} className="gy-dr-fixture" onClick={() => onSelectTeam(team)}>
+                    <span className="gy-dr-team">{getFlag(team)} {team}</span>
+                    <span className="gy-dr-hearing">
+                      {opponent
+                        ? <>removal hearing: vs {getFlag(opponent)} {opponent} · {formatDateAEST(utcDate)}, {formatTimeAEST(utcDate)}</>
+                        : 'removal hearing: next round, opponent pending'}
+                    </span>
+                  </button>
+                ))}
+                <div className="gy-dr-line">
+                  CASE #{1000 + (nameHash(d.name) % 9000)}: {INVESTIGATION_LINES[nameHash(d.name) % INVESTIGATION_LINES.length](d.name)}
                 </div>
-                <button className="gy-share-btn" onClick={() => shareDeportationCard(f)}>
-                  📤 SHARE MUGSHOT
-                </button>
-                <div className="gy-tomb-base">VISA DENIED</div>
               </div>
             ))}
           </div>
+        )
+      )}
 
-          <p className="gy-footer">✈️ Flight home now boarding · no peanuts will be served</p>
-        </>
+      {view === 'deported' && (
+        fallen.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">🛂</div>
+            <p>All visas still valid — no deportations yet.</p>
+            <p className="gy-hint-sub">Once all of someone's teams are eliminated, they'll be removed from the country.</p>
+          </div>
+        ) : (
+          <>
+            <div className="gy-grid">
+              {fallen.map((f) => {
+                const isOpen = openCase === f.name;
+                return (
+                  <div key={f.name} className={`gy-tomb${isOpen ? '' : ' compact'}`}>
+                    <button className="gy-tomb-head" onClick={() => setOpenCase(isOpen ? null : f.name)}>
+                      <span className="gy-tomb-head-icon">🛂</span>
+                      <span className="gy-tomb-head-main">
+                        <span className="gy-tomb-name">{f.name}</span>
+                        <span className="gy-tomb-head-sub">
+                          #{f.detainee} · {f.teams.map(({ team }) => getFlag(team)).join(' ')}
+                        </span>
+                      </span>
+                      <span className={`gy-tomb-chev${isOpen ? ' open' : ''}`}>▸</span>
+                    </button>
+                    {isOpen && (
+                      <div className="gy-tomb-body">
+                        <div className="gy-tomb-stamp">DEPORTATION ORDER</div>
+                        <div className="gy-tomb-facts">
+                          <div><b>Facility:</b> {f.facility}</div>
+                          <div><b>Removed via:</b> {f.via}</div>
+                          <div><b>Visa revoked:</b> {STAGE_LABELS[f.bestStage] || f.bestStage}</div>
+                          {f.unpaid && <div className="gy-unpaid"><b>Legal representation:</b> denied — entry fee unpaid</div>}
+                        </div>
+                        <div className="gy-tomb-epitaph">"{f.epitaph}"</div>
+                        <div className="gy-tomb-teams">
+                          {f.teams.map(({ team, eliminatedAt }) => (
+                            <button
+                              key={team}
+                              className="gy-team-badge"
+                              onClick={() => onSelectTeam(team)}
+                            >
+                              {getFlag(team)} {team}
+                              <span className="gy-team-stage">
+                                DEPORTED: {STAGE_LABELS[eliminatedAt] || '???'}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                        <button className="gy-share-btn" onClick={() => shareDeportationCard(f)}>
+                          📤 SHARE MUGSHOT
+                        </button>
+                        <div className="gy-tomb-base">VISA DENIED</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="gy-footer">✈️ Flight home now boarding · no peanuts will be served</p>
+          </>
+        )
       )}
     </div>
   );
