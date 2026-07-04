@@ -51,6 +51,12 @@ jobs:
           VITE_YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           VITE_YOUTUBE_API_KEY_BACKUP: ${{ secrets.YOUTUBE_API_KEY_BACKUP }}
 
+      # Stamp each build so gh-pages always gets a new commit — without this,
+      # a retriggered deploy with identical output is silently skipped and
+      # GitHub Pages never re-publishes after a transient failure
+      - name: Stamp build
+        run: echo "${{ github.sha }} $(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/build-stamp.txt
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
