@@ -53,9 +53,54 @@ const DEPORTED_VIA = [
   'strapped to the wing',
 ];
 
-const nameHash = (name) => [...name].reduce((h, c) => h + c.charCodeAt(0), 0);
+const nameHash = (name) => [...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+
+// Booking-sheet gag lines — deterministic per person via name hash
+const APPEAL_STATUS = [
+  'DENIED — REVIEWED BY THE DARTS TEAM',
+  'SHREDDED, THEN LAMINATED, THEN SHREDDED AGAIN',
+  'USED AS A COASTER',
+  'LOST IN THE MAIL (ON PURPOSE)',
+  'LAUGHED OUT OF THE TRIBUNAL',
+  'PENDING SINCE FOREVER. STOP CALLING.',
+  'DENIED — JUDGE HAD MONEY ON IT',
+  'APPROVED* (*NOT APPROVED)',
+];
+
+const LAST_WORDS = [
+  '"we go again"',
+  '"the ref was bent"',
+  '"I demand a recount"',
+  '"tell my teams I loved them" (they know he didn\'t)',
+  '"it\'s a marathon, not a sprint" (it was a sprint)',
+  '"I don\'t even follow soccer"',
+  '"this pot is rigged"',
+  '"wait — I can explain the group stage"',
+];
+
+const EFFECTS_SEIZED = [
+  'ONE ESKY, THREE WARM BEERS',
+  'A LAMINATED BRACKET, ANNOTATED IN CRAYON',
+  'ONE (1) LUCKY JERSEY, UNWASHED, BIOHAZARD',
+  'A NOVELTY OVERSIZED FLAG, CONFISCATED AT THE GATE',
+  'A SIGNED PHOTO OF A THIRD-PLACED TEAM',
+  'FOUR REFEREE COMPLAINT FORMS, UNSENT',
+  'ONE VUVUZELA (DESTROYED FOR PUBLIC SAFETY)',
+  'A BETTING SLIP, TORN, KISSED, TAPED BACK TOGETHER',
+];
 
 // ── Booking-photo share card ─────────────────────────────────────────────────
+
+// Shrink font size until text fits the width
+function fitText(ctx, text, maxWidth, basePx, fontTemplate) {
+  let px = basePx;
+  do {
+    ctx.font = fontTemplate.replace('{px}', px);
+    if (ctx.measureText(text).width <= maxWidth) return px;
+    px -= 3;
+  } while (px > 16);
+  return px;
+}
 
 async function shareDeportationCard(f) {
   const W = 1080, H = 1350;
@@ -65,74 +110,140 @@ async function shareDeportationCard(f) {
 
   try { await document.fonts.load('60px Ultra'); await document.fonts.load('30px Graduate'); } catch { /* fonts best-effort */ }
 
+  const h = nameHash(f.name);
+  const appeal = f.unpaid
+    ? 'NO LAWYER — ENTRY FEE UNPAID'
+    : APPEAL_STATUS[h % APPEAL_STATUS.length];
+  const lastWords = LAST_WORDS[(h >>> 2) % LAST_WORDS.length];
+  const effects = f.unpaid
+    ? '$50 CASH — APPLIED TO OUTSTANDING ENTRY FEE'
+    : EFFECTS_SEIZED[(h >>> 1) % EFFECTS_SEIZED.length];
+
   // Mugshot backdrop — grubby grey with height-chart lines
   const bg = ctx.createLinearGradient(0, 0, 0, H);
   bg.addColorStop(0, '#4A463F'); bg.addColorStop(1, '#35322C');
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
   ctx.strokeStyle = 'rgba(242,230,206,0.16)'; ctx.lineWidth = 3;
   ctx.font = '22px Graduate, serif'; ctx.textAlign = 'left';
-  for (let y = 140; y < H - 220; y += 110) {
+  for (let y = 150; y < H - 200; y += 110) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
     ctx.fillStyle = 'rgba(242,230,206,0.28)';
-    ctx.fillText(`${Math.round(210 - (y - 140) / 110 * 10)}cm`, 18, y - 10);
+    ctx.fillText(`${Math.round(210 - (y - 150) / 110 * 10)}cm`, 18, y - 10);
   }
 
   // Header
   ctx.textAlign = 'center';
-  ctx.font = '30px Graduate, serif'; ctx.fillStyle = '#E8B84B';
-  ctx.fillText("DAN'S SHED DETENTION FACILITY", W / 2, 78);
+  ctx.font = '32px Graduate, serif'; ctx.fillStyle = '#E8B84B';
+  ctx.fillText("DAN'S SHED DETENTION FACILITY", W / 2, 74);
   ctx.font = '20px Graduate, serif'; ctx.fillStyle = 'rgba(242,230,206,0.6)';
-  ctx.fillText('DEPARTMENT OF SWEEP SECURITY · EST. 2026', W / 2, 112);
+  ctx.fillText('DEPARTMENT OF SWEEP SECURITY · CASE CLOSED', W / 2, 108);
 
-  // Name board (the thing they hold)
-  const bx = 90, by = 420, bw = W - 180, bh = 420;
+  // Silhouette mugshot — subject declined to be photographed
+  ctx.fillStyle = 'rgba(18,15,11,0.72)';
+  ctx.beginPath(); ctx.arc(W / 2, 218, 62, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(W / 2 - 118, 356);
+  ctx.quadraticCurveTo(W / 2 - 112, 272, W / 2 - 48, 268);
+  ctx.lineTo(W / 2 + 48, 268);
+  ctx.quadraticCurveTo(W / 2 + 112, 272, W / 2 + 118, 356);
+  ctx.closePath(); ctx.fill();
+  ctx.font = 'italic 21px "Barlow Condensed", sans-serif';
+  ctx.fillStyle = 'rgba(242,230,206,0.55)';
+  ctx.fillText('subject declined to be photographed. typical.', W / 2, 340);
+
+  // ── Booking board: height computed from content so nothing ever clips ──
+  const bx = 80, bw = W - 160;
+  const maxTextW = bw - 70;
+  const chargeLines = f.teams.slice(0, 5).map(({ team, eliminatedAt }) =>
+    `HARBOURING ${team.toUpperCase()} (REMOVED: ${(STAGE_LABELS[eliminatedAt] || '???').toUpperCase()})`
+  );
+  if (f.teams.length > 5) {
+    chargeLines.push(`...PLUS ${f.teams.length - 5} FURTHER COUNTS, EACH WORSE THAN THE LAST`);
+  }
+  const factRows = [
+    ['FACILITY', f.facility.toUpperCase()],
+    ['REMOVED VIA', f.via.toUpperCase()],
+    ['APPEAL STATUS', appeal],
+    ['EFFECTS SEIZED', effects],
+    ['LAST WORDS', lastWords.toUpperCase()],
+  ];
+  const NAME_H = 96, DETAINEE_H = 46, FACT_H = 42, CH_HEADER_H = 52, CH_H = 38;
+  const PAD_TOP = 46, PAD_BOTTOM = 30;
+  const bh = PAD_TOP + NAME_H + DETAINEE_H + factRows.length * FACT_H
+    + CH_HEADER_H + chargeLines.length * CH_H + PAD_BOTTOM;
+  const by = 376;
+
   ctx.fillStyle = '#1E1B16'; ctx.fillRect(bx - 8, by - 8, bw + 16, bh + 16);
   ctx.fillStyle = '#F2E6CE'; ctx.fillRect(bx, by, bw, bh);
-  ctx.fillStyle = '#26201A';
-  ctx.font = '84px Ultra, serif';
-  ctx.fillText(f.name.toUpperCase(), W / 2, by + 110);
-  ctx.font = '26px Graduate, serif'; ctx.fillStyle = '#B22234';
-  ctx.fillText(`DETAINEE #${String(1000 + (nameHash(f.name) % 9000))}`, W / 2, by + 160);
 
-  ctx.font = '24px Graduate, serif'; ctx.fillStyle = '#3a3428';
-  ctx.fillText(`FACILITY: ${f.facility.toUpperCase()}`, W / 2, by + 215);
-  ctx.fillText(`REMOVED VIA: ${f.via.toUpperCase()}`, W / 2, by + 255);
-  ctx.fillText(`LAST STAGE REACHED: ${(STAGE_LABELS[f.bestStage] || f.bestStage).toUpperCase()}`, W / 2, by + 295);
+  let y = by + PAD_TOP;
+
+  // Name — shrink to fit long names
+  ctx.fillStyle = '#26201A';
+  fitText(ctx, f.name.toUpperCase(), maxTextW, 82, '{px}px Ultra, serif');
+  ctx.fillText(f.name.toUpperCase(), W / 2, y + 58);
+  y += NAME_H;
+
+  ctx.font = '27px Graduate, serif'; ctx.fillStyle = '#B22234';
+  ctx.fillText(
+    `DETAINEE #${String(1000 + (h % 9000))} · ${(STAGE_LABELS[f.bestStage] || f.bestStage).toUpperCase()}`,
+    W / 2, y + 20
+  );
+  y += DETAINEE_H;
+
+  // Booking facts — label + value on one line, shrunk to fit
+  for (const [label, value] of factRows) {
+    const line = `${label}: ${value}`;
+    ctx.fillStyle = '#3a3428';
+    fitText(ctx, line, maxTextW, 27, '{px}px Graduate, serif');
+    ctx.fillText(line, W / 2, y + 28);
+    y += FACT_H;
+  }
 
   // Charges
-  ctx.font = '22px Graduate, serif'; ctx.fillStyle = '#B22234';
-  ctx.fillText('CHARGES', W / 2, by + 345);
-  ctx.font = '600 26px "Barlow Condensed", sans-serif'; ctx.fillStyle = '#26201A';
-  const charges = f.teams.map(({ team, eliminatedAt }) =>
-    `Harbouring ${team} (removed: ${STAGE_LABELS[eliminatedAt] || '???'})`
-  );
-  charges.slice(0, 4).forEach((c, i) => ctx.fillText(c, W / 2, by + 380 + i * 34));
+  ctx.font = '25px Graduate, serif'; ctx.fillStyle = '#B22234';
+  ctx.fillText('— CHARGES —', W / 2, y + 36);
+  y += CH_HEADER_H;
+  for (const c of chargeLines) {
+    ctx.fillStyle = '#26201A';
+    fitText(ctx, c, maxTextW, 29, '700 {px}px "Barlow Condensed", sans-serif');
+    ctx.fillText(c, W / 2, y + 26);
+    y += CH_H;
+  }
 
-  // Epitaph
-  ctx.font = 'italic 30px "Barlow Condensed", sans-serif';
-  ctx.fillStyle = 'rgba(242,230,206,0.85)';
+  // Epitaph below the board
+  const boardBottom = by + bh;
+  ctx.font = 'italic 33px "Barlow Condensed", sans-serif';
+  ctx.fillStyle = 'rgba(242,230,206,0.9)';
   const words = f.epitaph.split(' ');
-  let line = '', lines = [];
+  let line = '';
+  const lines = [];
   for (const w of words) {
-    if ((line + ' ' + w).length > 52) { lines.push(line); line = w; }
+    if (ctx.measureText(line + ' ' + w).width > W - 200) { lines.push(line); line = w; }
     else line = line ? line + ' ' + w : w;
   }
   lines.push(line);
-  lines.forEach((l, i) => ctx.fillText(`${i === 0 ? '“' : ''}${l}${i === lines.length - 1 ? '”' : ''}`, W / 2, 950 + i * 42));
+  const maxEpLines = boardBottom > 1040 ? 2 : 3;
+  const shown = lines.slice(0, maxEpLines);
+  const epY = boardBottom + 52;
+  shown.forEach((l, i) =>
+    ctx.fillText(`${i === 0 ? '“' : ''}${l}${i === shown.length - 1 ? '”' : ''}`, W / 2, epY + i * 44)
+  );
 
-  // Big DEPORTED stamp
+  // Big DEPORTED stamp — placed under the epitaph, above the footer
+  const stampY = Math.min(H - 130, epY + shown.length * 44 + 78);
   ctx.save();
-  ctx.translate(W / 2, 1160);
-  ctx.rotate(-0.09);
-  ctx.font = '110px Graduate, serif';
-  ctx.fillStyle = 'rgba(178,34,52,0.9)';
-  ctx.strokeStyle = 'rgba(178,34,52,0.9)'; ctx.lineWidth = 8;
-  ctx.strokeRect(-420, -95, 840, 140);
-  ctx.fillText('DEPORTED', 0, 22);
+  ctx.translate(W / 2, stampY);
+  ctx.rotate(-0.08);
+  ctx.font = '104px Graduate, serif';
+  ctx.fillStyle = 'rgba(178,34,52,0.92)';
+  ctx.strokeStyle = 'rgba(178,34,52,0.92)'; ctx.lineWidth = 8;
+  ctx.strokeRect(-405, -88, 810, 132);
+  ctx.fillText('DEPORTED', 0, 20);
   ctx.restore();
 
   ctx.font = '18px Graduate, serif'; ctx.fillStyle = 'rgba(242,230,206,0.5)';
-  ctx.fillText("★  T H E   E A G L E ' S   N E S T   ·   W C   ' 2 6  ★", W / 2, H - 36);
+  ctx.fillText("★  T H E   E A G L E ' S   N E S T   ·   W C   ' 2 6  ★", W / 2, H - 32);
 
   const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
   const file = new File([blob], `deported-${f.name.toLowerCase().replace(/\s+/g, '-')}.png`, { type: 'image/png' });
