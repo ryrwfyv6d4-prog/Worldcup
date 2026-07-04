@@ -3,6 +3,7 @@ name: Deploy
 on:
   push:
     branches: [claude/world-cup-sweep-app-oFZHS]
+  workflow_dispatch:
 
 jobs:
   deploy:
