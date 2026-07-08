@@ -59,6 +59,23 @@ const DEPORTED_VIA = [
 
 const nameHash = (name) => [...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 
+// Bespoke treatment for specific blokes (keyed lowercase). The joke stays on
+// the detainee — never on anyone else.
+const PERSON_OVERRIDES = {
+  badger: {
+    facility: 'Cairo International — Arrivals Hall, indefinitely',
+    via: 'direct flight to Cairo, window seat, time to reflect',
+    epitaph: (name) => `${name} has been deported to Egypt. Specifically. At Egypt's request. The two parties have a lot to discuss.`,
+    appeal: 'DENIED — THE TRIBUNAL HAS SEEN THE GROUP CHAT',
+    effects: 'ONE (1) SCREENSHOT, ALREADY WIDELY CIRCULATED',
+    lastWords: '"it was taken out of context"',
+    extraCharge: 'PUBLIC COMMENTARY REGARDING EGYPT (REFERRED TO THE HAGUE)',
+    extraFact: 'Diplomatic status: persona non grata (Arab Republic of Egypt)',
+    investigationLine: (name) => `${name}'s file has been forwarded to the Egyptian consulate. They already had a copy.`,
+  },
+};
+const personOverride = (name) => PERSON_OVERRIDES[(name || '').trim().toLowerCase()];
+
 // Booking-sheet gag lines — deterministic per person via name hash
 const APPEAL_STATUS = [
   'DENIED — REVIEWED BY THE DARTS TEAM',
@@ -115,13 +132,12 @@ async function shareDeportationCard(f) {
   try { await document.fonts.load('60px Ultra'); await document.fonts.load('30px Graduate'); } catch { /* fonts best-effort */ }
 
   const h = nameHash(f.name);
-  const appeal = f.unpaid
-    ? 'NO LAWYER — ENTRY FEE UNPAID'
-    : APPEAL_STATUS[h % APPEAL_STATUS.length];
-  const lastWords = LAST_WORDS[(h >>> 2) % LAST_WORDS.length];
-  const effects = f.unpaid
-    ? '$50 CASH — APPLIED TO OUTSTANDING ENTRY FEE'
-    : EFFECTS_SEIZED[(h >>> 1) % EFFECTS_SEIZED.length];
+  const ov = personOverride(f.name) || {};
+  const appeal = ov.appeal
+    || (f.unpaid ? 'NO LAWYER — ENTRY FEE UNPAID' : APPEAL_STATUS[h % APPEAL_STATUS.length]);
+  const lastWords = ov.lastWords || LAST_WORDS[(h >>> 2) % LAST_WORDS.length];
+  const effects = ov.effects
+    || (f.unpaid ? '$50 CASH — APPLIED TO OUTSTANDING ENTRY FEE' : EFFECTS_SEIZED[(h >>> 1) % EFFECTS_SEIZED.length]);
 
   // Mugshot backdrop — grubby grey with height-chart lines
   const bg = ctx.createLinearGradient(0, 0, 0, H);
@@ -164,6 +180,7 @@ async function shareDeportationCard(f) {
   if (f.teams.length > 5) {
     chargeLines.push(`...PLUS ${f.teams.length - 5} FURTHER COUNTS, EACH WORSE THAN THE LAST`);
   }
+  if (ov.extraCharge) chargeLines.push(ov.extraCharge);
   const factRows = [
     ['FACILITY', f.facility.toUpperCase()],
     ['REMOVED VIA', f.via.toUpperCase()],
@@ -327,12 +344,14 @@ export default function Graveyard({ assignments, drawType, fixtures, onSelectTea
         return ti > bi ? ts.eliminatedAt : best;
       }, 'GROUP_STAGE');
       const h = nameHash(f.name);
+      const ov = personOverride(f.name) || {};
       return {
         ...f,
         bestStage,
-        epitaph: EPITAPHS[idx % EPITAPHS.length](f.name),
-        facility: FACILITIES[h % FACILITIES.length],
-        via: DEPORTED_VIA[h % DEPORTED_VIA.length],
+        epitaph: ov.epitaph ? ov.epitaph(f.name) : EPITAPHS[idx % EPITAPHS.length](f.name),
+        facility: ov.facility || FACILITIES[h % FACILITIES.length],
+        via: ov.via || DEPORTED_VIA[h % DEPORTED_VIA.length],
+        extraFact: ov.extraFact || null,
         detainee: 1000 + (h % 9000),
         unpaid: UNPAID.includes(f.name),
       };
@@ -397,7 +416,8 @@ export default function Graveyard({ assignments, drawType, fixtures, onSelectTea
                   </button>
                 ))}
                 <div className="gy-dr-line">
-                  CASE #{1000 + (nameHash(d.name) % 9000)}: {INVESTIGATION_LINES[nameHash(d.name) % INVESTIGATION_LINES.length](d.name)}
+                  CASE #{1000 + (nameHash(d.name) % 9000)}: {(personOverride(d.name)?.investigationLine
+                    || INVESTIGATION_LINES[nameHash(d.name) % INVESTIGATION_LINES.length])(d.name)}
                 </div>
               </div>
             ))}
@@ -436,6 +456,7 @@ export default function Graveyard({ assignments, drawType, fixtures, onSelectTea
                           <div><b>Facility:</b> {f.facility}</div>
                           <div><b>Removed via:</b> {f.via}</div>
                           <div><b>Visa revoked:</b> {STAGE_LABELS[f.bestStage] || f.bestStage}</div>
+                          {f.extraFact && <div className="gy-unpaid">{f.extraFact}</div>}
                           {f.unpaid && <div className="gy-unpaid"><b>Legal representation:</b> denied — entry fee unpaid</div>}
                         </div>
                         <div className="gy-tomb-epitaph">"{f.epitaph}"</div>
