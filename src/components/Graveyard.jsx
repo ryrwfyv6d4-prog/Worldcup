@@ -260,16 +260,24 @@ async function shareDeportationCard(f) {
 }
 
 const INVESTIGATION_LINES = [
-  name => `${name}'s file is open on the case officer's desk. The van is idling outside.`,
-  name => `${name} has been asked to keep their affairs in order and their boots by the door.`,
+  name => `${name}'s cell has been measured. The tape measure was not optimistic.`,
+  name => `${name} keeps saying "there's still a chance." The case officer has stopped making eye contact.`,
+  name => `The facility has already re-let ${name}'s bunk. Twice. At a profit.`,
+  name => `${name}'s name is on the manifest in pencil. The pen is on the desk. The desk is by the door.`,
+  name => `A sniffer dog walked past ${name}'s campaign and sat down immediately.`,
+  name => `${name} has started saying "we" about eleven men who cannot hear them and will not save them.`,
+  name => `The tribunal watched ${name}'s remaining team play and waived the filing fee out of pity.`,
+  name => `${name}'s travel documents are ready. The photo chosen is unflattering. That was a decision.`,
+  name => `The neighbours were asked what they knew about ${name}'s bracket. They knew everything. They said nothing.`,
+  name => `${name} declined voluntary departure. The department admires the confidence. Not the judgment.`,
+  name => `The van outside ${name}'s house has stopped pretending to be a plumber's.`,
+  name => `${name}'s last team is under observation by three agents and a bookmaker. All four expect the same result.`,
   name => `Housekeeping has been told not to bother refreshing ${name}'s room.`,
-  name => `${name}'s seat on the flight home is being held. Middle. Rear. Near the toilet.`,
-  name => `The paperwork on ${name} is complete. It's just waiting for a signature and a scoreline.`,
-  name => `${name} is one bad afternoon from a courtesy shuttle to the airport.`,
+  name => `${name}'s seat on the flight home is being held. Middle row. Rear. Between two stag parties.`,
 ];
 
-// Participants not yet deported, ranked by how close the van is:
-// alive-team count ascending. Each alive team carries its next fixture.
+// Participants not yet deported, ordered by how soon the van arrives:
+// earliest upcoming hearing first, alive-team count as tiebreak.
 function computeInvestigations(assignments, drawType, fixtures, fallenNames) {
   const groupStandings = buildGroupStandings(fixtures);
   const eliminatedThirds = getEliminatedThirds(groupStandings);
@@ -298,9 +306,14 @@ function computeInvestigations(assignments, drawType, fixtures, fallenNames) {
         : null;
       return { team, opponent, utcDate: next?.utcDate || null };
     });
-    out.push({ name, alive: withFixtures, count: alive.length });
+    const nextHearing = Math.min(
+      ...withFixtures.map((t) => (t.utcDate ? new Date(t.utcDate).getTime() : Infinity))
+    );
+    out.push({ name, alive: withFixtures, count: alive.length, nextHearing });
   }
-  return out.sort((a, b) => a.count - b.count || a.name.localeCompare(b.name));
+  return out.sort(
+    (a, b) => a.nextHearing - b.nextHearing || a.count - b.count || a.name.localeCompare(b.name)
+  );
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
