@@ -96,3 +96,32 @@ export function buildLadder(assignments, fixtures) {
     })
     .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 }
+
+// ── Match-sheet helpers ──────────────────────────────────────────────────────
+// Last n finished results for a team, newest first: ['W','D','L',...]
+export function formForTeam(team, fixtures, n = 5) {
+  return fixtures
+    .filter((f) => f.status === 'FINISHED' && (f.homeTeam.name === team || f.awayTeam.name === team))
+    .sort((a, b) => (b.utcDate || '').localeCompare(a.utcDate || ''))
+    .slice(0, n)
+    .map((f) => {
+      if (f.score.winner === 'DRAW') return 'D';
+      const won = (f.score.winner === 'HOME_TEAM' && f.homeTeam.name === team) ||
+                  (f.score.winner === 'AWAY_TEAM' && f.awayTeam.name === team);
+      return won ? 'W' : 'L';
+    });
+}
+
+export function positionOf(team, table) {
+  const i = table.findIndex((r) => r.team === team);
+  return i === -1 ? null : i + 1;
+}
+
+// The reverse fixture of the same pairing this season
+export function reverseFixture(fixture, fixtures) {
+  return fixtures.find(
+    (f) => f.division === fixture.division &&
+      f.homeTeam.name === fixture.awayTeam.name &&
+      f.awayTeam.name === fixture.homeTeam.name
+  ) || null;
+}

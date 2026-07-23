@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { getTeam } from '../data/england2027.js';
+import MatchSheet from './MatchSheet.jsx';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -8,15 +9,24 @@ function ownerOf(team, assignments) {
   return null;
 }
 
-function fmtDate(iso) {
+function dayKey(iso) {
+  return iso ? iso.slice(0, 10) : 'tbc';
+}
+
+function fmtDay(iso) {
+  if (!iso) return 'Date TBC';
+  return new Date(iso).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function fmtTime(iso) {
   if (!iso) return '';
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) +
-    ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
 export default function Fixtures({ fixtures, assignments }) {
   const [div, setDiv] = useState(1);
+  const [md, setMd] = useState(null);
+  const [open, setOpen] = useState(null);
 
   const matchdays = useMemo(() => {
     const mds = [...new Set(fixtures.filter((f) => f.division === div).map((f) => f.matchday))];
@@ -31,11 +41,22 @@ export default function Fixtures({ fixtures, assignments }) {
     return upcoming.length ? upcoming[0].matchday : (matchdays[0] || 1);
   }, [fixtures, div, matchdays]);
 
-  const [md, setMd] = useState(null);
   const shownMd = md ?? nowMd;
-  const shown = fixtures
-    .filter((f) => f.division === div && f.matchday === shownMd)
-    .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''));
+  const maxMd = matchdays[matchdays.length - 1] || 1;
+
+  const byDay = useMemo(() => {
+    const shown = fixtures
+      .filter((f) => f.division === div && f.matchday === shownMd)
+      .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''));
+    const groups = [];
+    for (const f of shown) {
+      const k = dayKey(f.utcDate);
+      const last = groups[groups.length - 1];
+      if (last && last.key === k) last.items.push(f);
+      else groups.push({ key: k, label: fmtDay(f.utcDate), items: [f] });
+    }
+    return groups;
+  }, [fixtures, div, shownMd]);
 
   return (
     <div className="panel">
@@ -45,36 +66,51 @@ export default function Fixtures({ fixtures, assignments }) {
         <button className={`seg ${div === 2 ? 'on' : ''}`} onClick={() => { setDiv(2); setMd(null); }}>Championship</button>
       </div>
       <div className="md-row">
-        <button className="btn" onClick={() => setMd(Math.max(1, shownMd - 1))}>‹</button>
-        <span className="md-label">Matchweek {shownMd}</span>
-        <button className="btn" onClick={() => setMd(shownMd + 1)}>›</button>
+        <button className="btn" onClick={() => setMd(Math.max(1, shownMd - 1))} disabled={shownMd <= 1}>‹</button>
+        <span className="md-label">Matchweek {shownMd} <small>of {maxMd}</small></span>
+        <button className="btn" onClick={() => setMd(Math.min(maxMd, shownMd + 1))} disabled={shownMd >= maxMd}>›</button>
       </div>
+      {md != null && md !== nowMd && (
+        <button className="btn btn-jump" onClick={() => setMd(null)}>↩ Back to this week</button>
+      )}
+      <p className="muted small">Tap any match for the sheet — owners, stakes, form and the rivalry file.</p>
 
-      {shown.map((f) => {
-        const h = getTeam(f.homeTeam.name);
-        const a = getTeam(f.awayTeam.name);
-        const ho = ownerOf(f.homeTeam.name, assignments);
-        const ao = ownerOf(f.awayTeam.name, assignments);
-        return (
-          <div className={`card fx-card ${f.status === 'IN_PLAY' ? 'live' : ''}`} key={f.id}>
-            <div className="fx-date">{fmtDate(f.utcDate)}{f.status === 'IN_PLAY' && <span className="live-dot"> LIVE</span>}</div>
-            <div className="fx-line">
-              <span className="fx-team">
-                {h ? h.short : f.homeTeam.name}
-                {ho && <em className="fx-owner">{ho}</em>}
-              </span>
-              <span className="fx-score">
-                {f.status === 'SCHEDULED' ? 'v' : `${f.score.home ?? ''}–${f.score.away ?? ''}`}
-              </span>
-              <span className="fx-team fx-away">
-                {a ? a.short : f.awayTeam.name}
-                {ao && <em className="fx-owner">{ao}</em>}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-      {shown.length === 0 && <p className="muted">No fixtures for this matchweek.</p>}
+      {byDay.map((g) => (
+        <div key={g.key}>
+          <div className="fx-day-head">{g.label}</div>
+          {g.items.map((f) => {
+            const h = getTeam(f.homeTeam.name);
+            const a = getTeam(f.awayTeam.name);
+            const ho = ownerOf(f.homeTeam.name, assignments);
+            const ao = ownerOf(f.awayTeam.name, assignments);
+            return (
+              <button className={`card fx-card ${f.status === 'IN_PLAY' ? 'live' : ''}`} key={f.id} onClick={() => setOpen(f)}>
+                <div className="fx-line">
+                  <span className="fx-team">
+                    <span className="fx-team-name">{h ? h.short : f.homeTeam.name}</span>
+                    {ho && <em className={`fx-owner pot-text-${h?.pot.toLowerCase()}`}>{ho}</em>}
+                  </span>
+                  <span className="fx-mid">
+                    <span className="fx-score">
+                      {f.status === 'SCHEDULED' ? fmtTime(f.utcDate) : `${f.score.home ?? ''}–${f.score.away ?? ''}`}
+                    </span>
+                    {f.status === 'IN_PLAY' && <span className="live-dot">LIVE</span>}
+                  </span>
+                  <span className="fx-team fx-away">
+                    <span className="fx-team-name">{a ? a.short : f.awayTeam.name}</span>
+                    {ao && <em className={`fx-owner pot-text-${a?.pot.toLowerCase()}`}>{ao}</em>}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ))}
+      {byDay.length === 0 && <p className="muted">No fixtures for this matchweek.</p>}
+
+      {open && (
+        <MatchSheet fixture={open} fixtures={fixtures} assignments={assignments} onClose={() => setOpen(null)} />
+      )}
     </div>
   );
 }

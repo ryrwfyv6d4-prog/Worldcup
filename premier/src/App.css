@@ -196,3 +196,88 @@ body {
 .nav-btn.on { color: var(--gold); }
 .nav-icon { font-size: 1.15rem; }
 .nav-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* ── v2: clarity pass ── */
+/* fixtures grouped by day */
+.fx-day-head {
+  color: var(--brass-bright); font-size: 0.72rem; text-transform: uppercase;
+  letter-spacing: 0.12em; margin: 14px 0 6px; padding-left: 2px;
+}
+.fx-card { width: 100%; text-align: inherit; border: 0; font: inherit; cursor: pointer; display: block; }
+.fx-card:active { transform: scale(0.99); }
+.fx-mid { display: flex; flex-direction: column; align-items: center; min-width: 52px; }
+.fx-team-name { display: block; }
+.btn-jump { margin-bottom: 8px; }
+.md-label small { color: var(--text-muted-dark); font-size: 0.7rem; }
+.pot-text-a { color: var(--pot-a); }
+.pot-text-b { color: var(--pot-b); }
+.pot-text-c { color: var(--pot-c); }
+.pot-text-d { color: var(--pot-d); }
+
+/* form pips */
+.pips { display: inline-flex; gap: 3px; }
+.pip {
+  width: 16px; height: 16px; border-radius: 4px; font-size: 0.6rem; font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center; color: #fff;
+}
+.pip-w { background: var(--green); }
+.pip-d { background: #8a7a4d; }
+.pip-l { background: var(--red); }
+.pip-none { color: var(--ink-soft); font-size: 0.7rem; }
+
+/* zone legend */
+.zone-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.zl { font-size: 0.68rem; padding: 3px 9px; border-radius: 999px; color: var(--text-on-dark); border: 1px solid; }
+.zl.up { border-color: var(--green); color: #7fdca8; }
+.zl.play { border-color: #c9a13d; color: var(--brass-bright); }
+.zl.drop { border-color: var(--red); color: #f0938e; }
+.league-table tr.play td { background: rgba(201, 161, 61, 0.12); }
+.league-table .team-cell { font-weight: 700; white-space: nowrap; }
+.league-table .owner-cell { font-size: 0.7rem; font-style: italic; color: #2E4C7E; white-space: nowrap; }
+.league-table .form-cell { white-space: nowrap; }
+.league-table .form-cell .pip { margin-right: 2px; }
+.unowned { color: var(--ink-soft); }
+
+/* match sheet */
+.sheet-overlay {
+  position: fixed; inset: 0; background: rgba(5, 4, 2, 0.75); z-index: 50;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.sheet {
+  background: var(--card); color: var(--ink); width: 100%; max-width: 560px;
+  border-radius: 18px 18px 0 0; padding: 18px 16px calc(18px + var(--safe-bottom));
+  max-height: 88vh; overflow-y: auto; position: relative;
+  box-shadow: 0 -12px 40px rgba(0,0,0,0.6);
+}
+.sheet-close {
+  position: absolute; top: 10px; right: 12px; border: 0; background: var(--card-alt);
+  width: 30px; height: 30px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; color: var(--ink);
+}
+.ms-meta { color: var(--ink-soft); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; text-align: center; line-height: 1.6; margin-bottom: 12px; }
+.ms-teams { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: start; margin-bottom: 12px; }
+.ms-side { grid-column: 1; }
+.ms-side.away { grid-column: 3; text-align: right; }
+.ms-score { grid-column: 2; grid-row: 1; font-size: 1.6rem; font-weight: 900; align-self: center; }
+.ms-team-name { font-weight: 800; font-size: 1.05rem; }
+.ms-codename { color: #7A5A12; font-style: italic; font-size: 0.78rem; }
+.ms-owner { font-size: 0.75rem; margin-top: 4px; }
+.ms-owner b { color: #2E4C7E; }
+.ms-owner span { color: var(--ink-soft); }
+.ms-owner.unowned { color: var(--ink-soft); font-style: italic; }
+.ms-rivalry {
+  background: linear-gradient(160deg, #241B0E, #3a2c14); color: var(--text-on-dark);
+  border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 12px;
+}
+.ms-rivalry-title { color: var(--brass-bright); font-weight: 800; letter-spacing: 0.06em; margin-bottom: 4px; }
+.ms-rivalry p { font-size: 0.82rem; line-height: 1.5; color: rgba(244,235,216,0.85); }
+.ms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.ms-stats { background: var(--card-alt); border-radius: var(--radius-sm); padding: 10px; display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.ms-stat b { display: block; font-size: 0.95rem; }
+.ms-stat span { font-size: 0.6rem; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.06em; }
+.ms-form { width: 100%; }
+.ms-pots { margin-bottom: 10px; }
+.ms-h2h { display: flex; gap: 10px; align-items: baseline; border-top: 1px dashed var(--border); padding-top: 10px; font-size: 0.82rem; margin-bottom: 10px; }
+.ms-h2h-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+.ms-lineups { border-top: 1px dashed var(--border); padding-top: 10px; }
+.muted.small { color: var(--ink-soft); }
+.panel .muted.small { color: var(--text-muted-dark); }
