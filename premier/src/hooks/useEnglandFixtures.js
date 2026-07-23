@@ -140,9 +140,15 @@ export function useEnglandFixtures() {
       setFixtures(all);
       setLastFetched(Date.now());
     } catch (err) {
-      setError(err.message === 'Failed to fetch'
-        ? 'Network error – check your connection and try again.'
-        : err.message);
+      // Sandboxed/offline builds carry a baked-in fixture snapshot
+      if (Array.isArray(window.__EPL_SNAPSHOT__)) {
+        setFixtures(window.__EPL_SNAPSHOT__);
+        setLastFetched(window.__EPL_SNAPSHOT_TS__ || null);
+      } else {
+        setError(err.message === 'Failed to fetch'
+          ? 'Network error – check your connection and try again.'
+          : err.message);
+      }
     } finally {
       setLoading(false);
     }
