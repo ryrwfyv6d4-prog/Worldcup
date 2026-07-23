@@ -125,3 +125,97 @@ export function reverseFixture(fixture, fixtures) {
       f.awayTeam.name === fixture.homeTeam.name
   ) || null;
 }
+
+// ── Projections & badges ─────────────────────────────────────────────────────
+// Ceiling for one team: win every remaining game + every medal it could still win
+export function maxForTeam(team, fixtures) {
+  const t = TEAMS.find((x) => x.name === team);
+  if (!t) return 0;
+  const rate = POT_POINTS[t.pot];
+  const current = teamPoints(team, fixtures).total;
+  const remaining = fixtures.filter(
+    (f) => f.status !== 'FINISHED' && (f.homeTeam.name === team || f.awayTeam.name === team)
+  ).length;
+  let medalMax = 0;
+  if (t.div === 1) {
+    medalMax = MEDALS.VC.pts + MEDALS.DSO.pts + (t.pot === 'B' ? MEDALS.SURVIVAL.pts : 0);
+  } else {
+    medalMax = MEDALS.PROMOTION.pts + MEDALS.CHAMP_TITLE.pts + MEDALS.BIG_PUSH.pts;
+  }
+  return current + remaining * rate.win + medalMax;
+}
+
+export function maxForPlayer(player, assignments, fixtures) {
+  return (assignments[player] || []).reduce((s, t) => s + maxForTeam(t, fixtures), 0);
+}
+
+// Points a player earned from matches finished on the viewer's local date
+export function todayPoints(player, assignments, fixtures) {
+  const today = new Date().toLocaleDateString('en-CA');
+  const todays = fixtures.filter(
+    (f) => f.status === 'FINISHED' && f.utcDate &&
+      new Date(f.utcDate).toLocaleDateString('en-CA') === today
+  );
+  let sum = 0;
+  for (const team of assignments[player] || []) sum += teamPoints(team, todays).total;
+  return sum;
+}
+
+// Points earned from matches finished inside [from, to) — Dates
+export function pointsBetween(player, assignments, fixtures, from, to) {
+  const inWindow = fixtures.filter((f) => {
+    if (f.status !== 'FINISHED' || !f.utcDate) return false;
+    const t = new Date(f.utcDate);
+    return t >= from && t < to;
+  });
+  let sum = 0;
+  for (const team of assignments[player] || []) sum += teamPoints(team, inWindow).total;
+  return sum;
+}
+
+// Campaign months of the season: [{y, m, label}]
+export function campaignMonths() {
+  const out = [];
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  for (const [y, m] of [[2026,7],[2026,8],[2026,9],[2026,10],[2026,11],[2027,0],[2027,1],[2027,2],[2027,3],[2027,4]]) {
+    out.push({ y, m, label: `${names[m]} ${String(y).slice(2)}` });
+  }
+  return out;
+}
+
+export function monthlyRace(assignments, fixtures) {
+  return campaignMonths().map(({ y, m, label }) => {
+    const from = new Date(y, m, 1);
+    const to = new Date(m === 11 ? y + 1 : y, (m + 1) % 12, 1);
+    const rows = Object.keys(assignments)
+      .map((p) => ({ name: p, pts: pointsBetween(p, assignments, fixtures, from, to) }))
+      .sort((a, b) => b.pts - a.pts || a.name.localeCompare(b.name));
+    const over = to <= new Date();
+    const top = rows[0]?.pts || 0;
+    return { y, m, label, rows, over, winners: top > 0 ? rows.filter((r) => r.pts === top).map((r) => r.name) : [] };
+  });
+}
+
+// Scoring events for the dispatches feed, newest first
+export function feedEvents(assignments, fixtures, limit = 20) {
+  const owner = (team) => {
+    for (const [name, teams] of Object.entries(assignments)) if (teams.includes(team)) return name;
+    return null;
+  };
+  const events = [];
+  for (const f of fixtures) {
+    if (f.status !== 'FINISHED') continue;
+    for (const side of ['home', 'away']) {
+      const team = side === 'home' ? f.homeTeam.name : f.awayTeam.name;
+      const who = owner(team);
+      if (!who) continue;
+      const t = TEAMS.find((x) => x.name === team);
+      const rate = POT_POINTS[t.pot];
+      const won = (f.score.winner === 'HOME_TEAM' && side === 'home') || (f.score.winner === 'AWAY_TEAM' && side === 'away');
+      const drew = f.score.winner === 'DRAW';
+      const pts = won ? rate.win : drew ? rate.draw : 0;
+      events.push({ fixture: f, team, owner: who, pts, result: won ? 'W' : drew ? 'D' : 'L', ts: f.utcDate });
+    }
+  }
+  return events.sort((a, b) => (b.ts || '').localeCompare(a.ts || '')).slice(0, limit);
+}

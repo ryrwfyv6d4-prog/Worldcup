@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TEAMS, POT_LABELS, POT_POINTS, MEDALS } from '../data/england2027.js';
+import { TEAMS, POT_LABELS, POT_POINTS } from '../data/england2027.js';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -41,16 +41,6 @@ export default function Regiments({ assignments }) {
         );
       })}
 
-      <div className="card">
-        <h3>Medal table</h3>
-        {Object.entries(MEDALS).map(([k, m]) => (
-          <div className="medal-row" key={k}>
-            <span className="medal-label">🎖 {m.label}</span>
-            <span className="medal-detail">{m.detail}</span>
-            <span className="medal-pts">+{m.pts}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

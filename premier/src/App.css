@@ -281,3 +281,54 @@ body {
 .ms-lineups { border-top: 1px dashed var(--border); padding-top: 10px; }
 .muted.small { color: var(--ink-soft); }
 .panel .muted.small { color: var(--text-muted-dark); }
+
+/* ── v3: front badges, campaign, HQ ── */
+.badge { font-size: 0.58rem; font-weight: 800; letter-spacing: 0.08em; padding: 3px 7px; border-radius: 4px; }
+.badge-front { background: #2E4C7E; color: #fff; }
+.badge-cooked { background: #241B0E; color: #F0938E; border: 1px solid var(--red); }
+.lb-right { display: flex; flex-direction: column; align-items: flex-end; margin-left: auto; }
+.lb-head .lb-rank { flex: 1; }
+.lb-today { color: var(--green); font-weight: 800; font-size: 0.72rem; }
+.lb-max { color: var(--ink-soft); font-size: 0.66rem; }
+
+.dispatch-card { background: linear-gradient(160deg, #241B0E, #3a2c14); color: var(--text-on-dark); }
+.dispatch-title { color: var(--brass-bright); font-weight: 800; letter-spacing: 0.1em; font-size: 0.8rem; margin-bottom: 8px; }
+.dispatch-line { font-size: 0.84rem; line-height: 1.55; color: rgba(244,235,216,0.88); margin-bottom: 6px; }
+
+.feed-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px dashed var(--border); font-size: 0.8rem; }
+.feed-row:first-of-type { border-top: 0; }
+.feed-text { flex: 1; }
+.feed-text em { color: var(--ink-soft); font-size: 0.72rem; }
+.feed-pts { font-weight: 800; color: var(--ink-soft); }
+.feed-pts.gain { color: var(--green); }
+
+/* campaign */
+.month-card.current { outline: 2px solid var(--gold); }
+.month-card.over { opacity: 0.9; }
+.month-head { display: flex; align-items: baseline; gap: 10px; }
+.month-label { font-weight: 800; letter-spacing: 0.06em; }
+.month-winner { color: #7A5A12; font-weight: 700; font-size: 0.82rem; flex: 1; text-align: right; }
+.month-none { color: var(--ink-soft); font-size: 0.72rem; flex: 1; text-align: right; }
+.month-live { color: #2E4C7E; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; flex: 1; text-align: right; }
+.month-rows { margin-top: 8px; border-top: 1px dashed var(--border); padding-top: 6px; }
+.month-row { display: flex; gap: 10px; font-size: 0.8rem; padding: 2px 0; }
+.month-pos { width: 18px; color: var(--ink-soft); }
+.month-name { flex: 1; }
+.month-pts { font-weight: 800; }
+
+/* HQ */
+.whoami { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.whoami-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+.whoami select { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px; background: #fffdf6; color: var(--ink); font-size: 0.85rem; }
+.sync-note { font-size: 0.68rem; color: var(--ink-soft); font-style: italic; width: 100%; }
+.wall-input { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; font: inherit; font-size: 0.88rem; background: #fffdf6; color: var(--ink); margin-bottom: 8px; resize: vertical; }
+.poll-input { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; font: inherit; font-size: 0.88rem; background: #fffdf6; color: var(--ink); margin-bottom: 8px; }
+.wall-post .wall-meta { display: flex; gap: 8px; align-items: baseline; font-size: 0.72rem; color: var(--ink-soft); margin-bottom: 4px; }
+.wall-meta b { color: var(--ink); font-size: 0.82rem; }
+.wall-meta .chip-x { margin-left: auto; }
+.wall-text { font-size: 0.88rem; line-height: 1.5; white-space: pre-wrap; }
+.poll-opt { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; border: 1px solid var(--border); background: #fffdf6; border-radius: var(--radius-sm); padding: 8px 10px; margin-bottom: 6px; cursor: pointer; font: inherit; font-size: 0.85rem; color: var(--ink); overflow: hidden; text-align: left; }
+.poll-opt.mine { border-color: #2E4C7E; box-shadow: inset 0 0 0 1px #2E4C7E; }
+.poll-bar { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(46, 76, 126, 0.14); transition: width 0.3s; }
+.poll-label { position: relative; flex: 1; }
+.poll-count { position: relative; font-weight: 800; }

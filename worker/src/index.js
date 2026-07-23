@@ -37,6 +37,22 @@ export default {
         return json({ ok: true });
       }
 
+      // GET /epl/state — England Campaign sweep shared state (separate app)
+      if (request.method === 'GET' && path === '/epl/state') {
+        const item = await env.WALL.get('epl-state.json');
+        if (!item) return json(null);
+        return json(JSON.parse(await item.text()));
+      }
+
+      // PUT /epl/state
+      if (request.method === 'PUT' && path === '/epl/state') {
+        const body = await request.json();
+        await env.WALL.put('epl-state.json', JSON.stringify(body), {
+          httpMetadata: { contentType: 'application/json' },
+        });
+        return json({ ok: true });
+      }
+
       // GET /photos — list all photos, newest first
       if (request.method === 'GET' && path === '/photos') {
         const list = await env.WALL.list({ prefix: 'photos/' });
