@@ -4721,3 +4721,20 @@ body, .app {
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-big { width: 100%; padding: 15px; font-size: 0.98rem; letter-spacing: 0.08em; margin-top: 8px; text-transform: uppercase; font-family: var(--font-display); }
 .chip.chip-team { font-weight: 600; }
+
+/* header identity chip */
+.id-chip {
+  flex-shrink: 0; align-self: center;
+  border: 1px solid var(--glass-line); background: var(--glass-bg);
+  color: var(--text-on-dark); border-radius: 999px; padding: 7px 13px;
+  font-size: 0.74rem; font-weight: 700; letter-spacing: 0.04em; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; text-transform: uppercase;
+}
+.id-chip:active { transform: scale(0.96); }
+
+/* non-derby matchup tag vs derby */
+.en-ms-derby-tag {
+  margin-left: 8px; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.1em;
+  background: var(--live-red); color: #fff; padding: 2px 7px; border-radius: 4px;
+  vertical-align: middle;
+}

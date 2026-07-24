@@ -89,3 +89,32 @@ const MAP = new Map(RIVALRIES.map((r) => [key(r.teams[0], r.teams[1]), r]));
 export function getRivalry(teamA, teamB) {
   return MAP.get(key(teamA, teamB)) || null;
 }
+
+// Pot pairing → a line of framing. Keyed by the sorted pot pair.
+const POT_FRAMING = {
+  'A|A': 'Two Armoured Divisions grind against each other — heavy metal, no quarter, the sort of engagement that decides campaigns.',
+  'A|B': 'An Armoured Division rolls into Infantry country. The big guns are favoured — but the mud has swallowed bigger.',
+  'B|B': 'Infantry against Infantry in the trenches of the bottom half. Won by whoever wants it more, and worth double either way.',
+  'A|C': 'A top-flight Armoured Division is dragged down a division into a cup-tie skirmish. Upsets are written here.',
+  'A|D': 'An Armoured Division meets the Territorials — a mismatch on paper that the Territorials have not read.',
+  'B|C': 'Infantry and Reserves collide across the divide between the divisions — pride, and doubled points, on the line.',
+  'B|D': 'Infantry against Territorials — two units who win their battles in the rain, both paid double for the privilege.',
+  'C|C': 'Two of the Reserves jockey for the front of the promotion queue. The Championship’s real war.',
+  'C|D': 'Reserves against Territorials — a Championship scrap where a Territorial win pays double and stings triple.',
+  'D|D': 'Territorial against Territorial in the deep field. Unglamorous, doubled, and absolutely decisive for someone’s survival.',
+};
+
+// A war-based line for EVERY fixture. Famous derby → its dossier; otherwise a
+// composed framing from the two regiments' codenames, roots and pots.
+export function getMatchup(teamA, teamB, infoA, infoB) {
+  const derby = getRivalry(teamA, teamB);
+  if (derby) return { ...derby, derby: true };
+  if (!infoA || !infoB) return null;
+  const potKey = [infoA.pot, infoB.pot].sort().join('|');
+  const framing = POT_FRAMING[potKey] || '';
+  return {
+    derby: false,
+    title: `${infoA.codename} v ${infoB.codename}`,
+    blurb: `${framing} ${infoA.short} — ${infoA.codename.replace(/^The /, '')} — line up against ${infoB.short}, ${infoB.codename.replace(/^The /, '').toLowerCase()}.`.trim(),
+  };
+}

@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { getTeam, POT_POINTS, POT_LABELS } from '../data/england2027.js';
-import { getRivalry } from '../data/rivalries.js';
+import { getMatchup } from '../data/rivalries.js';
 import { leagueTable, formForTeam, positionOf, reverseFixture } from '../utils/scoring.js';
+import { useDismissable } from '../hooks/useDismissable.js';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -42,10 +43,11 @@ function SideStats({ team, table, fixtures }) {
 }
 
 export default function MatchSheet({ fixture, fixtures, assignments, onClose, onSelectTeam }) {
+  useDismissable(true, onClose);
   const table = useMemo(() => leagueTable(fixtures, fixture.division), [fixtures, fixture.division]);
   const home = getTeam(fixture.homeTeam.name);
   const away = getTeam(fixture.awayTeam.name);
-  const rivalry = getRivalry(fixture.homeTeam.name, fixture.awayTeam.name);
+  const matchup = getMatchup(fixture.homeTeam.name, fixture.awayTeam.name, home, away);
   const rev = reverseFixture(fixture, fixtures);
 
   const sides = [
@@ -55,8 +57,14 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
 
   return (
     <div className="ms-backdrop" onClick={onClose}>
-      <div className="ms-sheet" onClick={(e) => e.stopPropagation()}>
+      <div className="ms-topbar">
+        <button className="ms-back" onClick={(e) => { e.stopPropagation(); onClose(); }}>
+          <span className="ms-back-chevron">‹</span>Back
+        </button>
         <div className="ms-drag-handle" />
+        <div className="ms-topbar-end" />
+      </div>
+      <div className="ms-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="card" style={{ marginTop: 8 }}>
           <div className="en-ms-meta">
             {fixture.division === 1 ? 'Premier League' : 'Championship'} · Matchweek {fixture.matchday}
@@ -89,10 +97,13 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
             </div>
           </div>
 
-          {rivalry && (
+          {matchup && (
             <div className="en-ms-rivalry">
-              <div className="en-ms-rivalry-title">⚔️ {rivalry.title}</div>
-              <p>{rivalry.blurb}</p>
+              <div className="en-ms-rivalry-title">
+                {matchup.derby ? '⚔️' : '🎖'} {matchup.title}
+                {matchup.derby && <span className="en-ms-derby-tag">DERBY</span>}
+              </div>
+              <p>{matchup.blurb}</p>
             </div>
           )}
 

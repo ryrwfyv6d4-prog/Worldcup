@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { getTeam, POT_LABELS, POT_POINTS } from '../data/england2027.js';
 import { leagueTable, formForTeam, positionOf, teamPoints } from '../utils/scoring.js';
+import { useDismissable } from '../hooks/useDismissable.js';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -16,6 +17,7 @@ function ordinal(n) {
 }
 
 export default function TeamSheet({ team, fixtures, assignments, onClose }) {
+  useDismissable(true, onClose);
   const info = getTeam(team);
   const table = useMemo(() => (info ? leagueTable(fixtures, info.div) : []), [fixtures, info]);
   if (!info) return null;
@@ -31,8 +33,14 @@ export default function TeamSheet({ team, fixtures, assignments, onClose }) {
 
   return (
     <div className="ms-backdrop" onClick={onClose}>
-      <div className="ms-sheet" onClick={(e) => e.stopPropagation()}>
+      <div className="ms-topbar">
+        <button className="ms-back" onClick={(e) => { e.stopPropagation(); onClose(); }}>
+          <span className="ms-back-chevron">‹</span>Back
+        </button>
         <div className="ms-drag-handle" />
+        <div className="ms-topbar-end" />
+      </div>
+      <div className="ms-sheet" onClick={(e) => e.stopPropagation()}>
         <div className={`card regiment pot-border-${info.pot.toLowerCase()}`} style={{ marginTop: 8 }}>
           <div className="reg-head">
             <span className="reg-name">{info.short}</span>
