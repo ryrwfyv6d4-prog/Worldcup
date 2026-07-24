@@ -52,6 +52,19 @@ jobs:
           VITE_YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           VITE_YOUTUBE_API_KEY_BACKUP: ${{ secrets.YOUTUBE_API_KEY_BACKUP }}
 
+      - name: Install England Campaign dependencies
+        working-directory: premier
+        run: npm ci
+
+      - name: Build England Campaign app
+        working-directory: premier
+        run: npm run build
+        env:
+          VITE_WALL_API_URL: https://worldcup.phil-remington.workers.dev
+
+      - name: Add England Campaign at /england
+        run: cp -r premier/dist dist/england
+
       # Stamp each build so gh-pages always gets a new commit — without this,
       # a retriggered deploy with identical output is silently skipped and
       # GitHub Pages never re-publishes after a transient failure
