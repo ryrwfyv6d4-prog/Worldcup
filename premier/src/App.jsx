@@ -99,7 +99,7 @@ export default function App() {
         )}
         {tab === 'orders' && <Fixtures fixtures={fixtures} assignments={assignments} onSelectTeam={setTeamSheet} />}
         {tab === 'map' && <Tables fixtures={fixtures} assignments={assignments} onSelectTeam={setTeamSheet} />}
-        {tab === 'campaign' && <Campaign assignments={assignments} fixtures={fixtures} />}
+        {tab === 'tours' && <Campaign assignments={assignments} fixtures={fixtures} />}
         {tab === 'hq' && (
           <HQ
             state={state}

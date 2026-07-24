@@ -8,7 +8,7 @@ const ICONS = {
   map: (
     <svg viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14" /></svg>
   ),
-  campaign: (
+  tours: (
     <svg viewBox="0 0 24 24"><circle cx="12" cy="15" r="5" /><path d="M9 11L6 3h4l2 4 2-4h4l-3 8" /></svg>
   ),
   hq: (
@@ -21,7 +21,7 @@ export default function Navigation({ tab, setTab, liveCount = 0 }) {
     { id: 'front', label: 'The Front' },
     { id: 'orders', label: 'Orders' },
     { id: 'map', label: 'Map Room' },
-    { id: 'campaign', label: 'Campaign' },
+    { id: 'tours', label: 'Tours' },
     { id: 'hq', label: 'HQ' },
   ];
 

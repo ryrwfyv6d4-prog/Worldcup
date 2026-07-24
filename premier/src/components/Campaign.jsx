@@ -8,10 +8,10 @@ export default function Campaign({ assignments, fixtures }) {
 
   return (
     <div className="page">
-      <div className="page-header"><h2>The Campaign</h2><span className="subtitle">Monthly medals · nine side pots · season honours</span></div>
+      <div className="page-header"><h2>Tours of Duty</h2><span className="subtitle">Monthly medals · nine side pots · season honours</span></div>
       <p className="muted">
-        Campaign Medals — most points in each calendar month takes the monthly side pot.
-        Nine months, nine medals, nine chances to matter even when you're cooked.
+        A Tour a month — most points in each calendar month takes the side pot.
+        Nine tours, nine medals, nine chances to matter even when you're cooked.
       </p>
 
       {Object.keys(assignments).length === 0 && (
