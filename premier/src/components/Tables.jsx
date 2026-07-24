@@ -22,14 +22,14 @@ function zoneFor(div, pos) {
   return '';
 }
 
-export default function Tables({ fixtures, assignments }) {
+export default function Tables({ fixtures, assignments, onSelectTeam }) {
   const [div, setDiv] = useState(1);
   const table = leagueTable(fixtures, div);
   const started = table.some((r) => r.p > 0);
 
   return (
-    <div className="panel">
-      <h2 className="panel-title">The Map Room</h2>
+    <div className="page">
+      <div className="page-header"><h2>The Map Room</h2><span className="subtitle">The real tables — tap a regiment for its file</span></div>
       <div className="seg-row">
         <button className={`seg ${div === 1 ? 'on' : ''}`} onClick={() => setDiv(1)}>Premier League</button>
         <button className={`seg ${div === 2 ? 'on' : ''}`} onClick={() => setDiv(2)}>Championship</button>
@@ -69,7 +69,7 @@ export default function Tables({ fixtures, assignments }) {
               return (
                 <tr key={r.team} className={zoneFor(div, pos)}>
                   <td>{pos}</td>
-                  <td className="tl team-cell">{info ? info.short : r.team}</td>
+                  <td className="tl team-cell"><button className="team-btn" onClick={() => onSelectTeam && onSelectTeam(r.team)}>{info ? info.short : r.team}</button></td>
                   <td className="tl owner-cell">{owner || <span className="unowned">—</span>}</td>
                   <td>{r.p}</td>
                   <td>{r.gd > 0 ? `+${r.gd}` : r.gd}</td>

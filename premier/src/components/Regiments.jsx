@@ -8,13 +8,12 @@ function ownerOf(team, assignments) {
   return null;
 }
 
-export default function Regiments({ assignments }) {
+export default function Regiments({ assignments }) {  // rendered inside HQ
   const [filter, setFilter] = useState('ALL');
   const shown = TEAMS.filter((t) => filter === 'ALL' || t.pot === filter);
 
   return (
-    <div className="panel">
-      <h2 className="panel-title">The Regiments</h2>
+    <div>
       <p className="muted">Every club and where it really came from. Know your unit.</p>
       <div className="seg-row">
         {['ALL', 'A', 'B', 'C', 'D'].map((k) => (

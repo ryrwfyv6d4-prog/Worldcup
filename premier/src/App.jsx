@@ -1,55 +1,112 @@
 import { useState } from 'react';
 import { useEnglandFixtures } from './hooks/useEnglandFixtures.js';
 import { useSharedState } from './hooks/useSharedState.js';
+import Navigation from './components/Navigation.jsx';
 import Leaderboard from './components/Leaderboard.jsx';
 import Fixtures from './components/Fixtures.jsx';
 import Tables from './components/Tables.jsx';
 import Campaign from './components/Campaign.jsx';
-import Regiments from './components/Regiments.jsx';
 import HQ from './components/HQ.jsx';
+import TeamSheet from './components/TeamSheet.jsx';
 import { SEASON } from './data/england2027.js';
 
-const TABS = [
-  { key: 'front', label: 'The Front', icon: '🎖' },
-  { key: 'orders', label: 'Orders', icon: '📋' },
-  { key: 'map', label: 'Map Room', icon: '🗺' },
-  { key: 'campaign', label: 'Campaign', icon: '🏅' },
-  { key: 'regiments', label: 'Regiments', icon: '🪖' },
-  { key: 'hq', label: 'HQ', icon: '📯' },
-];
+function WhoAmIModal({ participants, onPick, onSkip }) {
+  return (
+    <div className="whoami-overlay">
+      <div className="whoami-modal">
+        <div className="whoami-icon">🦅</div>
+        <div className="whoami-title">Report in, soldier</div>
+        <div className="whoami-sub">Who are you? Your row gets marked and your posts signed.</div>
+        <div className="whoami-list">
+          {participants.map((p) => (
+            <button key={p} className="whoami-btn" onClick={() => onPick(p)}>{p}</button>
+          ))}
+        </div>
+        <button className="whoami-skip" onClick={onSkip}>Just observing</button>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const [tab, setTab] = useState('front');
   const { state, update, synced } = useSharedState();
-  const { fixtures, loading, error, refresh } = useEnglandFixtures();
+  const { fixtures, loading, error, refresh, lastFetched } = useEnglandFixtures();
   const { assignments } = state;
+  const participants = Object.keys(assignments);
+
+  const [whoAmI, setWhoAmI] = useState(() => {
+    try { return localStorage.getItem('epl_whoami') || ''; } catch { return ''; }
+  });
+  const [whoAsked, setWhoAsked] = useState(() => {
+    try { return localStorage.getItem('epl_who_asked') === '1'; } catch { return false; }
+  });
+  const pickWho = (name) => {
+    setWhoAmI(name);
+    setWhoAsked(true);
+    try {
+      localStorage.setItem('epl_whoami', name);
+      localStorage.setItem('epl_who_asked', '1');
+    } catch { /* ignore */ }
+  };
+  const skipWho = () => {
+    setWhoAsked(true);
+    try { localStorage.setItem('epl_who_asked', '1'); } catch { /* ignore */ }
+  };
+
+  const [teamSheet, setTeamSheet] = useState(null);
+  const liveCount = fixtures.filter((f) => f.status === 'IN_PLAY').length;
 
   return (
     <div className="app">
-      <header className="header">
-        <h1>THE EAGLE'S NEST</h1>
-        <p className="subtitle">England Campaign {SEASON} · Two Fronts</p>
+      <header className="app-header">
+        <span className="header-icon">🦅</span>
+        <div className="header-text">
+          <h1 className="app-title">The Eagle's <span className="gold">Nest</span></h1>
+          <div className="app-year">England Campaign {SEASON} · Two Fronts</div>
+        </div>
       </header>
 
       <main className="main">
         {error && <div className="error-bar">{error} <button className="btn" onClick={refresh}>Retry</button></div>}
-        {loading && fixtures.length === 0 && <p className="muted center">Receiving transmissions…</p>}
-        {tab === 'front' && <Leaderboard assignments={assignments} fixtures={fixtures} />}
-        {tab === 'orders' && <Fixtures fixtures={fixtures} assignments={assignments} />}
-        {tab === 'map' && <Tables fixtures={fixtures} assignments={assignments} />}
+        {loading && fixtures.length === 0 && (
+          <div className="empty-state"><div className="empty-icon">📡</div><p>Receiving transmissions…</p></div>
+        )}
+        {tab === 'front' && (
+          <Leaderboard
+            assignments={assignments}
+            fixtures={fixtures}
+            whoAmI={whoAmI}
+            onChangeUser={() => { setWhoAsked(false); }}
+            onSelectTeam={setTeamSheet}
+          />
+        )}
+        {tab === 'orders' && <Fixtures fixtures={fixtures} assignments={assignments} onSelectTeam={setTeamSheet} />}
+        {tab === 'map' && <Tables fixtures={fixtures} assignments={assignments} onSelectTeam={setTeamSheet} />}
         {tab === 'campaign' && <Campaign assignments={assignments} fixtures={fixtures} />}
-        {tab === 'regiments' && <Regiments assignments={assignments} />}
-        {tab === 'hq' && <HQ state={state} update={update} synced={synced} />}
+        {tab === 'hq' && (
+          <HQ
+            state={state}
+            update={update}
+            synced={synced}
+            whoAmI={whoAmI}
+            onChangeUser={() => setWhoAsked(false)}
+            onSelectTeam={setTeamSheet}
+            lastFetched={lastFetched}
+            refresh={refresh}
+          />
+        )}
       </main>
 
-      <nav className="nav">
-        {TABS.map((t) => (
-          <button key={t.key} className={`nav-btn ${tab === t.key ? 'on' : ''}`} onClick={() => setTab(t.key)}>
-            <span className="nav-icon">{t.icon}</span>
-            <span className="nav-label">{t.label}</span>
-          </button>
-        ))}
-      </nav>
+      {!whoAsked && participants.length > 0 && (
+        <WhoAmIModal participants={participants} onPick={pickWho} onSkip={skipWho} />
+      )}
+
+      {teamSheet && (
+        <TeamSheet team={teamSheet} fixtures={fixtures} assignments={assignments} onClose={() => setTeamSheet(null)} />
+      )}
+
+      <Navigation tab={tab} setTab={setTab} liveCount={liveCount} />
     </div>
   );
 }

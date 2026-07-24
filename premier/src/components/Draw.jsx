@@ -41,8 +41,7 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
     : [];
 
   return (
-    <div className="panel">
-      <h2 className="panel-title">Conscription</h2>
+    <div>
       <p className="muted">
         Four pots, one team from each. No choices, no appeals — your call-up papers
         arrive and you serve. Infantry and Territorial results pay double.

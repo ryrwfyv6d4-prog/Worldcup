@@ -7,8 +7,8 @@ export default function Campaign({ assignments, fixtures }) {
   const currentIdx = race.findIndex((r) => r.y === now.getFullYear() && r.m === now.getMonth());
 
   return (
-    <div className="panel">
-      <h2 className="panel-title">The Campaign</h2>
+    <div className="page">
+      <div className="page-header"><h2>The Campaign</h2><span className="subtitle">Monthly medals · nine side pots · season honours</span></div>
       <p className="muted">
         Campaign Medals — most points in each calendar month takes the monthly side pot.
         Nine months, nine medals, nine chances to matter even when you're cooked.
@@ -43,7 +43,7 @@ export default function Campaign({ assignments, fixtures }) {
       ))}
 
       <div className="card">
-        <h3>Honours list</h3>
+        <h3 className="section-title">Honours list</h3>
         {Object.entries(MEDALS).map(([k, m]) => (
           <div className="medal-row" key={k}>
             <span className="medal-label">🎖 {m.label}</span>

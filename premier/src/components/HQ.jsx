@@ -1,16 +1,6 @@
 import { useState } from 'react';
 import Draw from './Draw.jsx';
-
-function useWhoAmI(participants) {
-  const [who, setWho] = useState(() => {
-    try { return localStorage.getItem('epl_whoami') || ''; } catch { return ''; }
-  });
-  const save = (name) => {
-    setWho(name);
-    try { localStorage.setItem('epl_whoami', name); } catch { /* ignore */ }
-  };
-  return [who, save, participants];
-}
+import Regiments from './Regiments.jsx';
 
 function Wall({ state, update, who }) {
   const [text, setText] = useState('');
@@ -25,7 +15,7 @@ function Wall({ state, update, who }) {
       <div className="card">
         <textarea
           className="wall-input" rows="2" value={text}
-          placeholder={who ? 'Post to the mess hall…' : 'Report in first (pick your name above)'}
+          placeholder={who ? 'Post to the mess hall…' : 'Report in first (tap your name above)'}
           disabled={!who}
           onChange={(e) => setText(e.target.value)}
         />
@@ -69,7 +59,7 @@ function Polls({ state, update, who }) {
   return (
     <>
       <div className="card">
-        <h3>Call a council of war</h3>
+        <h3 className="section-title">Call a council of war</h3>
         <input className="poll-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="The question…" disabled={!who} />
         <textarea className="wall-input" rows="3" value={opts} onChange={(e) => setOpts(e.target.value)}
           placeholder={'One option per line\nAye\nNay'} disabled={!who} />
@@ -82,7 +72,7 @@ function Polls({ state, update, who }) {
         return (
           <div className="card" key={p.id}>
             <div className="wall-meta"><b>{p.person}</b><span>asks</span></div>
-            <h3>{p.q}</h3>
+            <h3 className="section-title">{p.q}</h3>
             {p.options.map((o, i) => (
               <button key={i} className={`poll-opt ${p.votes[who] === i ? 'mine' : ''}`} onClick={() => vote(p.id, i)}>
                 <span className="poll-bar" style={{ width: total ? `${(counts[i] / total) * 100}%` : 0 }} />
@@ -97,32 +87,36 @@ function Polls({ state, update, who }) {
   );
 }
 
-export default function HQ({ state, update, synced }) {
+export default function HQ({ state, update, synced, whoAmI, onChangeUser, lastFetched, refresh }) {
   const [view, setView] = useState('wall');
-  const participants = Object.keys(state.assignments);
-  const [who, setWho] = useWhoAmI(participants);
 
   return (
-    <div className="panel">
-      <h2 className="panel-title">HQ</h2>
-
-      <div className="card whoami">
-        <span className="whoami-label">Reporting in as</span>
-        <select value={who} onChange={(e) => setWho(e.target.value)}>
-          <option value="">— pick your name —</option>
-          {participants.map((p) => <option key={p} value={p}>{p}</option>)}
-        </select>
-        {!synced && <span className="sync-note">offline preview — visible only on this device</span>}
+    <div className="page">
+      <div className="page-header">
+        <div className="header-row">
+          <h2>HQ</h2>
+          <button className="ch-identity" onClick={onChangeUser}>
+            {whoAmI || 'Report in'} <span className="ch-switch">switch ▾</span>
+          </button>
+        </div>
+        <span className="subtitle">
+          {synced ? 'Shared with the whole shed' : 'Offline preview — this device only'}
+          {lastFetched && ` · results updated ${new Date(lastFetched).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`}
+          {' · '}
+          <button className="team-btn" onClick={refresh} style={{ textDecoration: 'underline' }}>refresh</button>
+        </span>
       </div>
 
       <div className="seg-row">
         <button className={`seg ${view === 'wall' ? 'on' : ''}`} onClick={() => setView('wall')}>The Wall</button>
         <button className={`seg ${view === 'polls' ? 'on' : ''}`} onClick={() => setView('polls')}>War Council</button>
+        <button className={`seg ${view === 'regiments' ? 'on' : ''}`} onClick={() => setView('regiments')}>Regiments</button>
         <button className={`seg ${view === 'draw' ? 'on' : ''}`} onClick={() => setView('draw')}>Conscription</button>
       </div>
 
-      {view === 'wall' && <Wall state={state} update={update} who={who} />}
-      {view === 'polls' && <Polls state={state} update={update} who={who} />}
+      {view === 'wall' && <Wall state={state} update={update} who={whoAmI} />}
+      {view === 'polls' && <Polls state={state} update={update} who={whoAmI} />}
+      {view === 'regiments' && <Regiments assignments={state.assignments} />}
       {view === 'draw' && (
         <Draw
           assignments={state.assignments}

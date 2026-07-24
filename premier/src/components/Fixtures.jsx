@@ -23,7 +23,7 @@ function fmtTime(iso) {
   return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function Fixtures({ fixtures, assignments }) {
+export default function Fixtures({ fixtures, assignments, onSelectTeam }) {
   const [div, setDiv] = useState(1);
   const [md, setMd] = useState(null);
   const [open, setOpen] = useState(null);
@@ -59,8 +59,8 @@ export default function Fixtures({ fixtures, assignments }) {
   }, [fixtures, div, shownMd]);
 
   return (
-    <div className="panel">
-      <h2 className="panel-title">Orders</h2>
+    <div className="page">
+      <div className="page-header"><h2>Orders</h2><span className="subtitle">Every fixture, both fronts — tap for the match sheet</span></div>
       <div className="seg-row">
         <button className={`seg ${div === 1 ? 'on' : ''}`} onClick={() => { setDiv(1); setMd(null); }}>Premier League</button>
         <button className={`seg ${div === 2 ? 'on' : ''}`} onClick={() => { setDiv(2); setMd(null); }}>Championship</button>
@@ -73,8 +73,7 @@ export default function Fixtures({ fixtures, assignments }) {
       {md != null && md !== nowMd && (
         <button className="btn btn-jump" onClick={() => setMd(null)}>↩ Back to this week</button>
       )}
-      <p className="muted small">Tap any match for the sheet — owners, stakes, form and the rivalry file.</p>
-
+      
       {byDay.map((g) => (
         <div key={g.key}>
           <div className="fx-day-head">{g.label}</div>
@@ -109,7 +108,7 @@ export default function Fixtures({ fixtures, assignments }) {
       {byDay.length === 0 && <p className="muted">No fixtures for this matchweek.</p>}
 
       {open && (
-        <MatchSheet fixture={open} fixtures={fixtures} assignments={assignments} onClose={() => setOpen(null)} />
+        <MatchSheet fixture={open} fixtures={fixtures} assignments={assignments} onClose={() => setOpen(null)} onSelectTeam={onSelectTeam} />
       )}
     </div>
   );
