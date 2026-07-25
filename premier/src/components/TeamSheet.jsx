@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { getTeam, POT_LABELS, SCORING } from '../data/england2027.js';
 import { priceRangeFor } from '../utils/odds.js';
-import { leagueTable, formForTeam, positionOf, teamPoints, buildTables, buildComplete, overachieveForTeam } from '../utils/scoring.js';
+import NextFive, { RecentForm } from './NextFive.jsx';
+import { leagueTable, formForTeam, positionOf, teamPoints, buildTables, buildComplete, overachieveForTeam, nextFixtures, recentResults } from '../utils/scoring.js';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -16,7 +17,7 @@ function ordinal(n) {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-export default function TeamSheet({ team, fixtures, assignments, onClose }) {
+export default function TeamSheet({ team, fixtures, assignments, onClose, onOpenMatch }) {
   const info = getTeam(team);
   const table = useMemo(() => (info ? leagueTable(fixtures, info.div) : []), [fixtures, info]);
   if (!info) return null;
@@ -28,9 +29,8 @@ export default function TeamSheet({ team, fixtures, assignments, onClose }) {
   const pts = teamPoints(team, fixtures);
   const range = priceRangeFor(team);
   const oa = overachieveForTeam(team, buildTables(fixtures), buildComplete(fixtures));
-  const next = fixtures
-    .filter((f) => f.status === 'SCHEDULED' && (f.homeTeam.name === team || f.awayTeam.name === team))
-    .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''))[0];
+  const hasNext = nextFixtures(team, fixtures, 5).length > 0;
+  const hasRecent = recentResults(team, fixtures, 6).length > 0;
 
   return (
     <div className="ms-backdrop" onClick={onClose}>
@@ -74,15 +74,15 @@ export default function TeamSheet({ team, fixtures, assignments, onClose }) {
           </div>
         </div>
 
-        {next && (
+        {hasNext && (
           <div className="card">
-            <div className="en-ms-h2h">
-              <span className="en-ms-h2h-label">Next orders</span>
-              <span>
-                {getTeam(next.homeTeam.name)?.short} v {getTeam(next.awayTeam.name)?.short}
-                {next.utcDate && ` — ${new Date(next.utcDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}`}
-              </span>
-            </div>
+            <NextFive team={team} fixtures={fixtures} onOpenMatch={onOpenMatch} />
+          </div>
+        )}
+
+        {hasRecent && (
+          <div className="card">
+            <RecentForm team={team} fixtures={fixtures} onOpenMatch={onOpenMatch} />
           </div>
         )}
       </div>

@@ -150,7 +150,13 @@ export default function App() {
       )}
 
       {teamSheet && (
-        <TeamSheet team={teamSheet} fixtures={fixtures} assignments={assignments} onClose={() => setTeamSheet(null)} />
+        <TeamSheet
+          team={teamSheet}
+          fixtures={fixtures}
+          assignments={assignments}
+          onClose={() => setTeamSheet(null)}
+          onOpenMatch={(f) => { setTeamSheet(null); setMatchSheet(f); }}
+        />
       )}
 
       <Navigation tab={tab} setTab={setTab} liveCount={liveCount} />

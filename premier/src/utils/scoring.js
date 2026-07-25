@@ -8,22 +8,46 @@ const RANK = new Map(TEAMS.map((t) => [t.name, t.rank + (t.div === 1 ? 0 : 100)]
 const ROUNDS = { 1: 38, 2: 46 };
 
 // ── Real league tables (3/1/0) ───────────────────────────────────────────────
-export function leagueTable(fixtures, div) {
+// mode: 'all' (default) | 'home' | 'away' | 'form' (each club's last 6)
+function blankRow(team) {
+  return { team, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 0 };
+}
+
+function applyResult(row, f, teamName) {
+  const isHome = f.homeTeam.name === teamName;
+  const my = isHome ? f.score.home : f.score.away;
+  const their = isHome ? f.score.away : f.score.home;
+  if (my == null || their == null) return;
+  row.p++; row.gf += my; row.ga += their;
+  if (my > their) { row.w++; row.pts += 3; }
+  else if (my < their) { row.l++; }
+  else { row.d++; row.pts++; }
+}
+
+// Every finished match a club played, newest first
+function playedBy(team, fixtures, div) {
+  return fixtures
+    .filter((f) => f.division === div && f.status === 'FINISHED' &&
+      (f.homeTeam.name === team || f.awayTeam.name === team))
+    .sort((a, b) => (b.utcDate || '').localeCompare(a.utcDate || ''));
+}
+
+export const TABLE_MODES = [
+  { key: 'all', label: 'Overall' },
+  { key: 'home', label: 'Home' },
+  { key: 'away', label: 'Away' },
+  { key: 'form', label: 'Form 6' },
+];
+
+export function leagueTable(fixtures, div, mode = 'all') {
   const rows = {};
-  for (const t of TEAMS.filter((t) => t.div === div)) {
-    rows[t.name] = { team: t.name, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 0 };
-  }
-  for (const f of fixtures) {
-    if (f.division !== div || f.status !== 'FINISHED') continue;
-    const h = rows[f.homeTeam.name];
-    const a = rows[f.awayTeam.name];
-    if (!h || !a) continue;
-    h.p++; a.p++;
-    h.gf += f.score.home; h.ga += f.score.away;
-    a.gf += f.score.away; a.ga += f.score.home;
-    if (f.score.winner === 'HOME_TEAM') { h.w++; a.l++; h.pts += 3; }
-    else if (f.score.winner === 'AWAY_TEAM') { a.w++; h.l++; a.pts += 3; }
-    else { h.d++; a.d++; h.pts++; a.pts++; }
+  for (const t of TEAMS.filter((x) => x.div === div)) {
+    rows[t.name] = blankRow(t.name);
+    let mine = playedBy(t.name, fixtures, div);
+    if (mode === 'home') mine = mine.filter((f) => f.homeTeam.name === t.name);
+    else if (mode === 'away') mine = mine.filter((f) => f.awayTeam.name === t.name);
+    else if (mode === 'form') mine = mine.slice(0, 6);
+    for (const f of mine) applyResult(rows[t.name], f, t.name);
   }
   for (const r of Object.values(rows)) r.gd = r.gf - r.ga;
   return Object.values(rows).sort(
@@ -415,4 +439,50 @@ export function myWeekend(player, assignments, fixtures) {
     .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''));
 
   return { window: { start, end }, matches };
+}
+
+// ── Next 5 / recent form, priced ─────────────────────────────────────────────
+// The run of games ahead, with what a win in each is worth. Same idea as a
+// fantasy "fixture difficulty" ticker, except denominated in sweep points.
+export function nextFixtures(team, fixtures, n = 5) {
+  const t = getTeam(team);
+  if (!t) return [];
+  const now = Date.now();
+  return fixtures
+    .filter((f) => f.status !== 'FINISHED' && (f.homeTeam.name === team || f.awayTeam.name === team))
+    .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''))
+    .filter((f) => !f.utcDate || new Date(f.utcDate).getTime() > now - 3 * 3600 * 1000)
+    .slice(0, n)
+    .map((f) => {
+      const isHome = f.homeTeam.name === team;
+      const opp = isHome ? f.awayTeam.name : f.homeTeam.name;
+      return { fixture: f, opp, isHome, ...valueForFixture(f, team) };
+    });
+}
+
+// Last n results with the opponent, score and what it earned
+export function recentResults(team, fixtures, n = 6) {
+  const t = getTeam(team);
+  if (!t) return [];
+  return playedBy(team, fixtures, t.div).slice(0, n).map((f) => {
+    const isHome = f.homeTeam.name === team;
+    const my = isHome ? f.score.home : f.score.away;
+    const their = isHome ? f.score.away : f.score.home;
+    const val = valueForFixture(f, team);
+    const result = my > their ? 'W' : my < their ? 'L' : 'D';
+    return {
+      fixture: f,
+      opp: isHome ? f.awayTeam.name : f.homeTeam.name,
+      isHome, my, their, result,
+      pts: result === 'W' ? val.win : result === 'D' ? val.draw : 0,
+    };
+  });
+}
+
+// Payout bands, for colouring the ticker
+export function priceBand(win) {
+  if (win >= 10) return 4;
+  if (win >= 7) return 3;
+  if (win >= 5) return 2;
+  return 1;
 }

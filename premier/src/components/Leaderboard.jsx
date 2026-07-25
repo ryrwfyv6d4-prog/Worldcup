@@ -3,6 +3,7 @@ import { buildLadder, computeOutlook, todayPoints, feedEvents } from '../utils/s
 import { buildDispatch } from '../utils/dispatch.js';
 import { MEDALS, getTeam, ENTRY_FEE, PAYOUTS } from '../data/england2027.js';
 import MyWeekend, { PreSeason } from './MyWeekend.jsx';
+import NextFive from './NextFive.jsx';
 
 function ordinal(n) {
   const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
@@ -200,6 +201,19 @@ export default function Leaderboard({
                       })}
                     </tbody>
                   </table>
+                  <div className="lb-next">
+                    {row.breakdown.map((b) => {
+                      const info = getTeam(b.team);
+                      return (
+                        <div className="lb-next-club" key={b.team}>
+                          <span className="lb-next-name">
+                            <span className={`pot-dot p${b.pot?.toLowerCase()}`} /> {info ? info.short : b.team}
+                          </span>
+                          <NextFive team={b.team} fixtures={fixtures} n={5} compact onOpenMatch={onOpenMatch} />
+                        </div>
+                      );
+                    })}
+                  </div>
                   <div className="lb-outlook">
                     <span>Tiebreak: {row.tb.wins} wins · {row.tb.gd > 0 ? `+${row.tb.gd}` : row.tb.gd} GD · {row.tb.gf} scored</span>
                     {o.floor != null && <span>Range {o.floor}–{o.ceiling} · projected {o.projected}</span>}
