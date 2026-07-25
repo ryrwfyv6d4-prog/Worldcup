@@ -11,6 +11,7 @@ export const EMPTY_STATE = {
   drawLocked: false,
   wallPosts: [],     // { id, person, text, ts }
   polls: [],         // { id, person, q, options: [..], votes: { person: optionIndex }, ts }
+  manualMedals: {},  // { teamName: ['CUP','BIG_PUSH'] } — awarded by hand in HQ
 };
 
 function readLocal() {

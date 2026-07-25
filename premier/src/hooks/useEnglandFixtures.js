@@ -1,12 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { resolveClub } from '../utils/teamMatch.js';
 
-// openfootball plain-text feeds — updated with results as the season runs
+// Base schedule + settled results — openfootball plain-text feeds
 const SOURCES = [
   { div: 1, url: 'https://raw.githubusercontent.com/openfootball/england/master/2026-27/1-premierleague.txt' },
   { div: 2, url: 'https://raw.githubusercontent.com/openfootball/england/master/2026-27/2-championship.txt' },
 ];
 
-const CACHE_KEY = 'epl_fixtures_cache_v1';
+// Live/in-play overlay — ESPN public scoreboard, no key needed. Best-effort:
+// if it's down or empty the openfootball base data still stands.
+const ESPN_LEAGUES = [
+  { div: 1, code: 'eng.1' },
+  { div: 2, code: 'eng.2' },
+];
+const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
+
+const CACHE_KEY = 'epl_fixtures_cache_v2';
 const CACHE_TTL = 30 * 60 * 1000;
 
 const MONTHS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
@@ -74,24 +83,51 @@ export function parseLeagueTxt(txt, div) {
     let winner = null;
     if (finished) winner = hs > as ? 'HOME_TEAM' : as > hs ? 'AWAY_TEAM' : 'DRAW';
 
-    const now = Date.now();
-    const t = utcDate ? new Date(utcDate).getTime() : 0;
-    let status = 'SCHEDULED';
-    if (finished) status = 'FINISHED';
-    else if (t > 0 && now > t && now < t + 2 * 3600 * 1000) status = 'IN_PLAY';
-
     fixtures.push({
       id: `${div}-${matchday}-${home}-${away}`,
       division: div,
       matchday,
       utcDate,
-      status,
+      status: finished ? 'FINISHED' : 'SCHEDULED',
       homeTeam: { name: home },
       awayTeam: { name: away },
       score: { home: hs, away: as, winner },
+      liveClock: null,
     });
   }
   return fixtures;
+}
+
+// Merge ESPN live/final data over the base schedule. ESPN only ever upgrades a
+// fixture that isn't already settled; if ESPN is empty, base wins.
+function mergeEspn(base, espnGames) {
+  if (!espnGames.length) return base;
+  return base.map((f) => {
+    if (f.status === 'FINISHED') return f;
+    const fTime = f.utcDate ? new Date(f.utcDate).getTime() : 0;
+    const g = espnGames.find((g) =>
+      g.div === f.division &&
+      g.home === f.homeTeam.name &&
+      g.away === f.awayTeam.name &&
+      Math.abs(new Date(g.date).getTime() - fTime) < 3 * 24 * 3600 * 1000
+    );
+    if (!g || g.state === 'pre') return f;
+    if (g.homeScore == null || g.awayScore == null) return f;
+
+    const finished = g.state === 'post';
+    let winner = null;
+    if (finished) {
+      if (g.homeScore > g.awayScore) winner = 'HOME_TEAM';
+      else if (g.awayScore > g.homeScore) winner = 'AWAY_TEAM';
+      else winner = 'DRAW';
+    }
+    return {
+      ...f,
+      status: finished ? 'FINISHED' : 'IN_PLAY',
+      liveClock: !finished ? g.clock : null,
+      score: { home: g.homeScore, away: g.awayScore, winner },
+    };
+  });
 }
 
 function readCache() {
@@ -115,6 +151,63 @@ export function useEnglandFixtures() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastFetched, setLastFetched] = useState(null);
+  const [espnGames, setEspnGames] = useState([]);
+  const [espnState, setEspnState] = useState({ ok: null, unmatched: [], count: 0, ts: null });
+  const lastEspnRef = useRef(0);
+  const mergedRef = useRef([]);
+
+  const fetchEspn = useCallback(async () => {
+    const fmt = (dt) => dt.toISOString().slice(0, 10).replace(/-/g, '');
+    const from = fmt(new Date(Date.now() - 36 * 3600 * 1000));
+    const to = fmt(new Date(Date.now() + 36 * 3600 * 1000));
+    const unmatched = [];
+    const games = [];
+    let anyOk = false;
+
+    for (const lg of ESPN_LEAGUES) {
+      try {
+        const res = await fetch(`${ESPN_BASE}/${lg.code}/scoreboard?dates=${from}-${to}`);
+        if (!res.ok) continue;
+        anyOk = true;
+        const json = await res.json();
+        for (const e of json.events || []) {
+          const comp = e.competitions && e.competitions[0];
+          if (!comp) continue;
+          const hc = (comp.competitors || []).find((c) => c.homeAway === 'home');
+          const ac = (comp.competitors || []).find((c) => c.homeAway === 'away');
+          if (!hc || !ac) continue;
+          const rawHome = hc.team && hc.team.displayName;
+          const rawAway = ac.team && ac.team.displayName;
+          const home = resolveClub(rawHome);
+          const away = resolveClub(rawAway);
+          if (!home || !away) {
+            if (!home && rawHome) unmatched.push(rawHome);
+            if (!away && rawAway) unmatched.push(rawAway);
+            continue;
+          }
+          games.push({
+            div: lg.div,
+            home,
+            away,
+            date: e.date,
+            state: e.status && e.status.type ? e.status.type.state : 'pre', // pre | in | post
+            homeScore: hc.score != null && hc.score !== '' ? Number(hc.score) : null,
+            awayScore: ac.score != null && ac.score !== '' ? Number(ac.score) : null,
+            clock: e.status?.displayClock ? String(e.status.displayClock).replace(/'+$/, '') : null,
+          });
+        }
+      } catch { /* per-league best effort */ }
+    }
+
+    setEspnGames(games);
+    setEspnState({
+      ok: anyOk,
+      unmatched: [...new Set(unmatched)],
+      count: games.length,
+      ts: Date.now(),
+    });
+    lastEspnRef.current = Date.now();
+  }, []);
 
   const fetchData = useCallback(async (force = false) => {
     if (!force) {
@@ -154,7 +247,35 @@ export function useEnglandFixtures() {
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchData(); fetchEspn(); }, [fetchData, fetchEspn]);
 
-  return { fixtures, loading, error, lastFetched, refresh: () => fetchData(true) };
+  // Poll ESPN only around kick-offs, only while the tab is visible
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      const nearGame = mergedRef.current.some((f) => {
+        if (!f.utcDate || f.status === 'FINISHED') return false;
+        const t = new Date(f.utcDate).getTime();
+        return now > t - 15 * 60 * 1000 && now < t + 3 * 3600 * 1000;
+      });
+      if (!nearGame) return;
+      if (now - lastEspnRef.current > 55 * 1000) fetchEspn();
+    }, 30 * 1000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchEspn(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
+  }, [fetchEspn]);
+
+  const merged = useMemo(() => mergeEspn(fixtures, espnGames), [fixtures, espnGames]);
+  mergedRef.current = merged;
+
+  return {
+    fixtures: merged,
+    loading,
+    error,
+    lastFetched,
+    espnState,
+    refresh: () => Promise.all([fetchData(true), fetchEspn()]),
+  };
 }

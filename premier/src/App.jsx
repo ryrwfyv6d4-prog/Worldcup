@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useEnglandFixtures } from './hooks/useEnglandFixtures.js';
 import { useSharedState } from './hooks/useSharedState.js';
 import Navigation from './components/Navigation.jsx';
@@ -8,7 +8,9 @@ import Tables from './components/Tables.jsx';
 import Campaign from './components/Campaign.jsx';
 import HQ from './components/HQ.jsx';
 import TeamSheet from './components/TeamSheet.jsx';
+import MatchSheet from './components/MatchSheet.jsx';
 import { SEASON } from './data/england2027.js';
+import { useDismissable } from './hooks/useDismissable.js';
 
 function WhoAmIModal({ participants, onPick, onSkip }) {
   const hasRoster = participants.length > 0;
@@ -40,8 +42,8 @@ function WhoAmIModal({ participants, onPick, onSkip }) {
 export default function App() {
   const [tab, setTab] = useState('front');
   const { state, update, synced } = useSharedState();
-  const { fixtures, loading, error, refresh, lastFetched } = useEnglandFixtures();
-  const { assignments } = state;
+  const { fixtures, loading, error, refresh, lastFetched, espnState } = useEnglandFixtures();
+  const { assignments, manualMedals } = state;
   const participants = Object.keys(assignments);
 
   const [whoAmI, setWhoAmI] = useState(() => {
@@ -67,8 +69,24 @@ export default function App() {
   };
   const skipWho = () => setShowWho(false);
 
+  const mainRef = useRef(null);
+  // Tabs share one scroll container, so without this you land mid-page
+  useEffect(() => { if (mainRef.current) mainRef.current.scrollTop = 0; }, [tab]);
+
   const [teamSheet, setTeamSheet] = useState(null);
+  const [matchSheet, setMatchSheet] = useState(null);
   const liveCount = fixtures.filter((f) => f.status === 'IN_PLAY').length;
+
+  // Phone/browser Back and Escape close the topmost overlay, not the app.
+  // A ref keeps the callback stable so swapping sheets doesn't churn history.
+  const closeTopRef = useRef(() => {});
+  closeTopRef.current = () => {
+    if (showWho) setShowWho(false);
+    else if (teamSheet) setTeamSheet(null);
+    else if (matchSheet) setMatchSheet(null);
+  };
+  const closeTop = useCallback(() => closeTopRef.current(), []);
+  useDismissable(Boolean(showWho || teamSheet || matchSheet), closeTop);
 
   return (
     <div className="app">
@@ -76,14 +94,14 @@ export default function App() {
         <span className="header-icon">🦅</span>
         <div className="header-text">
           <h1 className="app-title">The Eagle's <span className="gold">Nest</span></h1>
-          <div className="app-year">England Campaign {SEASON} · Two Fronts</div>
+          <div className="app-year">England {SEASON} · Two Fronts</div>
         </div>
         <button className="id-chip" onClick={() => setShowWho(true)}>
           {whoAmI || 'Report in'}
         </button>
       </header>
 
-      <main className="main">
+      <main className="main" ref={mainRef}>
         {error && <div className="error-bar">{error} <button className="btn" onClick={refresh}>Retry</button></div>}
         {loading && fixtures.length === 0 && (
           <div className="empty-state"><div className="empty-icon">📡</div><p>Receiving transmissions…</p></div>
@@ -92,12 +110,14 @@ export default function App() {
           <Leaderboard
             assignments={assignments}
             fixtures={fixtures}
+            manualMedals={manualMedals}
             whoAmI={whoAmI}
             onChangeUser={() => setShowWho(true)}
             onSelectTeam={setTeamSheet}
+            onOpenMatch={setMatchSheet}
           />
         )}
-        {tab === 'orders' && <Fixtures fixtures={fixtures} assignments={assignments} onSelectTeam={setTeamSheet} />}
+        {tab === 'orders' && <Fixtures fixtures={fixtures} assignments={assignments} onOpenMatch={setMatchSheet} />}
         {tab === 'map' && <Tables fixtures={fixtures} assignments={assignments} onSelectTeam={setTeamSheet} />}
         {tab === 'tours' && <Campaign assignments={assignments} fixtures={fixtures} />}
         {tab === 'hq' && (
@@ -110,12 +130,23 @@ export default function App() {
             onSelectTeam={setTeamSheet}
             lastFetched={lastFetched}
             refresh={refresh}
+            espnState={espnState}
           />
         )}
       </main>
 
       {showWho && (
         <WhoAmIModal participants={participants} onPick={pickWho} onSkip={skipWho} />
+      )}
+
+      {matchSheet && (
+        <MatchSheet
+          fixture={matchSheet}
+          fixtures={fixtures}
+          assignments={assignments}
+          onClose={() => setMatchSheet(null)}
+          onSelectTeam={setTeamSheet}
+        />
       )}
 
       {teamSheet && (

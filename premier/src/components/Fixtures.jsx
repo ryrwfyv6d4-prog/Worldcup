@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { getTeam } from '../data/england2027.js';
-import MatchSheet from './MatchSheet.jsx';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -23,10 +22,9 @@ function fmtTime(iso) {
   return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function Fixtures({ fixtures, assignments, onSelectTeam }) {
+export default function Fixtures({ fixtures, assignments, onOpenMatch }) {
   const [div, setDiv] = useState(1);
   const [md, setMd] = useState(null);
-  const [open, setOpen] = useState(null);
 
   const matchdays = useMemo(() => {
     const mds = [...new Set(fixtures.filter((f) => f.division === div).map((f) => f.matchday))];
@@ -83,7 +81,7 @@ export default function Fixtures({ fixtures, assignments, onSelectTeam }) {
             const ho = ownerOf(f.homeTeam.name, assignments);
             const ao = ownerOf(f.awayTeam.name, assignments);
             return (
-              <button className={`card fx-card ${f.status === 'IN_PLAY' ? 'live' : ''}`} key={f.id} onClick={() => setOpen(f)}>
+              <button className={`card fx-card ${f.status === 'IN_PLAY' ? 'live' : ''}`} key={f.id} onClick={() => onOpenMatch(f)}>
                 <div className="fx-line">
                   <span className="fx-team">
                     <span className="fx-team-name">{h ? h.short : f.homeTeam.name}</span>
@@ -106,10 +104,6 @@ export default function Fixtures({ fixtures, assignments, onSelectTeam }) {
         </div>
       ))}
       {byDay.length === 0 && <p className="muted">No fixtures for this matchweek.</p>}
-
-      {open && (
-        <MatchSheet fixture={open} fixtures={fixtures} assignments={assignments} onClose={() => setOpen(null)} onSelectTeam={onSelectTeam} />
-      )}
     </div>
   );
 }

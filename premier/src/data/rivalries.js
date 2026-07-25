@@ -115,6 +115,6 @@ export function getMatchup(teamA, teamB, infoA, infoB) {
   return {
     derby: false,
     title: `${infoA.codename} v ${infoB.codename}`,
-    blurb: `${framing} ${infoA.short} — ${infoA.codename.replace(/^The /, '')} — line up against ${infoB.short}, ${infoB.codename.replace(/^The /, '').toLowerCase()}.`.trim(),
+    blurb: `${framing} ${infoA.short} (${infoA.codename}) line up against ${infoB.short} (${infoB.codename}).`.trim(),
   };
 }

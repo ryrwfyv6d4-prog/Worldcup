@@ -4738,3 +4738,83 @@ body, .app {
   background: var(--live-red); color: #fff; padding: 2px 7px; border-radius: 4px;
   vertical-align: middle;
 }
+
+/* ── v4: my weekend, pre-season, outlook, honours, signals ── */
+
+/* pre-season countdown */
+.preseason { background: linear-gradient(160deg, #241B0E, #3a2c14); border: 1px solid var(--hairline); }
+.ps-eyebrow {
+  color: var(--brass-bright); font-family: var(--font-display); font-weight: 700;
+  letter-spacing: 0.16em; font-size: 0.78rem; text-transform: uppercase; margin-bottom: 10px;
+}
+.ps-rows { display: flex; flex-direction: column; gap: 6px; }
+.ps-row { display: flex; align-items: baseline; gap: 10px; }
+.ps-label { color: rgba(244,235,216,0.78); font-size: 0.84rem; flex: 1; }
+.ps-time {
+  font-family: var(--font-display); font-size: 1.3rem; font-weight: 800;
+  color: var(--brass-bright); font-variant-numeric: tabular-nums;
+}
+.ps-note { margin-top: 10px; font-size: 0.78rem; line-height: 1.5; color: rgba(244,235,216,0.6); }
+
+/* my weekend */
+.my-weekend { padding: 12px 14px; }
+.mw-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.mw-title {
+  font-family: var(--font-display); font-size: 1.15rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--text);
+}
+.mw-sub { color: var(--text-muted); font-size: 0.72rem; flex: 1; }
+.mw-earned {
+  font-weight: 800; color: var(--green); font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+.mw-match {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  background: none; border: 0; border-top: 1px dashed var(--border);
+  padding: 8px 0; font: inherit; cursor: pointer; color: var(--text);
+}
+.mw-match:first-of-type { border-top: 0; }
+.mw-match:active { opacity: 0.7; }
+.mw-match.live { background: rgba(240, 99, 92, 0.08); }
+.mw-teams { flex: 1; font-size: 0.86rem; display: flex; align-items: baseline; gap: 5px; flex-wrap: wrap; }
+.mw-teams b { font-weight: 800; }
+.mw-vs { color: var(--text-muted); font-size: 0.72rem; }
+.mw-derby {
+  font-size: 0.55rem; font-weight: 800; letter-spacing: 0.08em;
+  background: var(--live-red); color: #fff; padding: 1px 5px; border-radius: 3px;
+}
+.mw-right { display: flex; align-items: baseline; gap: 7px; flex-shrink: 0; }
+.mw-ko { color: var(--text-muted); font-size: 0.72rem; }
+.mw-score { font-weight: 800; font-variant-numeric: tabular-nums; }
+.mw-live { color: var(--live-red); font-weight: 800; font-size: 0.78rem; }
+.mw-pts { font-size: 0.76rem; font-weight: 800; color: var(--text-muted); }
+.mw-pts.gain { color: var(--green); }
+
+/* outlook strip inside an expanded ladder row */
+.lb-outlook {
+  display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px;
+  padding-top: 8px; border-top: 1px solid var(--border);
+  font-size: 0.7rem; color: var(--text-muted);
+}
+
+/* honours toggles */
+.chip-toggle { cursor: pointer; }
+.chip-toggle.on { background: var(--gold); border-color: var(--gold); color: #241B0E; font-weight: 700; }
+.chip-toggle.on em { color: rgba(36, 27, 14, 0.7); }
+
+/* live-feed signals line */
+.subtitle.signals { display: block; margin-top: 3px; font-size: 0.72rem; }
+.signals-warn { color: var(--live-red); }
+
+/* draw guard */
+.draw-warn {
+  background: rgba(179, 55, 47, 0.14); border: 1px solid var(--red);
+  border-radius: var(--radius-sm); padding: 11px 13px; margin: 10px 0;
+  font-size: 0.8rem; line-height: 1.5; color: var(--text-on-dark);
+}
+.draw-warn b { color: #f0938e; }
+
+/* England header: the wordmark must never wrap, webfont or not */
+.app-header .app-title { white-space: nowrap; font-size: 1.42rem; }
+.app-header .app-year { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-header .header-icon { font-size: 26px; }

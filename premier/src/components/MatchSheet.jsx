@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { getTeam, POT_POINTS, POT_LABELS } from '../data/england2027.js';
 import { getMatchup } from '../data/rivalries.js';
 import { leagueTable, formForTeam, positionOf, reverseFixture } from '../utils/scoring.js';
-import { useDismissable } from '../hooks/useDismissable.js';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -30,7 +29,7 @@ function SideStats({ team, table, fixtures }) {
   const form = formForTeam(team, fixtures);
   return (
     <div className="en-ms-stats">
-      <div className="en-ms-stat"><b>{ordinal(pos)}</b><span>position</span></div>
+      <div className="en-ms-stat"><b>{row && row.p > 0 ? ordinal(pos) : '—'}</b><span>position</span></div>
       <div className="en-ms-stat"><b>{row ? `${row.w}-${row.d}-${row.l}` : '—'}</b><span>W-D-L</span></div>
       <div className="en-ms-stat"><b>{row ? `${row.gf}:${row.ga}` : '—'}</b><span>goals</span></div>
       <div className="en-ms-form">
@@ -43,7 +42,6 @@ function SideStats({ team, table, fixtures }) {
 }
 
 export default function MatchSheet({ fixture, fixtures, assignments, onClose, onSelectTeam }) {
-  useDismissable(true, onClose);
   const table = useMemo(() => leagueTable(fixtures, fixture.division), [fixtures, fixture.division]);
   const home = getTeam(fixture.homeTeam.name);
   const away = getTeam(fixture.awayTeam.name);
@@ -77,7 +75,15 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
               const rate = s.info ? POT_POINTS[s.info.pot] : null;
               return (
                 <div className={`en-ms-side ${i === 1 ? 'away' : ''}`} key={s.name}>
-                  <button className="team-btn en-ms-team" onClick={() => onSelectTeam && onSelectTeam(s.name)}>
+                  <button
+                    className="team-btn en-ms-team"
+                    onClick={() => {
+                      // close this sheet first — otherwise two sheets stack and
+                      // both try to own the Back button
+                      onClose();
+                      if (onSelectTeam) onSelectTeam(s.name);
+                    }}
+                  >
                     {s.info ? s.info.short : s.name}
                   </button>
                   <div className="en-ms-codename">{s.info?.codename}</div>

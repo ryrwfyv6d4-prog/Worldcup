@@ -1,49 +1,61 @@
 import { useMemo, useState } from 'react';
-import { buildLadder, maxForPlayer, todayPoints, feedEvents } from '../utils/scoring.js';
+import { buildLadder, computeOutlook, todayPoints, feedEvents } from '../utils/scoring.js';
 import { buildDispatch } from '../utils/dispatch.js';
 import { MEDALS, getTeam, ENTRY_FEE, PAYOUTS } from '../data/england2027.js';
+import MyWeekend, { PreSeason } from './MyWeekend.jsx';
 
 function ordinal(n) {
   const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-// Ladder as it stood before the last 7 days of results — for movement arrows
-function previousLadder(assignments, fixtures) {
+// Ladder as it stood a week ago — for movement arrows
+function previousLadder(assignments, fixtures, manualMedals) {
   const cutoff = Date.now() - 7 * 24 * 3600 * 1000;
   const prev = fixtures.map((f) =>
     f.status === 'FINISHED' && f.utcDate && new Date(f.utcDate).getTime() > cutoff
       ? { ...f, status: 'SCHEDULED', score: { home: null, away: null, winner: null } }
       : f
   );
-  return buildLadder(assignments, prev);
+  return buildLadder(assignments, prev, manualMedals);
 }
 
-export default function Leaderboard({ assignments, fixtures, whoAmI, onChangeUser, onSelectTeam }) {
-  const ladder = useMemo(() => buildLadder(assignments, fixtures), [assignments, fixtures]);
+export default function Leaderboard({
+  assignments, fixtures, manualMedals, whoAmI, onChangeUser, onSelectTeam, onOpenMatch,
+}) {
+  const ladder = useMemo(
+    () => buildLadder(assignments, fixtures, manualMedals),
+    [assignments, fixtures, manualMedals]
+  );
+  const outlook = useMemo(
+    () => computeOutlook(assignments, fixtures, manualMedals),
+    [assignments, fixtures, manualMedals]
+  );
   const prevRanks = useMemo(() => {
-    const prev = previousLadder(assignments, fixtures);
+    const prev = previousLadder(assignments, fixtures, manualMedals);
     return Object.fromEntries(prev.map((r, i) => [r.name, i]));
-  }, [assignments, fixtures]);
+  }, [assignments, fixtures, manualMedals]);
   const dispatch = useMemo(() => buildDispatch(assignments, fixtures), [assignments, fixtures]);
   const feed = useMemo(() => feedEvents(assignments, fixtures, 12), [assignments, fixtures]);
   const [expanded, setExpanded] = useState(null);
+
+  const anyFinished = fixtures.some((f) => f.status === 'FINISHED');
 
   if (!ladder.length) {
     return (
       <div className="page">
         <div className="page-header"><h2>The Front</h2></div>
+        <PreSeason />
         <div className="empty-state">
           <div className="empty-icon">📯</div>
-          <p>No troops in the field. Run Conscription in HQ — the season opens 14 August.</p>
+          <p>No troops in the field. Run Conscription in HQ.</p>
         </div>
       </div>
     );
   }
 
   const pot = ladder.length * ENTRY_FEE;
-  const leaderTotal = ladder[0].total;
-  const hasResults = leaderTotal > 0;
+  const hasResults = ladder[0].total > 0;
   const meIdx = ladder.findIndex((r) => r.name === whoAmI);
   const me = meIdx >= 0 ? ladder[meIdx] : null;
   const myToday = me ? todayPoints(me.name, assignments, fixtures) : 0;
@@ -54,6 +66,17 @@ export default function Leaderboard({ assignments, fixtures, whoAmI, onChangeUse
         <h2>The Front</h2>
         <span className="subtitle">Two divisions · one ladder · {ladder.length} conscripts</span>
       </div>
+
+      {!anyFinished && <PreSeason />}
+
+      {me && (
+        <MyWeekend
+          player={me.name}
+          assignments={assignments}
+          fixtures={fixtures}
+          onOpenMatch={onOpenMatch}
+        />
+      )}
 
       <section className="pot-strip">
         <div className="pot-head">
@@ -86,9 +109,12 @@ export default function Leaderboard({ assignments, fixtures, whoAmI, onChangeUse
               <div className="hstat"><b>{me.total}</b><span>Points</span></div>
               {myToday > 0 && <div className="hstat gain"><b>+{myToday}</b><span>Today</span></div>}
               <div className="hstat">
-                <b>{meIdx === 0 ? (me.total - (ladder[1]?.total ?? 0)) : leaderTotal - me.total}</b>
+                <b>{meIdx === 0 ? (me.total - (ladder[1]?.total ?? 0)) : ladder[0].total - me.total}</b>
                 <span>{meIdx === 0 ? 'Clear' : 'Off lead'}</span>
               </div>
+              {outlook[me.name] && (
+                <div className="hstat"><b>{outlook[me.name].projected}</b><span>Projected</span></div>
+              )}
             </div>
           </div>
         </section>
@@ -96,9 +122,8 @@ export default function Leaderboard({ assignments, fixtures, whoAmI, onChangeUse
 
       <div className="leaderboard">
         {ladder.map((row, i) => {
-          const max = maxForPlayer(row.name, assignments, fixtures);
+          const o = outlook[row.name] || {};
           const today = todayPoints(row.name, assignments, fixtures);
-          const cooked = hasResults && max < leaderTotal;
           const prevIdx = prevRanks[row.name];
           const delta = prevIdx != null ? prevIdx - i : 0;
           const isMe = row.name === whoAmI;
@@ -124,7 +149,7 @@ export default function Leaderboard({ assignments, fixtures, whoAmI, onChangeUse
                     {isMe && <span className="tag you">YOU</span>}
                     {hasResults && i === 0 && <span className="tag front">FRONT RUNNER</span>}
                     {hasResults && i === ladder.length - 1 && <span className="tag disaster">LATRINE DUTY</span>}
-                    {cooked && <span className="tag cooked">MIA</span>}
+                    {o.cooked && <span className="tag cooked">MIA</span>}
                   </span>
                   <span className="lb-teams">
                     {row.breakdown.map((b) => {
@@ -141,7 +166,7 @@ export default function Leaderboard({ assignments, fixtures, whoAmI, onChangeUse
                 <span className="lb-pts">
                   {row.total}<small>pts</small>
                   {today > 0 && <span className="lb-today">+{today} today</span>}
-                  {hasResults && !cooked && <span className="lb-max">max {max}</span>}
+                  {o.projected != null && <span className="lb-max">proj {o.projected}</span>}
                 </span>
                 <span className={`lb-chev ${isExpanded ? 'open' : ''}`}>{'▸'}</span>
               </div>
@@ -169,6 +194,10 @@ export default function Leaderboard({ assignments, fixtures, whoAmI, onChangeUse
                       })}
                     </tbody>
                   </table>
+                  <div className="lb-outlook">
+                    <span>Tiebreak: {row.tb.wins} wins · {row.tb.gd > 0 ? `+${row.tb.gd}` : row.tb.gd} GD · {row.tb.gf} scored</span>
+                    {o.floor != null && <span>Range {o.floor}–{o.ceiling} · projected {o.projected}</span>}
+                  </div>
                 </div>
               )}
             </div>

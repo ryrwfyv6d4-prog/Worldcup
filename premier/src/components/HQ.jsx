@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Draw from './Draw.jsx';
 import Regiments from './Regiments.jsx';
+import Honours from './Honours.jsx';
 
 function Wall({ state, update, who }) {
   const [text, setText] = useState('');
@@ -87,7 +88,7 @@ function Polls({ state, update, who }) {
   );
 }
 
-export default function HQ({ state, update, synced, whoAmI, onChangeUser, lastFetched, refresh }) {
+export default function HQ({ state, update, synced, whoAmI, onChangeUser, lastFetched, refresh, espnState }) {
   const [view, setView] = useState('wall');
 
   return (
@@ -101,9 +102,17 @@ export default function HQ({ state, update, synced, whoAmI, onChangeUser, lastFe
         </div>
         <span className="subtitle">
           {synced ? 'Shared with the whole shed' : 'Offline preview — this device only'}
-          {lastFetched && ` · results updated ${new Date(lastFetched).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`}
+          {lastFetched && ` · updated ${new Date(lastFetched).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`}
           {' · '}
           <button className="team-btn" onClick={refresh} style={{ textDecoration: 'underline' }}>refresh</button>
+        </span>
+        <span className="subtitle signals">
+          {espnState?.ok === true && `📡 Live scores connected · ${espnState.count} match${espnState.count === 1 ? '' : 'es'} in window`}
+          {espnState?.ok === false && '📡 Live scores unreachable — results still land from the league feed'}
+          {espnState?.ok == null && '📡 Live scores: checking…'}
+          {espnState?.unmatched?.length > 0 && (
+            <span className="signals-warn"> · unrecognised club{espnState.unmatched.length === 1 ? '' : 's'}: {espnState.unmatched.join(', ')}</span>
+          )}
         </span>
       </div>
 
@@ -111,12 +120,14 @@ export default function HQ({ state, update, synced, whoAmI, onChangeUser, lastFe
         <button className={`seg ${view === 'wall' ? 'on' : ''}`} onClick={() => setView('wall')}>The Wall</button>
         <button className={`seg ${view === 'polls' ? 'on' : ''}`} onClick={() => setView('polls')}>War Council</button>
         <button className={`seg ${view === 'regiments' ? 'on' : ''}`} onClick={() => setView('regiments')}>Regiments</button>
+        <button className={`seg ${view === 'honours' ? 'on' : ''}`} onClick={() => setView('honours')}>Honours</button>
         <button className={`seg ${view === 'draw' ? 'on' : ''}`} onClick={() => setView('draw')}>Conscription</button>
       </div>
 
       {view === 'wall' && <Wall state={state} update={update} who={whoAmI} />}
       {view === 'polls' && <Polls state={state} update={update} who={whoAmI} />}
       {view === 'regiments' && <Regiments assignments={state.assignments} />}
+      {view === 'honours' && <Honours state={state} update={update} />}
       {view === 'draw' && (
         <Draw
           assignments={state.assignments}

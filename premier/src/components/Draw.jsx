@@ -23,13 +23,19 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
     setNewName('');
   };
 
+  // Every pot must have at least one team per player, so the smallest pot
+  // (the Premier League ones, 10 each) caps the squad.
+  const MAX_PLAYERS = Math.min(...['A', 'B', 'C', 'D'].map((k) => POTS[k].length));
+  const tooMany = players.length > MAX_PLAYERS;
+
   const runDraw = () => {
-    if (players.length < 2) return;
+    if (players.length < 2 || tooMany) return;
     const result = {};
     for (const p of players) result[p] = [];
     for (const potKey of ['A', 'B', 'C', 'D']) {
       const order = shuffle(POTS[potKey]);
-      players.forEach((p, i) => { result[p].push(order[i]); });
+      // .filter(Boolean) guarantees we never store an empty slot, whatever happens
+      players.forEach((p, i) => { if (order[i]) result[p].push(order[i]); });
     }
     setAssignments(result);
   };
@@ -81,7 +87,16 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
             </div>
           ))}
 
-          <button className="btn btn-primary btn-big" onClick={runDraw} disabled={players.length < 2}>
+          {tooMany && (
+            <div className="draw-warn">
+              <b>Too many for this structure.</b> Pots A and B hold {MAX_PLAYERS} Premier League
+              clubs each, so {MAX_PLAYERS} is the cap for one-club-per-pot. You have {players.length}.
+              Either drop to {MAX_PLAYERS} officers, or tell me the real headcount and I'll
+              redesign the pots (e.g. one PL club plus two Championship clubs each).
+            </div>
+          )}
+
+          <button className="btn btn-primary btn-big" onClick={runDraw} disabled={players.length < 2 || tooMany}>
             SOUND THE BUGLE — RUN THE DRAW
           </button>
         </>

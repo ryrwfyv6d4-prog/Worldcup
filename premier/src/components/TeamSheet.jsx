@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { getTeam, POT_LABELS, POT_POINTS } from '../data/england2027.js';
 import { leagueTable, formForTeam, positionOf, teamPoints } from '../utils/scoring.js';
-import { useDismissable } from '../hooks/useDismissable.js';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -17,7 +16,6 @@ function ordinal(n) {
 }
 
 export default function TeamSheet({ team, fixtures, assignments, onClose }) {
-  useDismissable(true, onClose);
   const info = getTeam(team);
   const table = useMemo(() => (info ? leagueTable(fixtures, info.div) : []), [fixtures, info]);
   if (!info) return null;
@@ -55,7 +53,7 @@ export default function TeamSheet({ team, fixtures, assignments, onClose }) {
 
         <div className="card">
           <div className="en-ms-stats">
-            <div className="en-ms-stat"><b>{ordinal(pos)}</b><span>{info.div === 1 ? 'Premier League' : 'Championship'}</span></div>
+            <div className="en-ms-stat"><b>{row && row.p > 0 ? ordinal(pos) : '—'}</b><span>{info.div === 1 ? 'Premier League' : 'Championship'}</span></div>
             <div className="en-ms-stat"><b>{row ? `${row.w}-${row.d}-${row.l}` : '—'}</b><span>W-D-L</span></div>
             <div className="en-ms-stat"><b>{row ? `${row.gf}:${row.ga}` : '—'}</b><span>goals</span></div>
             <div className="en-ms-stat"><b>{pts.total}</b><span>sweep pts</span></div>
