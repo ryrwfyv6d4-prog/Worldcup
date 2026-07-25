@@ -35,6 +35,13 @@ export default function Tables({ fixtures, assignments, onSelectTeam }) {
         <button className={`seg ${div === 2 ? 'on' : ''}`} onClick={() => setDiv(2)}>Championship</button>
       </div>
 
+      {!started && (
+        <p className="muted small preseason-note">
+          Pre-season — no matches played, so this is the bookies' pecking order, not a table.
+          Promotion and relegation zones light up once results land.
+        </p>
+      )}
+
       <div className="zone-legend">
         {div === 1 ? (
           <>
@@ -50,11 +57,6 @@ export default function Tables({ fixtures, assignments, onSelectTeam }) {
         )}
       </div>
 
-      {!started && (
-        <p className="muted small">No results yet — the table shows all regiments at ease until the first shots on
-          {div === 1 ? ' 21 August.' : ' 14 August.'}</p>
-      )}
-
       <div className="card table-card">
         <table className="league-table">
           <thead>
@@ -67,7 +69,7 @@ export default function Tables({ fixtures, assignments, onSelectTeam }) {
               const pos = i + 1;
               const form = formForTeam(r.team, fixtures);
               return (
-                <tr key={r.team} className={zoneFor(div, pos)}>
+                <tr key={r.team} className={started ? zoneFor(div, pos) : ''}>
                   <td>{pos}</td>
                   <td className="tl team-cell"><button className="team-btn" onClick={() => onSelectTeam && onSelectTeam(r.team)}>{info ? info.short : r.team}</button></td>
                   <td className="tl owner-cell">{owner || <span className="unowned">—</span>}</td>

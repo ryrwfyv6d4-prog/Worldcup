@@ -10,7 +10,15 @@ function ownerOf(team, assignments) {
 
 export default function Regiments({ assignments }) {  // rendered inside HQ
   const [filter, setFilter] = useState('ALL');
-  const shown = TEAMS.filter((t) => filter === 'ALL' || t.pot === filter);
+  const [q, setQ] = useState('');
+  const needle = q.trim().toLowerCase();
+  const shown = TEAMS
+    .filter((t) => filter === 'ALL' || t.pot === filter)
+    .filter((t) => !needle ||
+      t.short.toLowerCase().includes(needle) ||
+      t.name.toLowerCase().includes(needle) ||
+      t.codename.toLowerCase().includes(needle) ||
+      t.roots.toLowerCase().includes(needle));
 
   return (
     <div>
@@ -22,6 +30,14 @@ export default function Regiments({ assignments }) {  // rendered inside HQ
           </button>
         ))}
       </div>
+
+      <input
+        className="poll-input"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Search club, codename or history…"
+      />
+      {needle && <p className="muted small">{shown.length} of {TEAMS.length} regiments</p>}
 
       {shown.map((t) => {
         const owner = ownerOf(t.name, assignments);

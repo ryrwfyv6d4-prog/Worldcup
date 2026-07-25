@@ -22,9 +22,11 @@ function fmtTime(iso) {
   return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function Fixtures({ fixtures, assignments, onOpenMatch }) {
+export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI }) {
   const [div, setDiv] = useState(1);
   const [md, setMd] = useState(null);
+  const [mineOnly, setMineOnly] = useState(false);
+  const myTeams = (assignments[whoAmI] || []).filter(Boolean);
 
   const matchdays = useMemo(() => {
     const mds = [...new Set(fixtures.filter((f) => f.division === div).map((f) => f.matchday))];
@@ -45,6 +47,7 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch }) {
   const byDay = useMemo(() => {
     const shown = fixtures
       .filter((f) => f.division === div && f.matchday === shownMd)
+      .filter((f) => !mineOnly || myTeams.includes(f.homeTeam.name) || myTeams.includes(f.awayTeam.name))
       .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''));
     const groups = [];
     for (const f of shown) {
@@ -54,7 +57,7 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch }) {
       else groups.push({ key: k, label: fmtDay(f.utcDate), items: [f] });
     }
     return groups;
-  }, [fixtures, div, shownMd]);
+  }, [fixtures, div, shownMd, mineOnly, myTeams]);
 
   return (
     <div className="page">
@@ -62,6 +65,9 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch }) {
       <div className="seg-row">
         <button className={`seg ${div === 1 ? 'on' : ''}`} onClick={() => { setDiv(1); setMd(null); }}>Premier League</button>
         <button className={`seg ${div === 2 ? 'on' : ''}`} onClick={() => { setDiv(2); setMd(null); }}>Championship</button>
+        {myTeams.length > 0 && (
+          <button className={`seg ${mineOnly ? 'on' : ''}`} onClick={() => setMineOnly((v) => !v)}>★ Mine</button>
+        )}
       </div>
       <div className="md-row">
         <button className="btn" onClick={() => setMd(Math.max(1, shownMd - 1))} disabled={shownMd <= 1}>‹</button>
@@ -103,7 +109,13 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch }) {
           })}
         </div>
       ))}
-      {byDay.length === 0 && <p className="muted">No fixtures for this matchweek.</p>}
+      {byDay.length === 0 && (
+        <p className="muted">
+          {mineOnly
+            ? 'None of your four clubs play in this matchweek — turn ★ Mine off to see the rest.'
+            : 'No fixtures for this matchweek.'}
+        </p>
+      )}
     </div>
   );
 }

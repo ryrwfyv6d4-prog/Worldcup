@@ -78,15 +78,6 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
             </div>
           </div>
 
-          {['A', 'B', 'C', 'D'].map((k) => (
-            <div className="card" key={k}>
-              <h3>Pot {k} — {POT_LABELS[k]} <span className="muted">(win {POT_POINTS[k].win} · draw {POT_POINTS[k].draw})</span></h3>
-              <div className="chip-row">
-                {POTS[k].map((t) => <span key={t} className="chip chip-team">{getTeam(t).short}</span>)}
-              </div>
-            </div>
-          ))}
-
           {tooMany && (
             <div className="draw-warn">
               <b>Too many for this structure.</b> Pots A and B hold {MAX_PLAYERS} Premier League
@@ -99,6 +90,19 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
           <button className="btn btn-primary btn-big" onClick={runDraw} disabled={players.length < 2 || tooMany}>
             SOUND THE BUGLE — RUN THE DRAW
           </button>
+
+          <p className="muted small">The pots, for reference:</p>
+
+          {['A', 'B', 'C', 'D'].map((k) => (
+            <div className="card" key={k}>
+              <h3>Pot {k} — {POT_LABELS[k]} <span className="muted">(win {POT_POINTS[k].win} · draw {POT_POINTS[k].draw})</span></h3>
+              <div className="chip-row">
+                {POTS[k].map((t) => <span key={t} className="chip chip-team">{getTeam(t).short}</span>)}
+              </div>
+            </div>
+          ))}
+
+
         </>
       )}
 

@@ -4818,3 +4818,21 @@ body, .app {
 .app-header .app-title { white-space: nowrap; font-size: 1.42rem; }
 .app-header .app-year { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .app-header .header-icon { font-size: 26px; }
+
+/* ── v5: fine-tuning ── */
+/* header: keep the wordmark clear of the identity chip at any label length */
+.app-header { gap: 10px; padding-right: 14px; }
+.app-header .app-title { font-size: 1.3rem; }
+.id-chip { font-size: 0.66rem; padding: 6px 10px; max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.preseason-note { margin-bottom: 10px; }
+
+/* Shed Rules */
+.rule-list { margin: 0 0 8px 18px; }
+.rule-list li { font-size: 0.84rem; line-height: 1.6; color: var(--text); }
+.rule-ol { list-style: decimal; }
+.rule-pot { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-top: 1px dashed var(--border); }
+.rule-pot:first-of-type { border-top: 0; }
+.rule-pot-name { flex: 1; font-size: 0.84rem; font-weight: 700; color: var(--text); }
+.rule-pot-name em { display: block; font-size: 0.68rem; font-weight: 400; font-style: normal; color: var(--text-muted); }
+.rule-pot-rate { font-size: 0.76rem; font-weight: 700; color: var(--gold-dark); white-space: nowrap; }

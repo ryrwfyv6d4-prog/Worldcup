@@ -117,7 +117,7 @@ export default function App() {
             onOpenMatch={setMatchSheet}
           />
         )}
-        {tab === 'orders' && <Fixtures fixtures={fixtures} assignments={assignments} onOpenMatch={setMatchSheet} />}
+        {tab === 'orders' && <Fixtures fixtures={fixtures} assignments={assignments} onOpenMatch={setMatchSheet} whoAmI={whoAmI} />}
         {tab === 'map' && <Tables fixtures={fixtures} assignments={assignments} onSelectTeam={setTeamSheet} />}
         {tab === 'tours' && <Campaign assignments={assignments} fixtures={fixtures} />}
         {tab === 'hq' && (

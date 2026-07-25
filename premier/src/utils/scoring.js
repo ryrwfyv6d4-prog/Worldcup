@@ -1,5 +1,9 @@
 import { POT_POINTS, MEDALS, potFor, TEAMS } from '../data/england2027.js';
 
+// Pre-season rank (TEAMS is listed best-first by bookies' odds within each pot),
+// used as the final table tiebreak so an all-zero table isn't alphabetical.
+const RANK = new Map(TEAMS.map((t, i) => [t.name, i]));
+
 const PL_ROUNDS = 38;
 const CH_ROUNDS = 46;
 
@@ -22,7 +26,9 @@ export function leagueTable(fixtures, div) {
     else { h.d++; a.d++; h.pts++; a.pts++; }
   }
   for (const r of Object.values(rows)) r.gd = r.gf - r.ga;
-  return Object.values(rows).sort((x, y) => y.pts - x.pts || y.gd - x.gd || y.gf - x.gf || x.team.localeCompare(y.team));
+  return Object.values(rows).sort(
+    (x, y) => y.pts - x.pts || y.gd - x.gd || y.gf - x.gf || RANK.get(x.team) - RANK.get(y.team)
+  );
 }
 
 export function divisionComplete(fixtures, div) {

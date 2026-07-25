@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Draw from './Draw.jsx';
 import Regiments from './Regiments.jsx';
 import Honours from './Honours.jsx';
+import Rules from './Rules.jsx';
 
 function Wall({ state, update, who }) {
   const [text, setText] = useState('');
@@ -94,12 +95,7 @@ export default function HQ({ state, update, synced, whoAmI, onChangeUser, lastFe
   return (
     <div className="page">
       <div className="page-header">
-        <div className="header-row">
-          <h2>HQ</h2>
-          <button className="ch-identity" onClick={onChangeUser}>
-            {whoAmI || 'Report in'} <span className="ch-switch">switch ▾</span>
-          </button>
-        </div>
+        <h2>HQ</h2>
         <span className="subtitle">
           {synced ? 'Shared with the whole shed' : 'Offline preview — this device only'}
           {lastFetched && ` · updated ${new Date(lastFetched).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`}
@@ -122,12 +118,14 @@ export default function HQ({ state, update, synced, whoAmI, onChangeUser, lastFe
         <button className={`seg ${view === 'regiments' ? 'on' : ''}`} onClick={() => setView('regiments')}>Regiments</button>
         <button className={`seg ${view === 'honours' ? 'on' : ''}`} onClick={() => setView('honours')}>Honours</button>
         <button className={`seg ${view === 'draw' ? 'on' : ''}`} onClick={() => setView('draw')}>Conscription</button>
+        <button className={`seg ${view === 'rules' ? 'on' : ''}`} onClick={() => setView('rules')}>Shed Rules</button>
       </div>
 
       {view === 'wall' && <Wall state={state} update={update} who={whoAmI} />}
       {view === 'polls' && <Polls state={state} update={update} who={whoAmI} />}
       {view === 'regiments' && <Regiments assignments={state.assignments} />}
       {view === 'honours' && <Honours state={state} update={update} />}
+      {view === 'rules' && <Rules playerCount={Object.keys(state.assignments).length} />}
       {view === 'draw' && (
         <Draw
           assignments={state.assignments}
