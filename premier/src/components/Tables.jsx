@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { leagueTable, formForTeam } from '../utils/scoring.js';
-import { getTeam } from '../data/england2027.js';
+import { getTeam, SCORING } from '../data/england2027.js';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -60,7 +60,7 @@ export default function Tables({ fixtures, assignments, onSelectTeam }) {
       <div className="card table-card">
         <table className="league-table">
           <thead>
-            <tr><th>#</th><th className="tl">Team</th><th className="tl">CO</th><th>P</th><th>GD</th><th>Pts</th><th className="tl">Form</th></tr>
+            <tr><th>#</th><th className="tl">Team</th><th className="tl">CO</th><th>P</th><th>GD</th><th>Pts</th><th>Tip</th><th className="tl">Form</th></tr>
           </thead>
           <tbody>
             {table.map((r, i) => {
@@ -76,6 +76,9 @@ export default function Tables({ fixtures, assignments, onSelectTeam }) {
                   <td>{r.p}</td>
                   <td>{r.gd > 0 ? `+${r.gd}` : r.gd}</td>
                   <td className="pts">{r.pts}</td>
+                  <td className={info && r.p >= SCORING.OVERACHIEVE_MIN_GAMES && info.rank > pos ? 'oa-good' : ''}>
+                    {info ? (r.p >= SCORING.OVERACHIEVE_MIN_GAMES && info.rank > pos ? `+${info.rank - pos}` : info.rank) : '—'}
+                  </td>
                   <td className="tl form-cell">
                     {form.length
                       ? form.slice(0, 5).reverse().map((x, j) => <span key={j} className={`pip pip-${x.toLowerCase()}`}>{x}</span>)
@@ -87,7 +90,11 @@ export default function Tables({ fixtures, assignments, onSelectTeam }) {
           </tbody>
         </table>
       </div>
-      <p className="muted small">CO = commanding officer (the owner in the sweep). Unclaimed regiments show a dash.</p>
+      <p className="muted small">
+        CO = commanding officer (the owner in the sweep). <b>Tip</b> is where the bookies
+        tipped them; once six games are played it turns green and shows the places gained,
+        which is worth +{SCORING.OVERACHIEVE} each.
+      </p>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { getTeam } from '../data/england2027.js';
+import { matchValue } from '../utils/odds.js';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -77,7 +78,10 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
       {md != null && md !== nowMd && (
         <button className="btn btn-jump" onClick={() => setMd(null)}>↩ Back to this week</button>
       )}
-      
+      <p className="muted small">
+        The number beside an owner is what a win there pays them. Tap a match for the full sheet.
+      </p>
+
       {byDay.map((g) => (
         <div key={g.key}>
           <div className="fx-day-head">{g.label}</div>
@@ -91,7 +95,11 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
                 <div className="fx-line">
                   <span className="fx-team">
                     <span className="fx-team-name">{h ? h.short : f.homeTeam.name}</span>
-                    {ho && <em className={`fx-owner pot-text-${h?.pot.toLowerCase()}`}>{ho}</em>}
+                    {ho && (
+                      <em className={`fx-owner pot-text-${h?.pot.toLowerCase()}`}>
+                        {ho} <b>+{matchValue(f.homeTeam.name, f.awayTeam.name, true).win}</b>
+                      </em>
+                    )}
                   </span>
                   <span className="fx-mid">
                     <span className="fx-score">
@@ -101,7 +109,11 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
                   </span>
                   <span className="fx-team fx-away">
                     <span className="fx-team-name">{a ? a.short : f.awayTeam.name}</span>
-                    {ao && <em className={`fx-owner pot-text-${a?.pot.toLowerCase()}`}>{ao}</em>}
+                    {ao && (
+                      <em className={`fx-owner pot-text-${a?.pot.toLowerCase()}`}>
+                        <b>+{matchValue(f.awayTeam.name, f.homeTeam.name, false).win}</b> {ao}
+                      </em>
+                    )}
                   </span>
                 </div>
               </button>

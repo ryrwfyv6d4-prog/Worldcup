@@ -1,13 +1,13 @@
-import { POT_POINTS, MEDALS, potFor, TEAMS } from '../data/england2027.js';
+import { MEDALS, SCORING, TEAMS, getTeam } from '../data/england2027.js';
+import { valueForFixture, matchValue, winProbability } from './odds.js';
 
-// Pre-season rank (TEAMS is listed best-first by bookies' odds within each pot),
-// used as the final table tiebreak so an all-zero table isn't alphabetical.
-const RANK = new Map(TEAMS.map((t, i) => [t.name, i]));
+// Pre-season odds rank, used as the final table tiebreak so an all-zero table
+// isn't alphabetical.
+const RANK = new Map(TEAMS.map((t) => [t.name, t.rank + (t.div === 1 ? 0 : 100)]));
 
-const PL_ROUNDS = 38;
-const CH_ROUNDS = 46;
+const ROUNDS = { 1: 38, 2: 46 };
 
-// ── Real league tables (3/1/0, sorted pts → GD → GF) ─────────────────────────
+// ── Real league tables (3/1/0) ───────────────────────────────────────────────
 export function leagueTable(fixtures, div) {
   const rows = {};
   for (const t of TEAMS.filter((t) => t.div === div)) {
@@ -32,17 +32,20 @@ export function leagueTable(fixtures, div) {
 }
 
 export function divisionComplete(fixtures, div) {
-  const rounds = div === 1 ? PL_ROUNDS : CH_ROUNDS;
   const teams = TEAMS.filter((t) => t.div === div).length;
   const finished = fixtures.filter((f) => f.division === div && f.status === 'FINISHED').length;
-  return finished >= (rounds * teams) / 2;
+  return finished >= (ROUNDS[div] * teams) / 2;
 }
 
-// ── Weekly sweep points for one team ─────────────────────────────────────────
+export function buildTables(fixtures) {
+  return { d1: leagueTable(fixtures, 1), d2: leagueTable(fixtures, 2) };
+}
+export function buildComplete(fixtures) {
+  return { d1: divisionComplete(fixtures, 1), d2: divisionComplete(fixtures, 2) };
+}
+
+// ── Match points: priced per fixture from the odds ───────────────────────────
 export function teamPoints(team, fixtures) {
-  const pot = potFor(team);
-  if (!pot) return { total: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pot };
-  const rate = POT_POINTS[pot];
   let total = 0, w = 0, d = 0, l = 0, gf = 0, ga = 0;
   for (const f of fixtures) {
     if (f.status !== 'FINISHED') continue;
@@ -51,20 +54,43 @@ export function teamPoints(team, fixtures) {
     if (!isHome && !isAway) continue;
     gf += isHome ? f.score.home : f.score.away;
     ga += isHome ? f.score.away : f.score.home;
-    if (f.score.winner === 'DRAW') { total += rate.draw; d++; }
-    else if ((f.score.winner === 'HOME_TEAM' && isHome) || (f.score.winner === 'AWAY_TEAM' && isAway)) { total += rate.win; w++; }
-    else l++;
+    const val = valueForFixture(f, team);
+    if (f.score.winner === 'DRAW') { total += val.draw; d++; }
+    else if ((f.score.winner === 'HOME_TEAM' && isHome) || (f.score.winner === 'AWAY_TEAM' && isAway)) {
+      total += val.win; w++;
+    } else l++;
   }
-  return { total, w, d, l, gf, ga, pot };
+  return { total, w, d, l, gf, ga };
 }
 
-// ── Medals ───────────────────────────────────────────────────────────────────
-// League-decided medals land automatically once a division's season completes.
-// BIG_PUSH (play-off final) and CUP aren't in the league feeds, so they're
-// awarded by hand in HQ → Honours and passed in as `manualMedals`.
+// ── Overachievement: places finished above your pre-season rank ──────────────
+export function overachieveForTeam(team, tables, complete) {
+  const t = getTeam(team);
+  const blank = { places: 0, pts: 0, pos: null, tipped: t ? t.rank : null, live: false, settled: false };
+  if (!t) return blank;
+  const table = t.div === 1 ? tables.d1 : tables.d2;
+  const row = table.find((r) => r.team === team);
+  if (!row) return blank;
+  const pos = table.findIndex((r) => r.team === team) + 1;
+  // Before a handful of games the table is noise, so this doesn't count yet
+  if (row.p < SCORING.OVERACHIEVE_MIN_GAMES) {
+    return { ...blank, pos, live: false };
+  }
+  const places = Math.max(0, t.rank - pos);
+  return {
+    places,
+    pts: places * SCORING.OVERACHIEVE,
+    pos,
+    tipped: t.rank,
+    live: true,
+    settled: t.div === 1 ? complete.d1 : complete.d2,
+  };
+}
+
+// ── Honours ─────────────────────────────────────────────────────────────────
 export function medalsForTeam(team, tables, complete, manualMedals = {}) {
   const medals = [];
-  const t = TEAMS.find((x) => x.name === team);
+  const t = getTeam(team);
   if (!t) return medals;
   if (t.div === 1 && complete.d1) {
     const pos = tables.d1.findIndex((r) => r.team === team) + 1;
@@ -83,7 +109,7 @@ export function medalsForTeam(team, tables, complete, manualMedals = {}) {
   return medals;
 }
 
-// ── Player totals & the ladder ───────────────────────────────────────────────
+// ── Player totals & the ladder ──────────────────────────────────────────────
 export function calculatePoints(player, assignments, tables, complete, fixtures, manualMedals) {
   const myTeams = (assignments[player] || []).filter(Boolean);
   let total = 0;
@@ -92,39 +118,37 @@ export function calculatePoints(player, assignments, tables, complete, fixtures,
     const pts = teamPoints(team, fixtures);
     const medalKeys = medalsForTeam(team, tables, complete, manualMedals);
     const medalPts = medalKeys.reduce((s, k) => s + MEDALS[k].pts, 0);
-    total += pts.total + medalPts;
-    breakdown.push({ team, ...pts, medals: medalKeys, medalPts });
+    const oa = overachieveForTeam(team, tables, complete);
+    total += pts.total + medalPts + oa.pts;
+    breakdown.push({ team, ...pts, medals: medalKeys, medalPts, oa, pot: getTeam(team)?.pot });
   }
   return { total, breakdown };
 }
 
-// Tiebreak cascade, in order: sweep points → wins → aggregate goal difference
-// → goals scored → (finally) name, so the order is never undefined.
+// Tiebreak: points -> wins -> aggregate goal difference -> goals scored
 export function buildLadder(assignments, fixtures, manualMedals = {}) {
-  const tables = { d1: leagueTable(fixtures, 1), d2: leagueTable(fixtures, 2) };
-  const complete = { d1: divisionComplete(fixtures, 1), d2: divisionComplete(fixtures, 2) };
+  const tables = buildTables(fixtures);
+  const complete = buildComplete(fixtures);
   return Object.keys(assignments)
     .map((name) => {
       const { total, breakdown } = calculatePoints(name, assignments, tables, complete, fixtures, manualMedals);
       const wins = breakdown.reduce((s, b) => s + b.w, 0);
       const gf = breakdown.reduce((s, b) => s + b.gf, 0);
       const ga = breakdown.reduce((s, b) => s + b.ga, 0);
+      const oaPts = breakdown.reduce((s, b) => s + b.oa.pts, 0);
       return {
-        name, total, breakdown,
+        name, total, breakdown, oaPts,
         teams: (assignments[name] || []).filter(Boolean),
         tb: { wins, gd: gf - ga, gf },
       };
     })
     .sort((a, b) =>
-      b.total - a.total ||
-      b.tb.wins - a.tb.wins ||
-      b.tb.gd - a.tb.gd ||
-      b.tb.gf - a.tb.gf ||
+      b.total - a.total || b.tb.wins - a.tb.wins || b.tb.gd - a.tb.gd || b.tb.gf - a.tb.gf ||
       a.name.localeCompare(b.name)
     );
 }
 
-// ── Match-sheet helpers ──────────────────────────────────────────────────────
+// ── Match-sheet helpers ─────────────────────────────────────────────────────
 export function formForTeam(team, fixtures, n = 5) {
   return fixtures
     .filter((f) => f.status === 'FINISHED' && (f.homeTeam.name === team || f.awayTeam.name === team))
@@ -151,12 +175,7 @@ export function reverseFixture(fixture, fixtures) {
   ) || null;
 }
 
-// ── Projections (Monte Carlo) ────────────────────────────────────────────────
-// The old version assumed a team wins every remaining match, which put opening
-// ceilings near 800 against a realistic winning total of ~230 — so nobody was
-// ever "cooked". This simulates the rest of the season instead.
-
-// Deterministic PRNG so badges don't flicker between renders
+// ── Projections (Monte Carlo) ───────────────────────────────────────────────
 function mulberry32(seed) {
   return function rand() {
     seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
@@ -166,41 +185,44 @@ function mulberry32(seed) {
   };
 }
 
-// Pre-season win/draw rates by pot, from the pot's competitive level
-const PRIOR = {
-  A: { w: 0.50, d: 0.24 },
-  B: { w: 0.30, d: 0.26 },
-  C: { w: 0.42, d: 0.27 },
-  D: { w: 0.32, d: 0.27 },
-};
-const PRIOR_WEIGHT = 6; // games of "belief" in the prior before form takes over
+const FORM_WEIGHT = 8; // games of belief in the odds before form takes over
 
-function ratesForTeam(team, fixtures) {
-  const t = TEAMS.find((x) => x.name === team);
-  if (!t) return { w: 0, d: 0 };
-  const prior = PRIOR[t.pot];
-  const { w, d, l } = teamPoints(team, fixtures);
-  const played = w + d + l;
-  const n = played + PRIOR_WEIGHT;
-  return {
-    w: (prior.w * PRIOR_WEIGHT + w) / n,
-    d: (prior.d * PRIOR_WEIGHT + d) / n,
-  };
+// Blend the pre-season odds probability with how the club is actually going
+function shrunkWinProb(team, opp, isHome, form) {
+  const base = winProbability(team, opp, isHome);
+  if (base == null) return 0;
+  const played = form.w + form.d + form.l;
+  if (!played) return base;
+  const actual = form.w / played;
+  return (base * FORM_WEIGHT + actual * played) / (FORM_WEIGHT + played);
 }
 
-// Medals a team could still mathematically reach (can't gain >3 league pts/game)
-function reachableMedalPoints(team, tables, manualMedals = {}) {
-  const t = TEAMS.find((x) => x.name === team);
+// Places a club could still climb, bounded by 3 league points per game remaining
+function reachableClimb(team, tables) {
+  const t = getTeam(team);
   if (!t) return 0;
   const table = t.div === 1 ? tables.d1 : tables.d2;
   const row = table.find((r) => r.team === team);
   if (!row) return 0;
-  const rounds = t.div === 1 ? PL_ROUNDS : CH_ROUNDS;
-  const maxGain = 3 * Math.max(0, rounds - row.p);
+  const pos = table.findIndex((r) => r.team === team) + 1;
+  const maxGain = 3 * Math.max(0, ROUNDS[t.div] - row.p);
+  const blockers = table.slice(0, pos - 1).filter((r) => r.pts > row.pts + maxGain).length;
+  const bestPos = blockers + 1;
+  return Math.max(0, t.rank - bestPos);
+}
+
+function reachableMedalPoints(team, tables, manualMedals = {}) {
+  const t = getTeam(team);
+  if (!t) return 0;
+  const table = t.div === 1 ? tables.d1 : tables.d2;
+  const row = table.find((r) => r.team === team);
+  if (!row) return 0;
+  const pos = table.findIndex((r) => r.team === team) + 1;
+  const maxGain = 3 * Math.max(0, ROUNDS[t.div] - row.p);
   const canReach = (targetPos) => {
     const target = table[targetPos - 1];
     if (!target) return false;
-    if (row === target || table.indexOf(row) < targetPos) return true;
+    if (pos <= targetPos) return true;
     return row.pts + maxGain >= target.pts;
   };
   let pts = 0;
@@ -208,100 +230,93 @@ function reachableMedalPoints(team, tables, manualMedals = {}) {
     if (canReach(1)) pts += MEDALS.VC.pts;
     if (canReach(4)) pts += MEDALS.DSO.pts;
     if (t.pot === 'B') {
-      const safety = table[16]; // 17th
+      const safety = table[16];
       if (!safety || row.pts + maxGain >= safety.pts) pts += MEDALS.SURVIVAL.pts;
     }
   } else {
     if (canReach(1)) pts += MEDALS.CHAMP_TITLE.pts;
     if (canReach(2)) pts += MEDALS.PROMOTION.pts;
-    if (canReach(6)) pts += MEDALS.BIG_PUSH.pts; // play-offs are top six
+    if (canReach(6)) pts += MEDALS.BIG_PUSH.pts;
   }
-  // Already-awarded manual medals are banked, not upside
-  for (const k of manualMedals[team] || []) {
-    if (k === 'BIG_PUSH') pts = Math.max(0, pts - MEDALS.BIG_PUSH.pts);
-  }
+  if ((manualMedals[team] || []).includes('BIG_PUSH')) pts = Math.max(0, pts - MEDALS.BIG_PUSH.pts);
   return pts;
 }
 
 const SIMS = 300;
+const pct = (sorted, p) => (sorted.length
+  ? sorted[Math.min(sorted.length - 1, Math.max(0, Math.round((p / 100) * (sorted.length - 1))))]
+  : 0);
 
-function pct(sortedArr, p) {
-  if (!sortedArr.length) return 0;
-  const i = Math.min(sortedArr.length - 1, Math.max(0, Math.round((p / 100) * (sortedArr.length - 1))));
-  return sortedArr[i];
-}
-
-// Simulate the remaining season and return per-player projections.
-// projected = median outcome, ceiling = 95th percentile + reachable medals.
 export function computeOutlook(assignments, fixtures, manualMedals = {}) {
   const players = Object.keys(assignments);
   if (!players.length) return {};
 
-  const tables = { d1: leagueTable(fixtures, 1), d2: leagueTable(fixtures, 2) };
-  const complete = { d1: divisionComplete(fixtures, 1), d2: divisionComplete(fixtures, 2) };
-
-  // Per-team: banked points now, plus SIMS simulated remaining-season totals
+  const tables = buildTables(fixtures);
+  const complete = buildComplete(fixtures);
+  const seasonOver = complete.d1 && complete.d2;
   const owned = [...new Set(players.flatMap((p) => (assignments[p] || []).filter(Boolean)))];
-  const teamSims = {};
-  const teamBanked = {};
-  const teamMedalUpside = {};
+
+  const banked = {}, upside = {}, sims = {};
   const rand = mulberry32(20262027);
 
   for (const team of owned) {
-    const t = TEAMS.find((x) => x.name === team);
-    const rate = POT_POINTS[t?.pot] || { win: 0, draw: 0 };
-    const { w: pw, d: pd } = ratesForTeam(team, fixtures);
+    const form = teamPoints(team, fixtures);
+    const medalKeys = medalsForTeam(team, tables, complete, manualMedals);
+    const oa = overachieveForTeam(team, tables, complete);
+    banked[team] = form.total + medalKeys.reduce((s, k) => s + MEDALS[k].pts, 0) + oa.pts;
+    upside[team] = seasonOver
+      ? 0
+      : reachableMedalPoints(team, tables, manualMedals) + reachableClimb(team, tables) * SCORING.OVERACHIEVE;
+
     const remaining = fixtures.filter(
       (f) => f.status !== 'FINISHED' && (f.homeTeam.name === team || f.awayTeam.name === team)
-    ).length;
+    );
+    const priced = remaining.map((f) => {
+      const isHome = f.homeTeam.name === team;
+      const opp = isHome ? f.awayTeam.name : f.homeTeam.name;
+      return { win: matchValue(team, opp, isHome).win, p: shrunkWinProb(team, opp, isHome, form) };
+    });
 
-    const banked = teamPoints(team, fixtures).total +
-      medalsForTeam(team, tables, complete, manualMedals).reduce((s, k) => s + MEDALS[k].pts, 0);
-    teamBanked[team] = banked;
-    teamMedalUpside[team] = complete.d1 && complete.d2 ? 0 : reachableMedalPoints(team, tables, manualMedals);
-
-    const sims = new Array(SIMS);
+    const arr = new Array(SIMS);
     for (let s = 0; s < SIMS; s++) {
       let pts = 0;
-      for (let g = 0; g < remaining; g++) {
+      for (const m of priced) {
         const r = rand();
-        if (r < pw) pts += rate.win;
-        else if (r < pw + pd) pts += rate.draw;
+        if (r < m.p) pts += m.win;
+        else if (r < m.p + 0.25) pts += SCORING.DRAW;
       }
-      sims[s] = pts;
+      arr[s] = pts;
     }
-    teamSims[team] = sims;
+    sims[team] = arr;
   }
 
   const out = {};
   for (const p of players) {
     const teams = (assignments[p] || []).filter(Boolean);
-    const banked = teams.reduce((s, t) => s + (teamBanked[t] || 0), 0);
-    const medalUpside = teams.reduce((s, t) => s + (teamMedalUpside[t] || 0), 0);
+    const base = teams.reduce((s, t) => s + (banked[t] || 0), 0);
+    const up = teams.reduce((s, t) => s + (upside[t] || 0), 0);
     const totals = new Array(SIMS);
     for (let s = 0; s < SIMS; s++) {
-      let sum = banked;
-      for (const t of teams) sum += teamSims[t][s];
+      let sum = base;
+      for (const t of teams) sum += sims[t][s];
       totals[s] = sum;
     }
     totals.sort((a, b) => a - b);
     out[p] = {
-      banked,
+      banked: base,
       projected: Math.round(pct(totals, 50)),
       floor: Math.round(pct(totals, 5)),
-      ceiling: Math.round(pct(totals, 95)) + medalUpside,
+      ceiling: Math.round(pct(totals, 95)) + up,
     };
   }
 
-  // Cooked: even a top-5% run leaves you short of the leader's median outcome
   const leader = players.reduce((best, p) => (out[p].projected > out[best].projected ? p : best), players[0]);
   const bar = out[leader].projected;
   for (const p of players) out[p].cooked = p !== leader && out[p].ceiling < bar;
-
   return out;
 }
 
-// ── Time-window helpers ──────────────────────────────────────────────────────
+// ── Time-window helpers ─────────────────────────────────────────────────────
 export function todayPoints(player, assignments, fixtures) {
   const today = new Date().toLocaleDateString('en-CA');
   const todays = fixtures.filter(
@@ -358,22 +373,21 @@ export function feedEvents(assignments, fixtures, limit = 20) {
       const team = side === 'home' ? f.homeTeam.name : f.awayTeam.name;
       const who = owner(team);
       if (!who) continue;
-      const t = TEAMS.find((x) => x.name === team);
-      if (!t) continue;
-      const rate = POT_POINTS[t.pot];
+      const val = valueForFixture(f, team);
       const won = (f.score.winner === 'HOME_TEAM' && side === 'home') || (f.score.winner === 'AWAY_TEAM' && side === 'away');
       const drew = f.score.winner === 'DRAW';
-      const pts = won ? rate.win : drew ? rate.draw : 0;
-      events.push({ fixture: f, team, owner: who, pts, result: won ? 'W' : drew ? 'D' : 'L', ts: f.utcDate });
+      events.push({
+        fixture: f, team, owner: who,
+        pts: won ? val.win : drew ? val.draw : 0,
+        result: won ? 'W' : drew ? 'D' : 'L',
+        ts: f.utcDate,
+      });
     }
   }
   return events.sort((a, b) => (b.ts || '').localeCompare(a.ts || '')).slice(0, limit);
 }
 
-// ── My Weekend ───────────────────────────────────────────────────────────────
-// The next (or current) weekend's fixtures involving a player's four clubs,
-// across both divisions. Window runs Fri 00:00 → Mon 06:00 around the next
-// fixture, so midweek rounds get their own "weekend" too.
+// ── My Weekend ──────────────────────────────────────────────────────────────
 export function myWeekend(player, assignments, fixtures) {
   const teams = (assignments[player] || []).filter(Boolean);
   if (!teams.length) return { window: null, matches: [] };
@@ -389,8 +403,8 @@ export function myWeekend(player, assignments, fixtures) {
 
   const a = new Date(anchor.utcDate);
   const start = new Date(a); start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - ((a.getDay() + 2) % 7)); // back to Friday
-  const end = new Date(start); end.setDate(end.getDate() + 4); // through Monday
+  start.setDate(start.getDate() - ((a.getDay() + 2) % 7));
+  const end = new Date(start); end.setDate(end.getDate() + 4);
 
   const matches = mine
     .filter((f) => {

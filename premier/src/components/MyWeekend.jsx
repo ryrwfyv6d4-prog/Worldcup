@@ -1,4 +1,5 @@
-import { getTeam, POT_POINTS } from '../data/england2027.js';
+import { getTeam } from '../data/england2027.js';
+import { valueForFixture } from '../utils/odds.js';
 import { myWeekend } from '../utils/scoring.js';
 import { getRivalry } from '../data/rivalries.js';
 
@@ -63,7 +64,7 @@ export default function MyWeekend({ player, assignments, fixtures, onOpenMatch }
     const mine = teams.includes(f.homeTeam.name) ? f.homeTeam.name : f.awayTeam.name;
     const info = getTeam(mine);
     if (!info) return sum;
-    const rate = POT_POINTS[info.pot];
+    const rate = valueForFixture(f, mine);
     const isHome = f.homeTeam.name === mine;
     if (f.score.winner === 'DRAW') return sum + rate.draw;
     const won = (f.score.winner === 'HOME_TEAM' && isHome) || (f.score.winner === 'AWAY_TEAM' && !isHome);
@@ -84,7 +85,7 @@ export default function MyWeekend({ player, assignments, fixtures, onOpenMatch }
         const mine = getTeam(mineName);
         const opp = getTeam(isHome ? f.awayTeam.name : f.homeTeam.name);
         const derby = getRivalry(f.homeTeam.name, f.awayTeam.name);
-        const rate = mine ? POT_POINTS[mine.pot] : null;
+        const rate = mine ? valueForFixture(f, mineName) : null;
         const done = f.status === 'FINISHED';
         const live = f.status === 'IN_PLAY';
         let pts = null;
@@ -109,7 +110,12 @@ export default function MyWeekend({ player, assignments, fixtures, onOpenMatch }
                   <span className={`mw-pts ${pts > 0 ? 'gain' : ''}`}>{pts > 0 ? `+${pts}` : 'nil'}</span>
                 </>
               )}
-              {!done && !live && <span className="mw-ko">{fmtKo(f.utcDate)}</span>}
+              {!done && !live && (
+                <>
+                  <span className="mw-ko">{fmtKo(f.utcDate)}</span>
+                  {rate && <span className="mw-worth">+{rate.win}</span>}
+                </>
+              )}
             </span>
           </button>
         );

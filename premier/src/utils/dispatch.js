@@ -1,5 +1,6 @@
 // The weekly Dispatch — a Monday-morning communiqué written from the results.
-import { TEAMS, POT_POINTS, getTeam } from '../data/england2027.js';
+import { getTeam } from '../data/england2027.js';
+import { valueForFixture } from './odds.js';
 import { getRivalry } from '../data/rivalries.js';
 import { pointsBetween } from './scoring.js';
 
@@ -59,9 +60,10 @@ export function buildDispatch(assignments, fixtures) {
     if (!h || !a || f.score.winner === 'DRAW') continue;
     const winner = f.score.winner === 'HOME_TEAM' ? h : a;
     const loser = f.score.winner === 'HOME_TEAM' ? a : h;
-    if ((winner.pot === 'B' || winner.pot === 'D') && (loser.pot === 'A' || loser.pot === 'C')) {
+    const val = valueForFixture(f, winner.name);
+    if (val.win >= 8) {
       const who = ownerOf(winner.name, assignments);
-      lines.push(`Against the odds: ${winner.short} took ${loser.short}'s colours${who ? ` — ${who} banks +${POT_POINTS[winner.pot].win}` : ''}.`);
+      lines.push(`Against the odds: ${winner.short} took ${loser.short}'s colours${who ? ` — ${who} banks +${val.win}` : ''}.`);
       if (lines.length >= 6) break;
     }
   }

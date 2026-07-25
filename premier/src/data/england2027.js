@@ -25,17 +25,8 @@ export const RANKS = [
   'Captain', 'Lieutenant', 'Sergeant', 'Corporal', 'Private',
 ];
 
-// ── Weekly points ────────────────────────────────────────────────────────────
-// "The deeper in the mud, the more each victory pays."
-// Calibrated so a good season in any pot lands ~50–70 pts:
-//   Pot A  ~22 wins × 3 ≈ 66      Pot B  ~11 wins × 6 ≈ 66
-//   Pot C  ~20 wins × 2 ≈ 40+medals   Pot D  ~13 wins × 4 ≈ 52
-export const POT_POINTS = {
-  A: { win: 3, draw: 1 }, // Armoured Divisions — PL top half
-  B: { win: 6, draw: 2 }, // Infantry — PL bottom half
-  C: { win: 2, draw: 1 }, // Reserves — Championship top half
-  D: { win: 4, draw: 2 }, // Territorials — Championship bottom half
-};
+// Pots exist for the DRAW only (one club from each). They no longer set point
+// values — every win is priced individually from the odds.
 
 export const POT_LABELS = {
   A: 'Armoured Divisions',
@@ -45,14 +36,28 @@ export const POT_LABELS = {
 };
 
 // ── Medals (season honours, stacked on weekly points) ────────────────────────
+// Honours are deliberately half what a flat-pot system would use: at full
+// weight the owner of the eventual champion won the sweep ~half the time, which
+// made the draw the whole contest.
 export const MEDALS = {
-  VC: { label: 'Victoria Cross', detail: 'Your team wins the Premier League', pts: 30 },
-  DSO: { label: 'Distinguished Service Order', detail: 'Premier League top-four finish', pts: 15 },
-  SURVIVAL: { label: 'Survival Medal', detail: 'Infantry (Pot B) team avoids relegation', pts: 10 },
-  PROMOTION: { label: 'Battlefield Promotion', detail: 'Championship team promoted', pts: 20 },
-  BIG_PUSH: { label: 'The Big Push', detail: 'Wins the play-off final at Wembley', pts: 10 },
-  CHAMP_TITLE: { label: 'Second Front Standard', detail: 'Wins the Championship outright', pts: 5 },
-  CUP: { label: 'Cup Honours', detail: 'FA Cup or League Cup winner (marked manually)', pts: 10 },
+  VC: { label: 'Victoria Cross', detail: 'Your team wins the Premier League', pts: 15 },
+  DSO: { label: 'Distinguished Service Order', detail: 'Premier League top-four finish', pts: 8 },
+  SURVIVAL: { label: 'Survival Medal', detail: 'A bottom-half PL team avoids relegation', pts: 5 },
+  PROMOTION: { label: 'Battlefield Promotion', detail: 'Championship team promoted', pts: 10 },
+  BIG_PUSH: { label: 'The Big Push', detail: 'Wins the play-off final at Wembley', pts: 5 },
+  CHAMP_TITLE: { label: 'Second Front Standard', detail: 'Wins the Championship outright', pts: 3 },
+  CUP: { label: 'Cup Honours', detail: 'FA Cup or League Cup winner (marked manually)', pts: 5 },
+};
+
+// ── Scoring constants ───────────────────────────────────────────────────────
+// Wins are priced per match from the two clubs' pre-season odds ranks and the
+// venue (see utils/odds.js): value = K / P(win), so the less likely the win,
+// the more it pays. Draws are flat.
+export const SCORING = {
+  K: 2,                     // win-price numerator
+  DRAW: 2,                  // any draw
+  OVERACHIEVE: 2,           // points per league place finished above your rank
+  OVERACHIEVE_MIN_GAMES: 6, // table must mean something before this counts
 };
 
 // ── The regiments ────────────────────────────────────────────────────────────
@@ -199,6 +204,13 @@ export const TEAMS = [
     codename: 'The First Tanks',
     roots: 'The tank was invented in Lincoln — William Foster & Co, 1915. "Little Willie" rolled first where the Imps now play.' },
 ];
+
+// Pre-season odds rank within each division (1 = shortest odds). Derived from
+// the order clubs are listed above, so the two can never fall out of step.
+for (const div of [1, 2]) {
+  TEAMS.filter((t) => t.div === div).forEach((t, i) => { t.rank = i + 1; });
+}
+export const DIV_SIZE = { 1: TEAMS.filter((t) => t.div === 1).length, 2: TEAMS.filter((t) => t.div === 2).length };
 
 export const TEAM_BY_NAME = Object.fromEntries(TEAMS.map((t) => [t.name, t]));
 export const POTS = { A: [], B: [], C: [], D: [] };

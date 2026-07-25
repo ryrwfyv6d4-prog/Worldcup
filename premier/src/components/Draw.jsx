@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { POTS, POT_LABELS, POT_POINTS, DEFAULT_PLAYERS, SQUAD_SIZE, getTeam } from '../data/england2027.js';
+import { POTS, POT_LABELS, DEFAULT_PLAYERS, SQUAD_SIZE, getTeam } from '../data/england2027.js';
 
 function shuffle(arr) {
   const a = [...arr];
@@ -50,7 +50,8 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
     <div>
       <p className="muted">
         Four pots, one team from each. No choices, no appeals — your call-up papers
-        arrive and you serve. Infantry and Territorial results pay double.
+        arrive and you serve. What each club's results are worth is set by the odds,
+        not by its pot.
       </p>
 
       {!drawn && (
@@ -95,7 +96,7 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
 
           {['A', 'B', 'C', 'D'].map((k) => (
             <div className="card" key={k}>
-              <h3>Pot {k} — {POT_LABELS[k]} <span className="muted">(win {POT_POINTS[k].win} · draw {POT_POINTS[k].draw})</span></h3>
+              <h3>Pot {k} — {POT_LABELS[k]} <span className="muted">({POTS[k].length} clubs)</span></h3>
               <div className="chip-row">
                 {POTS[k].map((t) => <span key={t} className="chip chip-team">{getTeam(t).short}</span>)}
               </div>

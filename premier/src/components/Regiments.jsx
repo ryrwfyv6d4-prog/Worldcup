@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { TEAMS, POT_LABELS, POT_POINTS } from '../data/england2027.js';
+import { TEAMS, POT_LABELS } from '../data/england2027.js';
+import { priceRangeFor } from '../utils/odds.js';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -48,7 +49,9 @@ export default function Regiments({ assignments }) {  // rendered inside HQ
               <span className="reg-codename">{t.codename}</span>
             </div>
             <div className="reg-meta">
-              <span className="reg-pot">{POT_LABELS[t.pot]} · win {POT_POINTS[t.pot].win} / draw {POT_POINTS[t.pot].draw}</span>
+              <span className="reg-pot">
+                {POT_LABELS[t.pot]} · tipped {t.rank} of {t.div === 1 ? 20 : 24} · wins pay {priceRangeFor(t.name).lo}–{priceRangeFor(t.name).hi}
+              </span>
               {owner && <span className="reg-owner">CO: {owner}</span>}
             </div>
             <p className="reg-roots">{t.roots}</p>

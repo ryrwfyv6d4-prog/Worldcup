@@ -4836,3 +4836,18 @@ body, .app {
 .rule-pot-name { flex: 1; font-size: 0.84rem; font-weight: 700; color: var(--text); }
 .rule-pot-name em { display: block; font-size: 0.68rem; font-weight: 400; font-style: normal; color: var(--text-muted); }
 .rule-pot-rate { font-size: 0.76rem; font-weight: 700; color: var(--gold-dark); white-space: nowrap; }
+
+/* ── v6: on-the-line pricing ── */
+.en-ms-price { font-size: 0.72rem; color: var(--gold-dark); margin-top: 2px; font-weight: 700; }
+.en-ms-price b { font-size: 0.95rem; }
+.en-ms-price span { color: var(--text-muted); font-weight: 400; }
+.fx-owner b { color: var(--gold-dark); font-style: normal; }
+.mw-worth { font-size: 0.76rem; font-weight: 800; color: var(--gold-dark); }
+.lb-oa { font-size: 0.66rem; font-weight: 700; color: var(--green); }
+.oa-good { color: var(--green); font-weight: 800; }
+.league-table .oa-good { color: var(--green); }
+.rule-examples { margin: 8px 0; }
+.rule-eg { display: flex; align-items: baseline; gap: 8px; padding: 5px 0; border-top: 1px dashed var(--border); font-size: 0.82rem; color: var(--text); }
+.rule-eg:first-of-type { border-top: 0; }
+.rule-eg-label { flex: 1; }
+.rule-eg-val { font-weight: 800; color: var(--gold-dark); font-variant-numeric: tabular-nums; }

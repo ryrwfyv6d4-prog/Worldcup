@@ -166,6 +166,7 @@ export default function Leaderboard({
                 <span className="lb-pts">
                   {row.total}<small>pts</small>
                   {today > 0 && <span className="lb-today">+{today} today</span>}
+                  {row.oaPts > 0 && <span className="lb-oa">+{row.oaPts} vs tipped</span>}
                   {o.projected != null && <span className="lb-max">proj {o.projected}</span>}
                 </span>
                 <span className={`lb-chev ${isExpanded ? 'open' : ''}`}>{'▸'}</span>
@@ -174,7 +175,7 @@ export default function Leaderboard({
                 <div className="lb-breakdown">
                   <table className="breakdown-table">
                     <thead>
-                      <tr><th>Regiment</th><th>Record</th><th>Honours</th><th style={{ textAlign: 'right' }}>Pts</th></tr>
+                      <tr><th>Regiment</th><th>Record</th><th>vs prediction / honours</th><th style={{ textAlign: 'right' }}>Pts</th></tr>
                     </thead>
                     <tbody>
                       {row.breakdown.map((b) => {
@@ -187,8 +188,13 @@ export default function Leaderboard({
                               </button>
                             </td>
                             <td className="small-text">{b.w}W {b.d}D {b.l}L</td>
-                            <td className="small-text">{b.medals.map((m) => MEDALS[m].label).join(', ') || '—'}</td>
-                            <td className="pts-cell">{b.total + b.medalPts}</td>
+                            <td className="small-text">
+                              {b.oa.live && b.oa.places > 0
+                                ? <span className="oa-good">{b.oa.pos}th, tipped {b.oa.tipped} (+{b.oa.pts})</span>
+                                : b.oa.live ? <span className="muted">{b.oa.pos}th, tipped {b.oa.tipped}</span> : '—'}
+                              {b.medals.length > 0 && <span> · {b.medals.map((m) => MEDALS[m].label).join(', ')}</span>}
+                            </td>
+                            <td className="pts-cell">{b.total + b.medalPts + b.oa.pts}</td>
                           </tr>
                         );
                       })}

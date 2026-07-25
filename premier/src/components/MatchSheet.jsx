@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { getTeam, POT_POINTS, POT_LABELS } from '../data/england2027.js';
+import { getTeam, POT_LABELS } from '../data/england2027.js';
+import { matchValue } from '../utils/odds.js';
 import { getMatchup } from '../data/rivalries.js';
 import { leagueTable, formForTeam, positionOf, reverseFixture } from '../utils/scoring.js';
 
@@ -49,8 +50,8 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
   const rev = reverseFixture(fixture, fixtures);
 
   const sides = [
-    { info: home, name: fixture.homeTeam.name },
-    { info: away, name: fixture.awayTeam.name },
+    { info: home, name: fixture.homeTeam.name, isHome: true, opp: fixture.awayTeam.name },
+    { info: away, name: fixture.awayTeam.name, isHome: false, opp: fixture.homeTeam.name },
   ];
 
   return (
@@ -72,7 +73,7 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
           <div className="en-ms-teams">
             {sides.map((s, i) => {
               const owner = ownerOf(s.name, assignments);
-              const rate = s.info ? POT_POINTS[s.info.pot] : null;
+              const rate = s.info ? matchValue(s.name, s.opp, s.isHome) : null;
               return (
                 <div className={`en-ms-side ${i === 1 ? 'away' : ''}`} key={s.name}>
                   <button
@@ -88,12 +89,14 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
                   </button>
                   <div className="en-ms-codename">{s.info?.codename}</div>
                   {owner ? (
-                    <div className="en-ms-owner">
-                      <b>{owner}</b>
-                      {rate && <span> · win +{rate.win} / draw +{rate.draw}</span>}
-                    </div>
+                    <div className="en-ms-owner"><b>{owner}</b></div>
                   ) : (
                     <div className="en-ms-owner unowned">unclaimed</div>
+                  )}
+                  {rate && (
+                    <div className="en-ms-price">
+                      <b>+{rate.win}</b> to win<span> · +{rate.draw} draw</span>
+                    </div>
                   )}
                 </div>
               );
@@ -120,7 +123,9 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
 
           {home && away && (
             <div className="muted small">
-              {home.short}: {POT_LABELS[home.pot]} · {away.short}: {POT_LABELS[away.pot]}
+              Priced off the odds: {home.short} tipped {ordinal(home.rank)}, {away.short} tipped{' '}
+              {ordinal(away.rank)} in the {home.div === 1 ? 'Premier League' : 'Championship'}.
+              The bigger the upset, the bigger the payout.
             </div>
           )}
 

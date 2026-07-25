@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { getTeam, POT_LABELS, POT_POINTS } from '../data/england2027.js';
-import { leagueTable, formForTeam, positionOf, teamPoints } from '../utils/scoring.js';
+import { getTeam, POT_LABELS, SCORING } from '../data/england2027.js';
+import { priceRangeFor } from '../utils/odds.js';
+import { leagueTable, formForTeam, positionOf, teamPoints, buildTables, buildComplete, overachieveForTeam } from '../utils/scoring.js';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -25,6 +26,8 @@ export default function TeamSheet({ team, fixtures, assignments, onClose }) {
   const row = table.find((r) => r.team === team);
   const form = formForTeam(team, fixtures);
   const pts = teamPoints(team, fixtures);
+  const range = priceRangeFor(team);
+  const oa = overachieveForTeam(team, buildTables(fixtures), buildComplete(fixtures));
   const next = fixtures
     .filter((f) => f.status === 'SCHEDULED' && (f.homeTeam.name === team || f.awayTeam.name === team))
     .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''))[0];
@@ -45,7 +48,9 @@ export default function TeamSheet({ team, fixtures, assignments, onClose }) {
             <span className="reg-codename">{info.codename}</span>
           </div>
           <div className="reg-meta">
-            <span className="reg-pot">{POT_LABELS[info.pot]} · win {POT_POINTS[info.pot].win} / draw {POT_POINTS[info.pot].draw}</span>
+            <span className="reg-pot">
+              {POT_LABELS[info.pot]} · tipped {info.rank} of {info.div === 1 ? 20 : 24} · wins pay {range.lo}–{range.hi}
+            </span>
             {owner && <span className="reg-owner">CO: {owner}</span>}
           </div>
           <p className="reg-roots">{info.roots}</p>
@@ -57,6 +62,10 @@ export default function TeamSheet({ team, fixtures, assignments, onClose }) {
             <div className="en-ms-stat"><b>{row ? `${row.w}-${row.d}-${row.l}` : '—'}</b><span>W-D-L</span></div>
             <div className="en-ms-stat"><b>{row ? `${row.gf}:${row.ga}` : '—'}</b><span>goals</span></div>
             <div className="en-ms-stat"><b>{pts.total}</b><span>sweep pts</span></div>
+            <div className="en-ms-stat">
+              <b className={oa.pts > 0 ? 'oa-good' : ''}>{oa.live ? (oa.places > 0 ? `+${oa.places}` : '0') : '—'}</b>
+              <span>vs tipped{oa.pts > 0 ? ` (+${oa.pts})` : ''}</span>
+            </div>
             <div className="en-ms-form">
               {form.length
                 ? <span className="pips">{form.map((r, i) => <span key={i} className={`pip pip-${r.toLowerCase()}`}>{r}</span>)}</span>
