@@ -56,6 +56,11 @@ jobs:
         working-directory: premier
         run: npm ci
 
+      - name: Fetch club crests (falls back to generated insignia if unavailable)
+        working-directory: premier
+        run: npm run crests
+        continue-on-error: true
+
       - name: Build England Campaign app
         working-directory: premier
         run: npm run build

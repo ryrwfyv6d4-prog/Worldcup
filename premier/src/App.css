@@ -4929,3 +4929,6 @@ body, .app {
 .en-ms-firms b { color: var(--brass-bright); font-weight: 700; }
 .mw-match .crest { margin-right: 2px; }
 .import-bad { color: var(--live-red); }
+
+/* real crest images sit on the same footprint as the generated insignia */
+.crest-img { object-fit: contain; flex: 0 0 auto; vertical-align: middle; }
