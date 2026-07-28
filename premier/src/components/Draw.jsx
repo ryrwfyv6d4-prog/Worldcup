@@ -15,7 +15,32 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
     Object.keys(assignments).length ? Object.keys(assignments) : DEFAULT_PLAYERS
   );
   const [newName, setNewName] = useState('');
+  const [importing, setImporting] = useState(null);
   const drawn = Object.keys(assignments).length > 0;
+
+  // Pull the roster straight from the World Cup sweep so the same blokes are in
+  // both. Runs in the browser, which can reach the worker even when a build
+  // machine can't.
+  const importWorldCup = async () => {
+    const base = import.meta.env.VITE_WALL_API_URL;
+    if (!base) { setImporting({ ok: false, msg: 'No worker configured in this build.' }); return; }
+    setImporting({ ok: null, msg: 'Fetching the World Cup roster…' });
+    try {
+      const res = await fetch(`${base}/state`);
+      if (!res.ok) throw new Error(`worker returned ${res.status}`);
+      const state = await res.json();
+      const names = Object.keys((state && state.assignments) || {});
+      const roster = names.length ? names : (state && state.participants) || [];
+      if (!roster.length) throw new Error('no players found in the World Cup sweep');
+      const merged = [...players];
+      let added = 0;
+      for (const n of roster) if (!merged.includes(n)) { merged.push(n); added++; }
+      setPlayers(merged);
+      setImporting({ ok: true, msg: `Found ${roster.length}. Added ${added} new — check the list and remove anyone sitting this one out.` });
+    } catch (err) {
+      setImporting({ ok: false, msg: `Couldn't reach the World Cup sweep (${err.message}). Add the names by hand.` });
+    }
+  };
 
   const addPlayer = () => {
     const n = newName.trim();
@@ -68,6 +93,12 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
                 </span>
               ))}
             </div>
+            <div className="btn-row" style={{ marginBottom: 8 }}>
+              <button className="btn" onClick={importWorldCup}>⇪ Import World Cup roster</button>
+            </div>
+            {importing && (
+              <p className={`muted small ${importing.ok === false ? 'import-bad' : ''}`}>{importing.msg}</p>
+            )}
             <div className="add-row">
               <input
                 value={newName}

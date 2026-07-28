@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { getTeam, POT_LABELS, SCORING } from '../data/england2027.js';
 import { priceRangeFor } from '../utils/odds.js';
 import NextFive, { RecentForm } from './NextFive.jsx';
+import Crest from './Crest.jsx';
 import { leagueTable, formForTeam, positionOf, teamPoints, buildTables, buildComplete, overachieveForTeam, nextFixtures, recentResults } from '../utils/scoring.js';
 
 function ownerOf(team, assignments) {
@@ -44,6 +45,7 @@ export default function TeamSheet({ team, fixtures, assignments, onClose, onOpen
       <div className="ms-sheet" onClick={(e) => e.stopPropagation()}>
         <div className={`card regiment pot-border-${info.pot.toLowerCase()}`} style={{ marginTop: 8 }}>
           <div className="reg-head">
+            <Crest team={team} size={44} className="reg-crest" />
             <span className="reg-name">{info.short}</span>
             <span className="reg-codename">{info.codename}</span>
           </div>

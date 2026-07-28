@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { getTeam } from '../data/england2027.js';
 import { matchValue } from '../utils/odds.js';
+import Crest from './Crest.jsx';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -94,7 +95,10 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
               <button className={`card fx-card ${f.status === 'IN_PLAY' ? 'live' : ''}`} key={f.id} onClick={() => onOpenMatch(f)}>
                 <div className="fx-line">
                   <span className="fx-team">
-                    <span className="fx-team-name">{h ? h.short : f.homeTeam.name}</span>
+                    <span className="fx-team-name">
+                      <Crest team={f.homeTeam.name} size={20} />
+                      {h ? h.short : f.homeTeam.name}
+                    </span>
                     {ho && (
                       <em className={`fx-owner pot-text-${h?.pot.toLowerCase()}`}>
                         {ho} <b>+{matchValue(f.homeTeam.name, f.awayTeam.name, true).win}</b>
@@ -108,7 +112,10 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
                     {f.status === 'IN_PLAY' && <span className="live-dot">LIVE</span>}
                   </span>
                   <span className="fx-team fx-away">
-                    <span className="fx-team-name">{a ? a.short : f.awayTeam.name}</span>
+                    <span className="fx-team-name">
+                      {a ? a.short : f.awayTeam.name}
+                      <Crest team={f.awayTeam.name} size={20} />
+                    </span>
                     {ao && (
                       <em className={`fx-owner pot-text-${a?.pot.toLowerCase()}`}>
                         <b>+{matchValue(f.awayTeam.name, f.homeTeam.name, false).win}</b> {ao}

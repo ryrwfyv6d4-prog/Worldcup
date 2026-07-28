@@ -83,11 +83,58 @@ const RIVALRIES = [
   },
 ];
 
+
+// The firms, as social history. English football's hooligan era is heavily
+// documented — books, court records, a shelf of documentaries — and these
+// rivalries can't honestly be described without it. Written in the past tense
+// on purpose: this is what these fixtures were, not an advert for what they
+// should be.
+const FIRMS = {
+  'Manchester City FC|Manchester United FC':
+    "United's Red Army were the template for the seventies travelling mob; City's Guvnors answered in the eighties. Both are now a documentary and a lot of dads in the pub.",
+  'Newcastle United FC|Sunderland AFC':
+    "Newcastle's Gremlins and Sunderland's Seaburn Casuals. The confrontation at Seaburn in 2000 drew some of the longest hooliganism sentences English courts had handed down.",
+  'Leeds United FC|Manchester United FC':
+    "The Service Crew against the Red Army. More than any other fixture, this is the one that put the phrase 'the English disease' into seventies newspapers.",
+  'Chelsea FC|Fulham FC':
+    "Chelsea's Headhunters were the most notorious firm in the country and the target of a famous undercover police operation. Fulham, to their eternal credit, never really bothered.",
+  'Millwall FC|West Ham United FC':
+    "The big one: West Ham's Inter City Firm against Millwall's Bushwackers. New Cross in 1976, Upton Park in 2009. Still the most heavily policed fixture in London, and the reason 'no one likes us' became a song.",
+  'Cardiff City FC|Swansea City AFC':
+    "The Soul Crew against the Swansea Jacks — policed like a state visit, away fans bussed in convoy. By most measures the most genuinely bitter derby in Britain.",
+  'Portsmouth FC|Southampton FC':
+    "Pompey's 6.57 Crew, named after the early train to away games, against the Southampton mob. Seventeen miles and a great deal of history nobody is especially proud of.",
+  'West Bromwich Albion FC|Wolverhampton Wanderers FC':
+    "Wolves' Subway Army against Albion's Section Five. Black Country furnaces, Black Country tempers.",
+  'Blackburn Rovers FC|Burnley FC':
+    "Burnley's Suicide Squad against the Blackburn mob. Cotton towns eight miles apart, and the reason this fixture spent years with its kick-off time chosen by the police rather than the TV.",
+  'Blackburn Rovers FC|Preston North End FC':
+    "Two founder members of the Football League, a hundred and forty years of grievance, and the Preston Para Squad to carry it.",
+  'Charlton Athletic FC|Millwall FC':
+    "The Bushwackers against Charlton's B Mob, fought out across one bend of the Thames in the old armament belt.",
+  'Birmingham City FC|West Bromwich Albion FC':
+    "Birmingham's Zulu Warriors were one of the few genuinely multiracial firms of the eighties, which quietly said more about the city than the fighting did.",
+  'Cardiff City FC|Wrexham AFC':
+    "North against south, the Soul Crew against the Wrexham Frontline. National service, both directions.",
+  'Brighton & Hove Albion FC|Crystal Palace FC':
+    "Nobody can properly explain this one. Forty miles apart, no shared border, barely any history — and still a category A fixture on police paperwork.",
+  'Everton FC|Liverpool FC':
+    "Famously the derby that mostly did not go that way. Families split down the middle, so the County Road Cutters and their Anfield counterparts largely saved it for everyone else.",
+};
+
 const key = (a, b) => [a, b].sort().join('|');
 const MAP = new Map(RIVALRIES.map((r) => [key(r.teams[0], r.teams[1]), r]));
 
 export function getRivalry(teamA, teamB) {
-  return MAP.get(key(teamA, teamB)) || null;
+  const r = MAP.get(key(teamA, teamB));
+  if (!r) return null;
+  const firms = FIRMS[key(teamA, teamB)] || null;
+  return firms ? { ...r, firms } : r;
+}
+
+// Firms note for any pairing, derby or not
+export function getFirms(teamA, teamB) {
+  return FIRMS[key(teamA, teamB)] || null;
 }
 
 // Pot pairing → a line of framing. Keyed by the sorted pot pair.

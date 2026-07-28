@@ -4910,3 +4910,22 @@ body, .app {
 .reg-meta { flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
 .reg-meta .reg-pot { flex: 1 1 auto; min-width: 60%; }
 .reg-meta .reg-owner { flex: 0 0 auto; white-space: nowrap; }
+
+/* ── v8: crests, firms, roster import ── */
+.crest { flex: 0 0 auto; vertical-align: middle; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.28)); }
+.fx-team-name { display: flex; align-items: center; gap: 6px; }
+.fx-away .fx-team-name { justify-content: flex-end; }
+.team-chip { gap: 4px; }
+.tbl-team { display: inline-flex; align-items: center; gap: 5px; }
+.reg-head { align-items: center; gap: 10px; }
+.reg-crest { flex: 0 0 auto; }
+.reg-head .reg-name { flex: 1; }
+.en-ms-crest { display: block; margin-bottom: 4px; }
+.en-ms-side.away .en-ms-crest { margin-left: auto; }
+.en-ms-firms {
+  margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(244,201,94,0.18);
+  font-size: 0.78rem; line-height: 1.5; color: rgba(244,235,216,0.72);
+}
+.en-ms-firms b { color: var(--brass-bright); font-weight: 700; }
+.mw-match .crest { margin-right: 2px; }
+.import-bad { color: var(--live-red); }

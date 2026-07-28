@@ -4,6 +4,7 @@ import { buildDispatch } from '../utils/dispatch.js';
 import { MEDALS, getTeam, ENTRY_FEE, PAYOUTS } from '../data/england2027.js';
 import MyWeekend, { PreSeason } from './MyWeekend.jsx';
 import NextFive from './NextFive.jsx';
+import Crest from './Crest.jsx';
 
 function ordinal(n) {
   const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
@@ -157,7 +158,7 @@ export default function Leaderboard({
                       const info = getTeam(b.team);
                       return (
                         <span className="team-chip" key={b.team}>
-                          <span className={`pot-dot p${b.pot?.toLowerCase()}`} />
+                          <Crest team={b.team} size={16} />
                           {info ? info.tla : b.team}
                         </span>
                       );

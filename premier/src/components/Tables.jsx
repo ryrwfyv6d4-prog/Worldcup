@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { leagueTable, formForTeam, TABLE_MODES } from '../utils/scoring.js';
 import { getTeam, SCORING } from '../data/england2027.js';
+import Crest from './Crest.jsx';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -107,7 +108,8 @@ export default function Tables({ fixtures, assignments, onSelectTeam }) {
                 <tr key={r.team} className={started && effectiveMode === 'all' ? zoneFor(div, pos) : ''}>
                   <td>{pos}</td>
                   <td className="tl team-cell">
-                    <button className="team-btn" onClick={() => onSelectTeam && onSelectTeam(r.team)}>
+                    <button className="team-btn tbl-team" onClick={() => onSelectTeam && onSelectTeam(r.team)}>
+                      <Crest team={r.team} size={18} />
                       {info ? info.short : r.team}
                     </button>
                     {owner && <em className="team-co">{owner}</em>}

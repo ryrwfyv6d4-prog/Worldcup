@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { getTeam, POT_LABELS } from '../data/england2027.js';
 import { matchValue } from '../utils/odds.js';
 import { getMatchup } from '../data/rivalries.js';
+import Crest from './Crest.jsx';
 import { leagueTable, formForTeam, positionOf, reverseFixture } from '../utils/scoring.js';
 
 function ownerOf(team, assignments) {
@@ -76,6 +77,7 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
               const rate = s.info ? matchValue(s.name, s.opp, s.isHome) : null;
               return (
                 <div className={`en-ms-side ${i === 1 ? 'away' : ''}`} key={s.name}>
+                  <Crest team={s.name} size={38} className="en-ms-crest" />
                   <button
                     className="team-btn en-ms-team"
                     onClick={() => {
@@ -113,6 +115,9 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
                 {matchup.derby && <span className="en-ms-derby-tag">DERBY</span>}
               </div>
               <p>{matchup.blurb}</p>
+              {matchup.firms && (
+                <p className="en-ms-firms"><b>The firms.</b> {matchup.firms}</p>
+              )}
             </div>
           )}
 

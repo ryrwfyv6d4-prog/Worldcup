@@ -2,6 +2,7 @@ import { getTeam } from '../data/england2027.js';
 import { valueForFixture } from '../utils/odds.js';
 import { myWeekend } from '../utils/scoring.js';
 import { getRivalry } from '../data/rivalries.js';
+import Crest from './Crest.jsx';
 
 const FIRST_KICKOFF = { d2: '2026-08-14T19:00:00Z', d1: '2026-08-21T19:00:00Z' };
 
@@ -95,7 +96,7 @@ export default function MyWeekend({ player, assignments, fixtures, onOpenMatch }
         }
         return (
           <button className={`mw-match ${live ? 'live' : ''}`} key={f.id} onClick={() => onOpenMatch(f)}>
-            <span className={`pot-dot p${mine?.pot.toLowerCase()}`} />
+            <Crest team={mineName} size={20} />
             <span className="mw-teams">
               <b>{mine?.short}</b>
               <span className="mw-vs">{isHome ? 'v' : 'away at'}</span>

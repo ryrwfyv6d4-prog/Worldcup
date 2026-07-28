@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { TEAMS, POT_LABELS } from '../data/england2027.js';
 import { priceRangeFor } from '../utils/odds.js';
+import Crest from './Crest.jsx';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
@@ -45,6 +46,7 @@ export default function Regiments({ assignments }) {  // rendered inside HQ
         return (
           <div className={`card regiment pot-border-${t.pot.toLowerCase()}`} key={t.name}>
             <div className="reg-head">
+              <Crest team={t.name} size={34} className="reg-crest" />
               <span className="reg-name">{t.short}</span>
               <span className="reg-codename">{t.codename}</span>
             </div>
