@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { POTS, POT_LABELS, DEFAULT_PLAYERS, SQUAD_SIZE, getTeam } from '../data/england2027.js';
+import { buildPots, DEFAULT_PLAYERS, TEAMS, getTeam } from '../data/england2027.js';
 
 function shuffle(arr) {
   const a = [...arr];
@@ -48,18 +48,18 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
     setNewName('');
   };
 
-  // Every pot must have at least one team per player, so the smallest pot
-  // (the Premier League ones, 10 each) caps the squad.
-  const MAX_PLAYERS = Math.min(...['A', 'B', 'C', 'D'].map((k) => POTS[k].length));
-  const tooMany = players.length > MAX_PLAYERS;
+  // The pot structure adapts to the headcount, so any size works up to one
+  // club each. Only a truly silly number has nothing left to hand out.
+  const plan = buildPots(players.length);
+  const tooMany = !plan.viable;
 
   const runDraw = () => {
     if (players.length < 2 || tooMany) return;
     const result = {};
     for (const p of players) result[p] = [];
-    for (const potKey of ['A', 'B', 'C', 'D']) {
-      const order = shuffle(POTS[potKey]);
-      // .filter(Boolean) guarantees we never store an empty slot, whatever happens
+    for (const tier of plan.tiers) {
+      const order = shuffle(tier.clubs);
+      // guard against ever storing an empty slot
       players.forEach((p, i) => { if (order[i]) result[p].push(order[i]); });
     }
     setAssignments(result);
@@ -67,22 +67,21 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
 
   const reset = () => { setAssignments({}); setDrawLocked(false); };
 
-  const exempt = drawn
-    ? ['C', 'D'].flatMap((k) => POTS[k].filter((t) => !Object.values(assignments).flat().includes(t)))
-    : [];
+  const taken = new Set(Object.values(assignments).flat());
+  const exempt = drawn ? TEAMS.map((t) => t.name).filter((n) => !taken.has(n)) : [];
 
   return (
     <div>
       <p className="muted">
-        Four pots, one team from each. No choices, no appeals — your call-up papers
-        arrive and you serve. What each club's results are worth is set by the odds,
-        not by its pot.
+        One club from each tier. No choices, no appeals — your call-up papers arrive
+        and you serve. The tiers only spread the quality evenly; what a result is
+        worth is set by the odds, not by which tier your club came from.
       </p>
 
       {!drawn && (
         <>
           <div className="card">
-            <h3>Reporting for duty ({players.length}/{SQUAD_SIZE})</h3>
+            <h3>Reporting for duty ({players.length})</h3>
             <div className="chip-row">
               {players.map((p) => (
                 <span key={p} className="chip">
@@ -110,12 +109,18 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
             </div>
           </div>
 
-          {tooMany && (
+          {tooMany ? (
             <div className="draw-warn">
-              <b>Too many for this structure.</b> Pots A and B hold {MAX_PLAYERS} Premier League
-              clubs each, so {MAX_PLAYERS} is the cap for one-club-per-pot. You have {players.length}.
-              Either drop to {MAX_PLAYERS} officers, or tell me the real headcount and I'll
-              redesign the pots (e.g. one PL club plus two Championship clubs each).
+              <b>{players.length} officers is more than there are clubs.</b> There are
+              only {TEAMS.length} in the two divisions, so at least one man would get nothing.
+            </div>
+          ) : (
+            <div className="draw-plan">
+              <b>{players.length} officers · {plan.perPlayer} club{plan.perPlayer === 1 ? '' : 's'} each</b>
+              <span>
+                {plan.tiers.length} tier{plan.tiers.length === 1 ? '' : 's'} of {players.length}
+                {plan.exempt.length > 0 && `, ${plan.exempt.length} clubs exempt from service`}
+              </span>
             </div>
           )}
 
@@ -123,16 +128,24 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
             SOUND THE BUGLE — RUN THE DRAW
           </button>
 
-          <p className="muted small">The pots, for reference:</p>
+          <p className="muted small">The tiers, for reference:</p>
 
-          {['A', 'B', 'C', 'D'].map((k) => (
-            <div className="card" key={k}>
-              <h3>Pot {k} — {POT_LABELS[k]} <span className="muted">({POTS[k].length} clubs)</span></h3>
+          {plan.tiers.map((tier) => (
+            <div className="card" key={tier.index}>
+              <h3>{tier.label} <span className="muted">({tier.clubs.length} clubs)</span></h3>
               <div className="chip-row">
-                {POTS[k].map((t) => <span key={t} className="chip chip-team">{getTeam(t).short}</span>)}
+                {tier.clubs.map((t) => <span key={t} className="chip chip-team">{getTeam(t).short}</span>)}
               </div>
             </div>
           ))}
+          {plan.exempt.length > 0 && (
+            <div className="card">
+              <h3>Exempt from service <span className="muted">({plan.exempt.length})</span></h3>
+              <div className="chip-row">
+                {plan.exempt.map((t) => <span key={t} className="chip chip-dim">{getTeam(t).short}</span>)}
+              </div>
+            </div>
+          )}
 
 
         </>
@@ -147,7 +160,7 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
                 {teams.map((t) => {
                   const info = getTeam(t);
                   return (
-                    <span key={t} className={`chip chip-team pot-${info.pot.toLowerCase()}`}>
+                    <span key={t} className="chip chip-team">
                       {info.short} <em>{info.codename}</em>
                     </span>
                   );

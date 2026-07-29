@@ -1,4 +1,4 @@
-import { MEDALS, SCORING, TEAMS, getTeam } from '../data/england2027.js';
+import { MEDALS, SCORING, TEAMS, DIV_SIZE, getTeam } from '../data/england2027.js';
 import { valueForFixture, matchValue, winProbability } from './odds.js';
 
 // Pre-season odds rank, used as the final table tiebreak so an all-zero table
@@ -120,7 +120,8 @@ export function medalsForTeam(team, tables, complete, manualMedals = {}) {
     const pos = tables.d1.findIndex((r) => r.team === team) + 1;
     if (pos === 1) medals.push('VC');
     if (pos >= 1 && pos <= 4) medals.push('DSO');
-    if (t.pot === 'B' && pos <= 17) medals.push('SURVIVAL');
+    // bottom-half PL club by pre-season odds that stays up
+    if (t.rank > DIV_SIZE[1] / 2 && pos <= 17) medals.push('SURVIVAL');
   }
   if (t.div === 2 && complete.d2) {
     const pos = tables.d2.findIndex((r) => r.team === team) + 1;
@@ -253,7 +254,7 @@ function reachableMedalPoints(team, tables, manualMedals = {}) {
   if (t.div === 1) {
     if (canReach(1)) pts += MEDALS.VC.pts;
     if (canReach(4)) pts += MEDALS.DSO.pts;
-    if (t.pot === 'B') {
+    if (t.rank > DIV_SIZE[1] / 2) {
       const safety = table[16];
       if (!safety || row.pts + maxGain >= safety.pts) pts += MEDALS.SURVIVAL.pts;
     }

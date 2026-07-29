@@ -1,8 +1,10 @@
-import { POT_LABELS, MEDALS, ENTRY_FEE, PAYOUTS, SEASON, POTS, SCORING } from '../data/england2027.js';
+import { MEDALS, ENTRY_FEE, PAYOUTS, SEASON, SCORING, TEAMS, buildPots } from '../data/england2027.js';
 import { matchValue } from '../utils/odds.js';
 
 export default function Rules({ playerCount }) {
-  const pot = (playerCount || 10) * ENTRY_FEE;
+  const count = playerCount || 10;
+  const pot = count * ENTRY_FEE;
+  const plan = buildPots(count);
   return (
     <>
       <p className="muted">
@@ -13,8 +15,8 @@ export default function Rules({ playerCount }) {
       <div className="card">
         <h3 className="section-title">The deal</h3>
         <ul className="rule-list">
-          <li>${ENTRY_FEE} a head. {playerCount || 10} officers means <b>${pot}</b> in the tin.</li>
-          <li>Every officer is conscripted <b>four clubs</b> — one from each pot — across the Premier League and the Championship, {SEASON}.</li>
+          <li>${ENTRY_FEE} a head. {count} officers means <b>${pot}</b> in the tin.</li>
+          <li>Every officer is conscripted <b>{plan.perPlayer} club{plan.perPlayer === 1 ? '' : 's'}</b> — one from each tier — across the Premier League and the Championship, {SEASON}.</li>
           <li>The draw is blind and final. No trades, no appeals.</li>
           <li>No pay, no payout. Same rule as always.</li>
         </ul>
@@ -62,22 +64,26 @@ export default function Rules({ playerCount }) {
       </div>
 
       <div className="card">
-        <h3 className="section-title">The pots</h3>
+        <h3 className="section-title">The draw</h3>
         <p className="muted small">
-          Pots decide the draw only. They don't affect scoring — that's all off the odds.
+          All {TEAMS.length} clubs in the two divisions are put in one pecking order off the
+          bookies' odds, then cut into equal tiers — one per club you'll be given. Everyone
+          draws exactly one club from each tier, so nobody can land four good ones or four
+          duds. Tiers affect the draw only; they have no bearing on scoring.
         </p>
-        {['A', 'B', 'C', 'D'].map((k) => (
-          <div className="rule-pot" key={k}>
-            <span className={`pot-dot p${k.toLowerCase()}`} />
+        {plan.tiers.map((t) => (
+          <div className="rule-pot" key={t.index}>
             <span className="rule-pot-name">
-              Pot {k} — {POT_LABELS[k]}
-              <em>{POTS[k].length} clubs</em>
+              {t.label}
+              <em>{t.clubs.length} clubs</em>
             </span>
           </div>
         ))}
         <p className="muted small" style={{ marginBottom: 0 }}>
-          Ten officers and twelve clubs in each Championship pot, so two Championship
-          clubs per pot go unclaimed — exempt from service, scoring for nobody.
+          With {count} officers that's <b>{plan.perPlayer} club{plan.perPlayer === 1 ? '' : 's'} each</b>
+          {plan.exempt.length > 0
+            ? `, leaving ${plan.exempt.length} clubs exempt from service — they play on, scoring for nobody.`
+            : ', with every club claimed.'}
         </p>
       </div>
 

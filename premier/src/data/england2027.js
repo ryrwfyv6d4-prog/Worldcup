@@ -212,6 +212,59 @@ for (const div of [1, 2]) {
 }
 export const DIV_SIZE = { 1: TEAMS.filter((t) => t.div === 1).length, 2: TEAMS.filter((t) => t.div === 2).length };
 
+// One combined pecking order across both divisions: Premier League 1-20, then
+// Championship 1-24. Used only to build the draw pots — scoring never sees it.
+TEAMS.forEach(() => {});
+[...TEAMS]
+  .sort((a, b) => a.div - b.div || a.rank - b.rank)
+  .forEach((t, i) => { t.globalRank = i + 1; });
+
+export const TIER_LABELS = [
+  'Armoured Divisions',
+  'Infantry',
+  'The Reserves',
+  'The Territorials',
+];
+
+// The draw adapts to however many turn up.
+//
+// With N officers we hand out floor(44 / N) clubs each, capped at four, and cut
+// that many equal tiers off the top of the combined pecking order. Everyone
+// therefore gets exactly one club from each tier, whatever the headcount:
+//   10 players -> 4 clubs each, 40 used, 4 exempt
+//   11 players -> 4 clubs each, 44 used, none exempt
+//   12 players -> 3 clubs each, 36 used, 8 exempt
+//   14 players -> 3 clubs each, 42 used, 2 exempt
+export const MAX_CLUBS_EACH = 4;
+
+export function buildPots(playerCount) {
+  const n = Math.max(1, Math.floor(playerCount) || 0);
+  const perPlayer = Math.min(MAX_CLUBS_EACH, Math.floor(TEAMS.length / n));
+  const ordered = [...TEAMS].sort((a, b) => a.globalRank - b.globalRank);
+  const tiers = [];
+  for (let i = 0; i < perPlayer; i++) {
+    tiers.push({
+      index: i,
+      label: TIER_LABELS[i] || `Tier ${i + 1}`,
+      clubs: ordered.slice(i * n, (i + 1) * n).map((t) => t.name),
+    });
+  }
+  const used = new Set(tiers.flatMap((t) => t.clubs));
+  return {
+    perPlayer,
+    tiers,
+    exempt: ordered.filter((t) => !used.has(t.name)).map((t) => t.name),
+    viable: perPlayer >= 1,
+  };
+}
+
+// Which tier a club falls into for a given headcount (null if exempt)
+export function tierOf(teamName, playerCount) {
+  const { tiers } = buildPots(playerCount);
+  const i = tiers.findIndex((t) => t.clubs.includes(teamName));
+  return i === -1 ? null : tiers[i];
+}
+
 export const TEAM_BY_NAME = Object.fromEntries(TEAMS.map((t) => [t.name, t]));
 export const POTS = { A: [], B: [], C: [], D: [] };
 for (const t of TEAMS) POTS[t.pot].push(t.name);

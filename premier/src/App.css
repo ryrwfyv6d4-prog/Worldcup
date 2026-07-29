@@ -4932,3 +4932,12 @@ body, .app {
 
 /* real crest images sit on the same footprint as the generated insignia */
 .crest-img { object-fit: contain; flex: 0 0 auto; vertical-align: middle; }
+
+/* draw plan summary */
+.draw-plan {
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--glass-bg); border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm); padding: 10px 12px; margin: 10px 0;
+}
+.draw-plan b { color: var(--brass-bright); font-size: 0.92rem; letter-spacing: 0.02em; }
+.draw-plan span { color: var(--text-muted-dark); font-size: 0.76rem; }
