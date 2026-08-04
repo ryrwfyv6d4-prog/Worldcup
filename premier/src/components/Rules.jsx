@@ -9,14 +9,14 @@ export default function Rules({ playerCount }) {
     <>
       <p className="muted">
         The whole format on one page. If it isn't written here, it isn't a rule —
-        take it to the War Council.
+        take it to the group.
       </p>
 
       <div className="card">
         <h3 className="section-title">The deal</h3>
         <ul className="rule-list">
-          <li>${ENTRY_FEE} a head. {count} officers means <b>${pot}</b> in the tin.</li>
-          <li>Every officer is conscripted <b>{plan.perPlayer} club{plan.perPlayer === 1 ? '' : 's'}</b> — one from each tier — across the Premier League and the Championship, {SEASON}.</li>
+          <li>${ENTRY_FEE} a head. {count} players means <b>${pot}</b> in the tin.</li>
+          <li>Every player gets <b>{plan.perPlayer} club{plan.perPlayer === 1 ? '' : 's'}</b> — one from each tier — across the Premier League and the Championship, {SEASON}.</li>
           <li>The draw is blind and final. No trades, no appeals.</li>
           <li>No pay, no payout. Same rule as always.</li>
         </ul>
@@ -87,7 +87,7 @@ export default function Rules({ playerCount }) {
         <p className="muted small" style={{ marginBottom: 0 }}>
           With {count} officers that's <b>{plan.perPlayer} club{plan.perPlayer === 1 ? '' : 's'} each</b>
           {plan.exempt.length > 0
-            ? `, leaving ${plan.exempt.length} clubs exempt from service — they play on, scoring for nobody.`
+            ? `, leaving ${plan.exempt.length} clubs unclaimed — they play on, scoring for nobody.`
             : ', with every club claimed.'}
         </p>
       </div>
@@ -117,7 +117,7 @@ export default function Rules({ playerCount }) {
           </div>
         ))}
         <p className="muted small" style={{ marginTop: 8, marginBottom: 0 }}>
-          Relegation costs no points — but that officer buys the first round at settling-up.
+          Relegation costs no points, but that player buys the first round at settling-up.
         </p>
       </div>
 
@@ -125,8 +125,8 @@ export default function Rules({ playerCount }) {
         <h3 className="section-title">Tiebreak</h3>
         <ol className="rule-list rule-ol">
           <li>Sweep points</li>
-          <li>Total wins across your four clubs</li>
-          <li>Aggregate goal difference across your four clubs</li>
+          <li>Total wins across your clubs</li>
+          <li>Aggregate goal difference across your clubs</li>
           <li>Goals scored</li>
         </ol>
         <p className="muted small" style={{ marginBottom: 0 }}>
@@ -139,8 +139,8 @@ export default function Rules({ playerCount }) {
         <ul className="rule-list">
           <li><b>Live scores</b> come from ESPN during matches; settled results come from the openfootball league feed.</li>
           <li><b>Projected</b> is the middle outcome of 300 simulated rest-of-seasons, using each club's odds rating and its actual form so far.</li>
-          <li><b>MIA</b> means even a top-5% run leaves you short of the leader's expected finish. It is a projection, not a mathematical certainty.</li>
-          <li><b>Tours</b> (monthly medals) are a side pot for pride — they don't add to your ladder total.</li>
+          <li><b>Out of it</b> means even a top-5% run leaves you short of the leader's expected finish. It is a projection, not a mathematical certainty.</li>
+          <li><b>Tours</b> (the monthly prize) are a side pot for pride — they don't add to your ladder total.</li>
         </ul>
       </div>
     </>

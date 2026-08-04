@@ -14,15 +14,9 @@ export const SQUAD_SIZE = 10; // players expected at the draw
 
 export const ENTRY_FEE = 50;
 export const PAYOUTS = [
-  { key: 'first', label: 'Victoria Cross', pct: 0.7 },
-  { key: 'second', label: 'Mentioned in Dispatches', pct: 0.2 },
-  { key: 'last', label: 'Latrine Duty', pct: 0.1 },
-];
-
-// Ladder ranks, 1st → 10th
-export const RANKS = [
-  'Field Marshal', 'General', 'Brigadier', 'Colonel', 'Major',
-  'Captain', 'Lieutenant', 'Sergeant', 'Corporal', 'Private',
+  { key: 'first', label: '1st Place', pct: 0.7 },
+  { key: 'second', label: '2nd Place', pct: 0.2 },
+  { key: 'last', label: 'Last Place', pct: 0.1 },
 ];
 
 // Pots exist for the DRAW only (one club from each). They no longer set point
@@ -40,13 +34,13 @@ export const POT_LABELS = {
 // weight the owner of the eventual champion won the sweep ~half the time, which
 // made the draw the whole contest.
 export const MEDALS = {
-  VC: { label: 'Victoria Cross', detail: 'Your team wins the Premier League', pts: 15 },
-  DSO: { label: 'Distinguished Service Order', detail: 'Premier League top-four finish', pts: 8 },
-  SURVIVAL: { label: 'Survival Medal', detail: 'A bottom-half PL team avoids relegation', pts: 5 },
-  PROMOTION: { label: 'Battlefield Promotion', detail: 'Championship team promoted', pts: 10 },
-  BIG_PUSH: { label: 'The Big Push', detail: 'Wins the play-off final at Wembley', pts: 5 },
-  CHAMP_TITLE: { label: 'Second Front Standard', detail: 'Wins the Championship outright', pts: 3 },
-  CUP: { label: 'Cup Honours', detail: 'FA Cup or League Cup winner (marked manually)', pts: 5 },
+  VC: { label: 'League Champions', detail: 'Your team wins the Premier League', pts: 15 },
+  DSO: { label: 'Top Four', detail: 'Premier League top-four finish', pts: 8 },
+  SURVIVAL: { label: 'Survival', detail: 'A bottom-half PL team avoids relegation', pts: 5 },
+  PROMOTION: { label: 'Promotion', detail: 'Championship team promoted', pts: 10 },
+  BIG_PUSH: { label: 'Play-off Winners', detail: 'Wins the play-off final at Wembley', pts: 5 },
+  CHAMP_TITLE: { label: 'Championship Winners', detail: 'Wins the Championship outright', pts: 3 },
+  CUP: { label: 'Cup Winners', detail: 'FA Cup or League Cup winner (marked manually)', pts: 5 },
 };
 
 // ── Scoring constants ───────────────────────────────────────────────────────

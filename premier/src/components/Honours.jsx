@@ -42,7 +42,7 @@ export default function Honours({ state, update }) {
         ladder immediately.
       </p>
 
-      {owned.length === 0 && <p className="muted">Nothing to award until Conscription is run.</p>}
+      {owned.length === 0 && <p className="muted">Nothing to award until the draw is run.</p>}
 
       {owned.length > 0 && (
         <>

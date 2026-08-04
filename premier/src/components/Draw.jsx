@@ -73,15 +73,15 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
   return (
     <div>
       <p className="muted">
-        One club from each tier. No choices, no appeals — your call-up papers arrive
-        and you serve. The tiers only spread the quality evenly; what a result is
-        worth is set by the odds, not by which tier your club came from.
+        One club from each tier, drawn blind. The tiers only spread the quality
+        evenly; what a result is worth is set by the odds, not by which tier your
+        club came from.
       </p>
 
       {!drawn && (
         <>
           <div className="card">
-            <h3>Reporting for duty ({players.length})</h3>
+            <h3>Players ({players.length})</h3>
             <div className="chip-row">
               {players.map((p) => (
                 <span key={p} className="chip">
@@ -105,27 +105,27 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
                 onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
                 placeholder="Add a name…"
               />
-              <button className="btn" onClick={addPlayer}>Enlist</button>
+              <button className="btn" onClick={addPlayer}>Add</button>
             </div>
           </div>
 
           {tooMany ? (
             <div className="draw-warn">
-              <b>{players.length} officers is more than there are clubs.</b> There are
-              only {TEAMS.length} in the two divisions, so at least one man would get nothing.
+              <b>{players.length} players is more than there are clubs.</b> There are
+              only {TEAMS.length} in the two divisions, so at least one player would get nothing.
             </div>
           ) : (
             <div className="draw-plan">
-              <b>{players.length} officers · {plan.perPlayer} club{plan.perPlayer === 1 ? '' : 's'} each</b>
+              <b>{players.length} players · {plan.perPlayer} club{plan.perPlayer === 1 ? '' : 's'} each</b>
               <span>
                 {plan.tiers.length} tier{plan.tiers.length === 1 ? '' : 's'} of {players.length}
-                {plan.exempt.length > 0 && `, ${plan.exempt.length} clubs exempt from service`}
+                {plan.exempt.length > 0 && `, ${plan.exempt.length} clubs unclaimed`}
               </span>
             </div>
           )}
 
           <button className="btn btn-primary btn-big" onClick={runDraw} disabled={players.length < 2 || tooMany}>
-            SOUND THE BUGLE — RUN THE DRAW
+            RUN THE DRAW
           </button>
 
           <p className="muted small">The tiers, for reference:</p>
@@ -140,7 +140,7 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
           ))}
           {plan.exempt.length > 0 && (
             <div className="card">
-              <h3>Exempt from service <span className="muted">({plan.exempt.length})</span></h3>
+              <h3>Unclaimed <span className="muted">({plan.exempt.length})</span></h3>
               <div className="chip-row">
                 {plan.exempt.map((t) => <span key={t} className="chip chip-dim">{getTeam(t).short}</span>)}
               </div>
@@ -170,7 +170,7 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
           ))}
           {exempt.length > 0 && (
             <div className="card">
-              <h3>Exempt from service</h3>
+              <h3>Unclaimed</h3>
               <div className="chip-row">
                 {exempt.map((t) => <span key={t} className="chip chip-dim">{getTeam(t).short}</span>)}
               </div>
@@ -179,7 +179,7 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
           <div className="btn-row">
             {!drawLocked && <button className="btn btn-primary" onClick={() => setDrawLocked(true)}>Lock it in</button>}
             {!drawLocked && <button className="btn btn-danger" onClick={reset}>Scrap & redraw</button>}
-            {drawLocked && <p className="muted">The draw is locked. Desertion is punishable.</p>}
+            {drawLocked && <p className="muted">The draw is locked.</p>}
           </div>
         </>
       )}

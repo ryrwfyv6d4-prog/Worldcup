@@ -41,7 +41,7 @@ export default function Tables({ fixtures, assignments, onSelectTeam }) {
     <div className="page">
       <div className="page-header">
         <h2>The Map Room</h2>
-        <span className="subtitle">The real tables. Tap a regiment for its file.</span>
+        <span className="subtitle">The real tables. Tap a club for its page.</span>
       </div>
 
       <div className="seg-row">
@@ -73,7 +73,7 @@ export default function Tables({ fixtures, assignments, onSelectTeam }) {
       <div className="zone-legend">
         {div === 1 ? (
           <>
-            <span className="zl up">Top 4 — DSO medal (+{8})</span>
+            <span className="zl up">Top 4 (+{8})</span>
             <span className="zl drop">Bottom 3 — relegated</span>
           </>
         ) : (
@@ -135,7 +135,7 @@ export default function Tables({ fixtures, assignments, onSelectTeam }) {
 
       <p className="muted small">
         Swipe the table sideways for the full stats. The name under each club is its
-        commanding officer. <b>Tip</b> is where the bookies tipped them, turning green with
+        owner. <b>Tip</b> is where the bookies tipped them, turning green with
         places gained once six games are played, worth +{SCORING.OVERACHIEVE} each.
         {effectiveMode !== 'all' && ' Zones and Tip always reflect the real overall table.'}
       </p>

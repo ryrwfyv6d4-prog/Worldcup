@@ -50,7 +50,7 @@ export default function Leaderboard({
         <PreSeason />
         <div className="empty-state">
           <div className="empty-icon">📯</div>
-          <p>No troops in the field. Run Conscription in HQ.</p>
+          <p>Nobody in yet. Run the draw in HQ.</p>
         </div>
       </div>
     );
@@ -66,7 +66,7 @@ export default function Leaderboard({
     <div className="page">
       <div className="page-header">
         <h2>The Front</h2>
-        <span className="subtitle">Two divisions · one ladder · {ladder.length} conscripts</span>
+        <span className="subtitle">Two divisions · one table · {ladder.length} players</span>
       </div>
 
       {!anyFinished && <PreSeason />}
@@ -150,8 +150,8 @@ export default function Leaderboard({
                     {row.name}
                     {isMe && <span className="tag you">YOU</span>}
                     {hasResults && i === 0 && <span className="tag front">FRONT RUNNER</span>}
-                    {hasResults && i === ladder.length - 1 && <span className="tag disaster">LATRINE DUTY</span>}
-                    {o.cooked && <span className="tag cooked">MIA</span>}
+                    {hasResults && i === ladder.length - 1 && <span className="tag disaster">LAST</span>}
+                    {o.cooked && <span className="tag cooked">OUT OF IT</span>}
                   </span>
                   <span className="lb-teams">
                     {row.breakdown.map((b) => {
@@ -225,7 +225,7 @@ export default function Leaderboard({
           );
         })}
       </div>
-      <div className="tap-hint">👆 Tap any officer for the full record — tap a regiment for its file</div>
+      <div className="tap-hint">👆 Tap anyone for their full record, or a club for its page</div>
 
       {dispatch && (
         <div className="card dispatch-card mt">
