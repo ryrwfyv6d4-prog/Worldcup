@@ -1,0 +1,27 @@
+name: Check feeds
+
+# Manual diagnostic. The dev container has no outbound access to ESPN, so this
+# is how the live-score wiring gets verified.
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: ESPN live-score feed
+        working-directory: premier
+        run: node scripts/check-feeds.mjs
+
+      - name: openfootball fixture feed
+        run: |
+          for f in 1-premierleague 2-championship; do
+            url="https://raw.githubusercontent.com/openfootball/england/master/2026-27/$f.txt"
+            code=$(curl -s -o /tmp/$f.txt -w "%{http_code}" "$url")
+            echo "$f: HTTP $code, $(wc -l < /tmp/$f.txt) lines, $(grep -c ' v ' /tmp/$f.txt || true) unplayed fixtures, $(grep -cE '[0-9]+-[0-9]+' /tmp/$f.txt || true) with scores"
+          done
