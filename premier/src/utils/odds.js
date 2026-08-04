@@ -14,6 +14,16 @@
 
 import { TEAMS, DIV_SIZE, SCORING, getTeam } from '../data/england2027.js';
 
+// A Championship season is 46 games, the Premier League 38. Without correcting
+// for that, a Championship club is worth ~21% more over a season purely for
+// playing more often — which stays hidden while everyone holds the same mix of
+// divisions, and becomes real unfairness the moment they don't. Scaling each
+// division's prices by 38/rounds makes a full season worth the same either way.
+// Premier League values are unchanged; Championship values come down ~17%.
+const SEASON_ROUNDS = { 1: 38, 2: 46 };
+const BASE_ROUNDS = 38;
+const lengthFactor = (div) => BASE_ROUNDS / SEASON_ROUNDS[div];
+
 const CAL = {
   spread: { 1: 0.6, 2: 0.3 }, // rating half-range per division (Ch is flatter)
   home: 0.2,                  // home advantage
@@ -55,9 +65,15 @@ export function matchValue(teamName, oppName, isHome) {
   const key = `${teamName}|${oppName}|${isHome}`;
   if (priceCache.has(key)) return priceCache.get(key);
   const p = winProbability(teamName, oppName, isHome);
+  const t = getTeam(teamName);
+  const f = t ? lengthFactor(t.div) : 1;
   const value = p == null
     ? { win: 0, draw: 0, pWin: null }
-    : { win: Math.max(2, Math.round(SCORING.K / p)), draw: SCORING.DRAW, pWin: p };
+    : {
+        win: Math.max(2, Math.round((SCORING.K * f) / p)),
+        draw: Math.max(1, Math.round(SCORING.DRAW * f)),
+        pWin: p,
+      };
   priceCache.set(key, value);
   return value;
 }

@@ -2,7 +2,7 @@ import { MEDALS, ENTRY_FEE, PAYOUTS, SEASON, SCORING, TEAMS, buildPots } from '.
 import { matchValue } from '../utils/odds.js';
 
 export default function Rules({ playerCount }) {
-  const count = playerCount || 10;
+  const count = playerCount || 11;
   const pot = count * ENTRY_FEE;
   const plan = buildPots(count);
   return (
@@ -42,6 +42,11 @@ export default function Rules({ playerCount }) {
             </div>
           ))}
         </div>
+        <p className="muted small">
+          A Championship season is 46 games to the Premier League's 38, so Championship
+          results are scaled slightly down. Without that, a Championship club would be
+          worth about a fifth more over a season purely for playing more often.
+        </p>
         <p className="muted small" style={{ marginBottom: 0 }}>
           You never have to work this out. The app prints the price on every fixture
           before kick-off.
