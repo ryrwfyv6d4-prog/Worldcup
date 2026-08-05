@@ -47,6 +47,13 @@ export default function Rules({ playerCount }) {
           results are scaled slightly down. Without that, a Championship club would be
           worth about a fifth more over a season purely for playing more often.
         </p>
+        <p className="muted small">
+          Prices are reset <b>once, on 1 January</b>, using where each club actually sits
+          in the table rather than where it was tipped. A fixture is always priced by its
+          own kick-off date, so nothing you have already banked can be re-scored. It does
+          not touch the prediction bonus below, which is measured against the pre-season
+          tip all season.
+        </p>
         <p className="muted small" style={{ marginBottom: 0 }}>
           You never have to work this out. The app prints the price on every fixture
           before kick-off.

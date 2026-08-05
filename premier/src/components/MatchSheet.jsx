@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { getTeam, POT_LABELS } from '../data/england2027.js';
-import { matchValue } from '../utils/odds.js';
+import { matchValue, phaseFor, midseasonRankFor } from '../utils/odds.js';
 import { getMatchup } from '../data/rivalries.js';
 import Crest from './Crest.jsx';
 import { leagueTable, formForTeam, positionOf, reverseFixture } from '../utils/scoring.js';
@@ -49,6 +49,7 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
   const away = getTeam(fixture.awayTeam.name);
   const matchup = getMatchup(fixture.homeTeam.name, fixture.awayTeam.name, home, away);
   const rev = reverseFixture(fixture, fixtures);
+  const phase = phaseFor(fixture.utcDate);
 
   const sides = [
     { info: home, name: fixture.homeTeam.name, isHome: true, opp: fixture.awayTeam.name },
@@ -74,7 +75,7 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
           <div className="en-ms-teams">
             {sides.map((s, i) => {
               const owner = ownerOf(s.name, assignments);
-              const rate = s.info ? matchValue(s.name, s.opp, s.isHome) : null;
+              const rate = s.info ? matchValue(s.name, s.opp, s.isHome, phase) : null;
               return (
                 <div className={`en-ms-side ${i === 1 ? 'away' : ''}`} key={s.name}>
                   <Crest team={s.name} size={38} className="en-ms-crest" />
@@ -128,9 +129,18 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
 
           {home && away && (
             <div className="muted small">
-              Priced off the odds: {home.short} tipped {ordinal(home.rank)}, {away.short} tipped{' '}
-              {ordinal(away.rank)} in the {home.div === 1 ? 'Premier League' : 'Championship'}.
-              The bigger the upset, the bigger the payout.
+              {phase === 'mid' && midseasonRankFor(home.name) ? (
+                <>
+                  Priced off the January re-rating: {home.short} {ordinal(midseasonRankFor(home.name))},
+                  {' '}{away.short} {ordinal(midseasonRankFor(away.name))} in the table at New Year.
+                </>
+              ) : (
+                <>
+                  Priced off the pre-season odds: {home.short} tipped {ordinal(home.rank)},
+                  {' '}{away.short} tipped {ordinal(away.rank)}.
+                </>
+              )}
+              {' '}The bigger the upset, the bigger the payout.
             </div>
           )}
 

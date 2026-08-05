@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { resolveClub } from '../utils/teamMatch.js';
+import { computeMidseasonRanks, setMidseasonRanks } from '../utils/odds.js';
 
 // Base schedule + settled results — openfootball plain-text feeds
 const SOURCES = [
@@ -269,6 +270,10 @@ export function useEnglandFixtures() {
 
   const merged = useMemo(() => mergeEspn(fixtures, espnGames), [fixtures, espnGames]);
   mergedRef.current = merged;
+
+  // Register the January re-rating before any component prices a fixture.
+  // useMemo runs during this hook's render, which is above every consumer.
+  useMemo(() => { setMidseasonRanks(computeMidseasonRanks(merged)); }, [merged]);
 
   return {
     fixtures: merged,
