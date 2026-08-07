@@ -1,12 +1,14 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useEnglandFixtures } from './hooks/useEnglandFixtures.js';
 import { useSharedState } from './hooks/useSharedState.js';
+import { buildLadder } from './utils/scoring.js';
 import Navigation from './components/Navigation.jsx';
+import Ticker from './components/Ticker.jsx';
 import Leaderboard from './components/Leaderboard.jsx';
 import Fixtures from './components/Fixtures.jsx';
 import Tables from './components/Tables.jsx';
-import Campaign from './components/Campaign.jsx';
-import HQ from './components/HQ.jsx';
+import Wall from './components/Wall.jsx';
+import Shed from './components/Shed.jsx';
 import TeamSheet from './components/TeamSheet.jsx';
 import MatchSheet from './components/MatchSheet.jsx';
 import { SEASON } from './data/england2027.js';
@@ -17,12 +19,11 @@ function WhoAmIModal({ participants, onPick, onSkip }) {
   return (
     <div className="whoami-overlay">
       <div className="whoami-modal">
-        <div className="whoami-icon">🦅</div>
-        <div className="whoami-title">Report in, soldier</div>
+        <div className="whoami-title">Who are you?</div>
         <div className="whoami-sub">
           {hasRoster
-            ? 'Who are you? Your row gets marked and your posts get signed.'
-            : 'No troops conscripted yet. Run the draw in HQ → Conscription, then report back in.'}
+            ? 'Your row gets marked and your posts get signed.'
+            : 'Nobody drawn yet. Run the draw in the Shed, then come back.'}
         </div>
         {hasRoster && (
           <div className="whoami-list">
@@ -32,19 +33,33 @@ function WhoAmIModal({ participants, onPick, onSkip }) {
           </div>
         )}
         <button className="whoami-skip" onClick={onSkip}>
-          {hasRoster ? 'Just observing' : 'Close'}
+          {hasRoster ? 'Just watching' : 'Close'}
         </button>
       </div>
     </div>
   );
 }
 
+// Masthead wordmark + issue line per screen
+const MASTHEAD = {
+  table: { word: "Dan's Shed", strapRight: null },
+  fixtures: { word: 'Fixtures', strapRight: null },
+  clubs: { word: 'Clubs', strapRight: null },
+  wall: { word: 'The Wall', strapRight: null },
+  shed: { word: 'The Shed', strapRight: null },
+};
+
 export default function App() {
-  const [tab, setTab] = useState('front');
+  const [tab, setTab] = useState('table');
   const { state, update, synced } = useSharedState();
   const { fixtures, loading, error, refresh, lastFetched, espnState } = useEnglandFixtures();
   const { assignments, manualMedals } = state;
   const participants = Object.keys(assignments);
+
+  const ladder = useMemo(
+    () => buildLadder(assignments, fixtures, manualMedals),
+    [assignments, fixtures, manualMedals]
+  );
 
   const [whoAmI, setWhoAmI] = useState(() => {
     try { return localStorage.getItem('epl_whoami') || ''; } catch { return ''; }
@@ -52,33 +67,25 @@ export default function App() {
   const [showWho, setShowWho] = useState(false);
   const promptedRef = useRef(false);
 
-  // Auto-prompt once, the first time a roster is available and nobody's signed in.
   useEffect(() => {
     if (promptedRef.current) return;
     if (whoAmI) { promptedRef.current = true; return; }
-    if (participants.length > 0) {
-      promptedRef.current = true;
-      setShowWho(true);
-    }
+    if (participants.length > 0) { promptedRef.current = true; setShowWho(true); }
   }, [participants.length, whoAmI]);
 
   const pickWho = (name) => {
-    setWhoAmI(name);
-    setShowWho(false);
+    setWhoAmI(name); setShowWho(false);
     try { localStorage.setItem('epl_whoami', name); } catch { /* ignore */ }
   };
   const skipWho = () => setShowWho(false);
 
-  const mainRef = useRef(null);
-  // Tabs share one scroll container, so without this you land mid-page
-  useEffect(() => { if (mainRef.current) mainRef.current.scrollTop = 0; }, [tab]);
-
   const [teamSheet, setTeamSheet] = useState(null);
   const [matchSheet, setMatchSheet] = useState(null);
-  const liveCount = fixtures.filter((f) => f.status === 'IN_PLAY').length;
 
-  // Phone/browser Back and Escape close the topmost overlay, not the app.
-  // A ref keeps the callback stable so swapping sheets doesn't churn history.
+  const mainRef = useRef(null);
+  useEffect(() => { if (mainRef.current) mainRef.current.scrollTop = 0; }, [tab]);
+
+  // Phone/browser Back and Escape close the topmost overlay
   const closeTopRef = useRef(() => {});
   closeTopRef.current = () => {
     if (showWho) setShowWho(false);
@@ -88,49 +95,83 @@ export default function App() {
   const closeTop = useCallback(() => closeTopRef.current(), []);
   useDismissable(Boolean(showWho || teamSheet || matchSheet), closeTop);
 
+  // Matchweek shown in the strap — the next one still to be played
+  const matchweek = useMemo(() => {
+    const now = Date.now();
+    const up = fixtures
+      .filter((f) => f.utcDate && Date.parse(f.utcDate) > now - 36 * 3600 * 1000)
+      .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''));
+    return up.length ? up[0].matchday : null;
+  }, [fixtures]);
+
+  const head = MASTHEAD[tab] || MASTHEAD.table;
+  const wallCount = (state.wallPosts || []).length;
+
   return (
     <div className="app">
-      <header className="app-header">
-        <span className="header-icon">🦅</span>
-        <div className="header-text">
-          <h1 className="app-title">The Eagle's <span className="gold">Nest</span></h1>
-          <div className="app-year">England {SEASON} · Two Fronts</div>
+      <header className="masthead">
+        <div className="masthead-top">
+          <div className="masthead-word">{head.word}</div>
+          <button className="masthead-issue" onClick={() => setShowWho(true)}>
+            {tab === 'wall'
+              ? `${wallCount} bit${wallCount === 1 ? '' : 's'}`
+              : whoAmI || 'Who are you?'}
+          </button>
         </div>
-        <button className="id-chip" onClick={() => setShowWho(true)}>
-          {whoAmI || 'Report in'}
-        </button>
+        <div className="strap">
+          <span>Season Sweep {SEASON}</span>
+          <span>{matchweek ? `Matchweek ${matchweek}` : 'Pre-season'}</span>
+        </div>
       </header>
 
+      <Ticker fixtures={fixtures} assignments={assignments} ladder={ladder} />
+
       <main className="main" ref={mainRef}>
-        {error && <div className="error-bar">{error} <button className="btn" onClick={refresh}>Retry</button></div>}
-        {loading && fixtures.length === 0 && (
-          <div className="empty-state"><div className="empty-icon">📡</div><p>Receiving transmissions…</p></div>
+        {error && (
+          <div className="error-bar">
+            <span>{error}</span>
+            <button className="btn" onClick={refresh}>Retry</button>
+          </div>
         )}
-        {tab === 'front' && (
+        {loading && fixtures.length === 0 && (
+          <div className="empty-state"><p>Fetching the fixtures…</p></div>
+        )}
+
+        {tab === 'table' && (
           <Leaderboard
             assignments={assignments}
             fixtures={fixtures}
             manualMedals={manualMedals}
             whoAmI={whoAmI}
-            onChangeUser={() => setShowWho(true)}
             onSelectTeam={setTeamSheet}
-            onOpenMatch={setMatchSheet}
           />
         )}
-        {tab === 'orders' && <Fixtures fixtures={fixtures} assignments={assignments} onOpenMatch={setMatchSheet} whoAmI={whoAmI} />}
-        {tab === 'map' && <Tables fixtures={fixtures} assignments={assignments} onSelectTeam={setTeamSheet} />}
-        {tab === 'tours' && <Campaign assignments={assignments} fixtures={fixtures} />}
-        {tab === 'hq' && (
-          <HQ
+        {tab === 'fixtures' && (
+          <Fixtures
+            fixtures={fixtures}
+            assignments={assignments}
+            onOpenMatch={setMatchSheet}
+            whoAmI={whoAmI}
+          />
+        )}
+        {tab === 'clubs' && (
+          <Tables fixtures={fixtures} assignments={assignments} onSelectTeam={setTeamSheet} />
+        )}
+        {tab === 'wall' && (
+          <Wall state={state} update={update} whoAmI={whoAmI} synced={synced} />
+        )}
+        {tab === 'shed' && (
+          <Shed
             state={state}
             update={update}
             synced={synced}
             whoAmI={whoAmI}
             onChangeUser={() => setShowWho(true)}
-            onSelectTeam={setTeamSheet}
+            fixtures={fixtures}
             lastFetched={lastFetched}
             refresh={refresh}
             espnState={espnState}
+            onSelectTeam={setTeamSheet}
           />
         )}
       </main>
@@ -159,7 +200,7 @@ export default function App() {
         />
       )}
 
-      <Navigation tab={tab} setTab={setTab} liveCount={liveCount} />
+      <Navigation tab={tab} setTab={setTab} />
     </div>
   );
 }

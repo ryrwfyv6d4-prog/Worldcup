@@ -1,29 +1,63 @@
 import { useMemo, useState } from 'react';
-import { buildLadder, computeOutlook, todayPoints, feedEvents } from '../utils/scoring.js';
-import { buildDispatch } from '../utils/dispatch.js';
-import { MEDALS, getTeam, ENTRY_FEE, PAYOUTS } from '../data/england2027.js';
-import MyWeekend, { PreSeason } from './MyWeekend.jsx';
-import NextFive from './NextFive.jsx';
-import Crest from './Crest.jsx';
+import { buildLadder, computeOutlook, formForTeam, feedEvents } from '../utils/scoring.js';
+import { MEDALS, SCORING, ENTRY_FEE, PAYOUTS, getTeam } from '../data/england2027.js';
+import { matchValue, priceRangeFor } from '../utils/odds.js';
+import { RowStripes } from './Stripe.jsx';
+import { tableLine, lastPlaceJibe } from '../utils/editorial.js';
 
-function ordinal(n) {
-  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+// The leader's recent form, taken across all their clubs, newest first
+function combinedForm(row, fixtures, n = 5) {
+  const all = [];
+  for (const t of row.teams) {
+    for (const f of fixtures) {
+      if (f.status !== 'FINISHED') continue;
+      if (f.homeTeam.name !== t && f.awayTeam.name !== t) continue;
+      const isHome = f.homeTeam.name === t;
+      const my = isHome ? f.score.home : f.score.away;
+      const their = isHome ? f.score.away : f.score.home;
+      if (my == null || their == null) continue;
+      all.push({ ts: f.utcDate || '', r: my > their ? 'W' : my < their ? 'L' : 'D' });
+    }
+  }
+  return all.sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, n).map((x) => x.r);
 }
 
-// Ladder as it stood a week ago — for movement arrows
-function previousLadder(assignments, fixtures, manualMedals) {
-  const cutoff = Date.now() - 7 * 24 * 3600 * 1000;
-  const prev = fixtures.map((f) =>
-    f.status === 'FINISHED' && f.utcDate && new Date(f.utcDate).getTime() > cutoff
-      ? { ...f, status: 'SCHEDULED', score: { home: null, away: null, winner: null } }
-      : f
-  );
-  return buildLadder(assignments, prev, manualMedals);
+// Every scoring event for one player, newest first — feeds the ledger
+function ledgerFor(row, fixtures) {
+  const events = [];
+  for (const b of row.breakdown) {
+    const info = getTeam(b.team);
+    for (const f of fixtures) {
+      if (f.status !== 'FINISHED') continue;
+      const isHome = f.homeTeam.name === b.team;
+      const isAway = f.awayTeam.name === b.team;
+      if (!isHome && !isAway) continue;
+      const opp = getTeam(isHome ? f.awayTeam.name : f.homeTeam.name);
+      const my = isHome ? f.score.home : f.score.away;
+      const their = isHome ? f.score.away : f.score.home;
+      if (my == null || their == null) continue;
+      const val = matchValue(b.team, isHome ? f.awayTeam.name : f.homeTeam.name, isHome,
+        f.utcDate && Date.parse(f.utcDate) >= Date.parse('2027-01-01T00:00:00Z') ? 'mid' : 'pre');
+      const pts = my > their ? val.win : my === their ? val.draw : 0;
+      events.push({
+        ts: f.utcDate || '',
+        label: `${info?.short} ${my}–${their} ${opp?.short}`,
+        pts,
+      });
+    }
+    // banked extras
+    if (b.oa?.pts > 0) {
+      events.push({ ts: 'zzz', label: `${info?.short} ${b.oa.pos}th, tipped ${b.oa.tipped}`, pts: b.oa.pts });
+    }
+    for (const m of b.medals) {
+      events.push({ ts: 'zzz', label: `${info?.short} — ${MEDALS[m].label}`, pts: MEDALS[m].pts });
+    }
+  }
+  return events.sort((a, b) => b.ts.localeCompare(a.ts));
 }
 
 export default function Leaderboard({
-  assignments, fixtures, manualMedals, whoAmI, onChangeUser, onSelectTeam, onOpenMatch,
+  assignments, fixtures, manualMedals, whoAmI, onSelectTeam,
 }) {
   const ladder = useMemo(
     () => buildLadder(assignments, fixtures, manualMedals),
@@ -33,231 +67,150 @@ export default function Leaderboard({
     () => computeOutlook(assignments, fixtures, manualMedals),
     [assignments, fixtures, manualMedals]
   );
-  const prevRanks = useMemo(() => {
-    const prev = previousLadder(assignments, fixtures, manualMedals);
-    return Object.fromEntries(prev.map((r, i) => [r.name, i]));
-  }, [assignments, fixtures, manualMedals]);
-  const dispatch = useMemo(() => buildDispatch(assignments, fixtures), [assignments, fixtures]);
-  const feed = useMemo(() => feedEvents(assignments, fixtures, 12), [assignments, fixtures]);
-  const [expanded, setExpanded] = useState(null);
+  const [open, setOpen] = useState(null);
 
-  const anyFinished = fixtures.some((f) => f.status === 'FINISHED');
+  const anyResults = fixtures.some((f) => f.status === 'FINISHED');
+  const pot = ladder.length * ENTRY_FEE;
 
   if (!ladder.length) {
     return (
       <div className="page">
-        <div className="page-header"><h2>The Front</h2></div>
-        <PreSeason />
-        <div className="empty-state">
-          <div className="empty-icon">📯</div>
-          <p>Nobody in yet. Run the draw in HQ.</p>
-        </div>
+        <div className="page-header"><h2>The Table</h2></div>
+        <p className="editorial">{tableLine(ladder, anyResults)}</p>
+        <div className="empty-state"><p>Run the draw in the Shed to get started.</p></div>
       </div>
     );
   }
 
-  const pot = ladder.length * ENTRY_FEE;
-  const hasResults = ladder[0].total > 0;
-  const meIdx = ladder.findIndex((r) => r.name === whoAmI);
-  const me = meIdx >= 0 ? ladder[meIdx] : null;
-  const myToday = me ? todayPoints(me.name, assignments, fixtures) : 0;
+  const leaderTotal = ladder[0].total;
 
   return (
     <div className="page">
       <div className="page-header">
-        <h2>The Front</h2>
-        <span className="subtitle">Two divisions · one table · {ladder.length} players</span>
+        <h2>The Table</h2>
+        <span className="subtitle">{ladder.length} in · ${pot} pot</span>
       </div>
 
-      {!anyFinished && <PreSeason />}
-
-      {me && (
-        <MyWeekend
-          player={me.name}
-          assignments={assignments}
-          fixtures={fixtures}
-          onOpenMatch={onOpenMatch}
-        />
-      )}
-
-      <section className="pot-strip">
-        <div className="pot-head">
-          <span className="pot-sub">${ENTRY_FEE} a head · ${pot} in the tin</span>
-        </div>
-        <div className="pot-prizes">
-          {PAYOUTS.map((p) => (
-            <div key={p.key} className="pot-prize">
-              <span className="pot-amt">${Math.round(pot * p.pct)}</span>
-              <span className="pot-lab">{p.label}</span>
-              <span className="pot-holder">
-                {hasResults ? (p.key === 'first' ? ladder[0].name : p.key === 'second' ? ladder[1]?.name : ladder[ladder.length - 1].name) : '—'}
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {me && (
-        <section className="ch-card">
-          <button className="ch-identity" onClick={onChangeUser}>
-            {me.name} <span className="ch-switch">switch ▾</span>
-          </button>
-          <div className="ch-top">
-            <div className="ch-rank">
-              <span className="pos">{meIdx + 1}</span>
-              <span className="ord">{ordinal(meIdx + 1).toUpperCase()} PLACE</span>
-            </div>
-            <div className="ch-stats">
-              <div className="hstat"><b>{me.total}</b><span>Points</span></div>
-              {myToday > 0 && <div className="hstat gain"><b>+{myToday}</b><span>Today</span></div>}
-              <div className="hstat">
-                <b>{meIdx === 0 ? (me.total - (ladder[1]?.total ?? 0)) : ladder[0].total - me.total}</b>
-                <span>{meIdx === 0 ? 'Clear' : 'Off lead'}</span>
-              </div>
-              {outlook[me.name] && (
-                <div className="hstat"><b>{outlook[me.name].projected}</b><span>Projected</span></div>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
+      <p className="editorial">{tableLine(ladder, anyResults)}</p>
 
       <div className="leaderboard">
         {ladder.map((row, i) => {
+          const isLeader = i === 0;
+          const isLast = i === ladder.length - 1 && ladder.length > 1;
+          const isOpen = open === row.name;
+          const gap = leaderTotal - row.total;
+          const form = isLeader ? combinedForm(row, fixtures) : [];
           const o = outlook[row.name] || {};
-          const today = todayPoints(row.name, assignments, fixtures);
-          const prevIdx = prevRanks[row.name];
-          const delta = prevIdx != null ? prevIdx - i : 0;
-          const isMe = row.name === whoAmI;
-          const isExpanded = expanded === row.name;
           return (
             <div
               key={row.name}
-              className={`lb-row ${isMe ? 'me' : ''}`}
-              onClick={() => setExpanded(isExpanded ? null : row.name)}
+              className={`lb-row ${isLeader ? 'leader' : ''} ${isLast ? 'last' : ''}`}
+              onClick={() => setOpen(isOpen ? null : row.name)}
             >
+              <RowStripes teams={row.teams} />
               <div className="lb-main">
-                <span className="rank-block">
-                  <span className={`rosette ${i < 3 ? 'gold' : ''}`}>{i + 1}</span>
-                  {hasResults && (
-                    delta > 0 ? <span className="lb-delta up">▲{delta}</span>
-                    : delta < 0 ? <span className="lb-delta down">▼{-delta}</span>
-                    : <span className="lb-delta flat">–</span>
-                  )}
-                </span>
+                <div className="lb-rank">{i + 1}</div>
                 <div className="lb-info">
-                  <span className="lb-name">
-                    {row.name}
-                    {isMe && <span className="tag you">YOU</span>}
-                    {hasResults && i === 0 && <span className="tag front">FRONT RUNNER</span>}
-                    {hasResults && i === ladder.length - 1 && <span className="tag disaster">LAST</span>}
-                    {o.cooked && <span className="tag cooked">OUT OF IT</span>}
-                  </span>
-                  <span className="lb-teams">
-                    {row.breakdown.map((b) => {
-                      const info = getTeam(b.team);
-                      return (
-                        <span className="team-chip" key={b.team}>
-                          <Crest team={b.team} size={16} />
-                          {info ? info.tla : b.team}
-                        </span>
-                      );
-                    })}
-                  </span>
+                  <div className="lb-name">{row.name}{whoAmI === row.name ? ' ·' : ''}</div>
+                  <div className="lb-clubs">
+                    {row.teams.map((t) => getTeam(t)?.short || t).join(' · ')}
+                  </div>
+                  {isLeader && form.length > 0 && (
+                    <div className="form-squares">
+                      {form.map((r, j) => (
+                        <span key={j} className={`fsq fsq-${r.toLowerCase()}`}>{r}</span>
+                      ))}
+                    </div>
+                  )}
+                  {isLast && anyResults && (
+                    <div className="lb-jibe">{lastPlaceJibe(row)}</div>
+                  )}
                 </div>
-                <span className="lb-pts">
-                  {row.total}<small>pts</small>
-                  {today > 0 && <span className="lb-today">+{today} today</span>}
-                  {row.oaPts > 0 && <span className="lb-oa">+{row.oaPts} vs tipped</span>}
-                  {o.projected != null && <span className="lb-max">proj {o.projected}</span>}
-                </span>
-                <span className={`lb-chev ${isExpanded ? 'open' : ''}`}>{'▸'}</span>
+                <div className="lb-right">
+                  <div className="lb-pts">{row.total}</div>
+                  <div className="lb-ptslabel">
+                    {isLeader ? 'points' : `−${gap}`}
+                  </div>
+                </div>
               </div>
-              {isExpanded && (
-                <div className="lb-breakdown">
-                  <table className="breakdown-table">
-                    <thead>
-                      <tr><th>Regiment</th><th>Record</th><th>vs prediction / honours</th><th style={{ textAlign: 'right' }}>Pts</th></tr>
-                    </thead>
-                    <tbody>
-                      {row.breakdown.map((b) => {
-                        const info = getTeam(b.team);
-                        return (
-                          <tr key={b.team}>
-                            <td>
-                              <button className="team-btn" onClick={(e) => { e.stopPropagation(); onSelectTeam(b.team); }}>
-                                <span className={`pot-dot p${b.pot?.toLowerCase()}`} /> {info ? info.short : b.team}
-                              </button>
-                            </td>
-                            <td className="small-text">{b.w}W {b.d}D {b.l}L</td>
-                            <td className="small-text">
-                              {b.oa.live && b.oa.places > 0
-                                ? <span className="oa-good">{b.oa.pos}th, tipped {b.oa.tipped} (+{b.oa.pts})</span>
-                                : b.oa.live ? <span className="muted">{b.oa.pos}th, tipped {b.oa.tipped}</span> : '—'}
-                              {b.medals.length > 0 && <span> · {b.medals.map((m) => MEDALS[m].label).join(', ')}</span>}
-                            </td>
-                            <td className="pts-cell">{b.total + b.medalPts + b.oa.pts}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                  <div className="lb-next">
-                    {row.breakdown.map((b) => {
-                      const info = getTeam(b.team);
+
+              {isOpen && (
+                <div className="ledger" onClick={(e) => e.stopPropagation()}>
+                  {(() => {
+                    const events = ledgerFor(row, fixtures);
+                    if (!events.length) {
                       return (
-                        <div className="lb-next-club" key={b.team}>
-                          <span className="lb-next-name">
-                            <span className={`pot-dot p${b.pot?.toLowerCase()}`} /> {info ? info.short : b.team}
-                          </span>
-                          <NextFive team={b.team} fixtures={fixtures} n={5} compact onOpenMatch={onOpenMatch} />
+                        <div className="ledger-empty">
+                          Nothing banked yet. {o.projected != null && `Projected ${o.projected} by May.`}
                         </div>
                       );
-                    })}
-                  </div>
-                  <div className="lb-outlook">
-                    <span>Tiebreak: {row.tb.wins} wins · {row.tb.gd > 0 ? `+${row.tb.gd}` : row.tb.gd} GD · {row.tb.gf} scored</span>
-                    {o.floor != null && <span>Range {o.floor}–{o.ceiling} · projected {o.projected}</span>}
-                  </div>
+                    }
+                    return (
+                      <>
+                        {events.slice(0, 12).map((e, j) => (
+                          <div key={j} className={`ledger-row ${e.pts === 0 ? 'zero' : ''}`}>
+                            <span>{e.label}</span>
+                            <b>{e.pts > 0 ? `+${e.pts}` : '0'}</b>
+                          </div>
+                        ))}
+                        {events.length > 12 && (
+                          <div className="ledger-more">{events.length - 12} more</div>
+                        )}
+                        {o.projected != null && (
+                          <div className="ledger-more">Projected {o.projected} by May</div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
           );
         })}
       </div>
-      <div className="tap-hint">👆 Tap anyone for their full record, or a club for its page</div>
 
-      {dispatch && (
-        <div className="card dispatch-card mt">
-          <div className="dispatch-title">📻 {dispatch.title}</div>
-          {dispatch.lines.map((l, i) => <p className="dispatch-line" key={i}>{l}</p>)}
-        </div>
-      )}
+      <ScoringPanel />
 
-      {feed.length > 0 && (
-        <div className="card">
-          <h3 className="section-title">Latest from the front</h3>
-          {feed.map((e, i) => {
-            const info = getTeam(e.team);
-            const isHome = e.fixture.homeTeam.name === e.team;
-            const opp = getTeam(isHome ? e.fixture.awayTeam.name : e.fixture.homeTeam.name);
-            const my = isHome ? e.fixture.score.home : e.fixture.score.away;
-            const their = isHome ? e.fixture.score.away : e.fixture.score.home;
-            return (
-              <div className={`feed-item ${e.pts === 0 ? 'feed-loss' : ''}`} key={i}>
-                <span className={`pip pip-${e.result.toLowerCase()}`}>{e.result}</span>
-                <div className="feed-body">
-                  <span className="feed-text">{info?.short} {my}–{their} {opp?.short}</span>
-                  <span className="feed-meta">
-                    <span className="feed-owner">{e.owner}</span>
-                    <span className="feed-pts">{e.pts > 0 ? `+${e.pts}` : 'nil'}</span>
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <div className="tap-hint">Tap a row for the ledger</div>
+    </div>
+  );
+}
+
+// Reads live from the scoring config — never hard-coded, so it always matches
+// whatever the engine is actually doing.
+function ScoringPanel() {
+  const arsenal = priceRangeFor('Arsenal FC');
+  const hull = priceRangeFor('Hull City AFC');
+  const lo = Math.min(arsenal?.lo ?? 3, hull?.lo ?? 3);
+  const hi = Math.max(arsenal?.hi ?? 15, hull?.hi ?? 15);
+
+  return (
+    <div className="scoring">
+      <div className="scoring-head">How points are earned</div>
+      <div className="scoring-row">
+        <span>Your club wins</span>
+        <b>{lo}–{hi}</b>
+      </div>
+      <div className="scoring-row">
+        <span>Draw</span>
+        <b>{SCORING.DRAW}</b>
+      </div>
+      <div className="scoring-row">
+        <span>Each place finished above its tip</span>
+        <b>{SCORING.OVERACHIEVE}</b>
+      </div>
+      <div className="scoring-row">
+        <span>{MEDALS.VC.label}</span>
+        <b>{MEDALS.VC.pts}</b>
+      </div>
+      <div className="scoring-row">
+        <span>{MEDALS.PROMOTION.label}</span>
+        <b>{MEDALS.PROMOTION.pts}</b>
+      </div>
+      <p className="scoring-note">
+        A win is priced on how likely it was — beat a better club, or win away, and it
+        pays more. The app prints the price on every fixture before kick-off.
+      </p>
     </div>
   );
 }

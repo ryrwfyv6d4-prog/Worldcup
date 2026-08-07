@@ -33,17 +33,13 @@ export default function Campaign({ assignments, fixtures }) {
   const tallyRows = Object.entries(tally).sort((a, b) => b[1] - a[1]);
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h2>Tours of Duty</h2>
-        <span className="subtitle">Monthly medals · nine side pots · season honours</span>
-      </div>
-      <p className="muted">
-        A Tour a month — most points in each calendar month takes the side pot.
-        Nine tours, nine medals, nine chances to matter even when you're cooked.
+    <div>
+      <p className="editorial">
+        A month at a time. Most points in each calendar month takes the side pot —
+        nine chances to matter even when the season has got away from you.
       </p>
 
-      {!drawn && <p className="muted">Run Conscription first — no troops, no tours.</p>}
+      {!drawn && <p className="muted small">Run the draw first.</p>}
 
       {drawn && (
         <>

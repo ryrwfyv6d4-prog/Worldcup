@@ -1,92 +1,175 @@
-import { useMemo } from 'react';
-import { getTeam, POT_LABELS, SCORING } from '../data/england2027.js';
+import { useEffect, useMemo, useState } from 'react';
+import { getTeam, SCORING } from '../data/england2027.js';
+import { coloursFor, inkOn } from '../data/colours.js';
 import { priceRangeFor } from '../utils/odds.js';
-import NextFive, { RecentForm } from './NextFive.jsx';
-import Crest from './Crest.jsx';
-import { leagueTable, formForTeam, positionOf, teamPoints, buildTables, buildComplete, overachieveForTeam, nextFixtures, recentResults } from '../utils/scoring.js';
+import {
+  leagueTable, teamPoints, recentResults, nextFixtures,
+  buildTables, buildComplete, overachieveForTeam,
+} from '../utils/scoring.js';
+import Stripe from './Stripe.jsx';
+
+const ordinal = (n) => {
+  if (n == null) return '—';
+  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
-    if (teams.includes(team)) return name;
+    if ((teams || []).includes(team)) return name;
   }
   return null;
 }
 
-function ordinal(n) {
-  if (n == null) return '—';
-  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+// 2d 4h 18m, dropping to 4h 18m inside a day
+function countdownTo(iso) {
+  if (!iso) return null;
+  const ms = Date.parse(iso) - Date.now();
+  if (ms <= 0) return null;
+  const d = Math.floor(ms / 864e5);
+  const h = Math.floor((ms % 864e5) / 36e5);
+  const m = Math.floor((ms % 36e5) / 6e4);
+  // two units is enough — three wraps the box on a long wait
+  return d > 0 ? `${d}d ${h}h` : `${h}h ${m}m`;
 }
 
 export default function TeamSheet({ team, fixtures, assignments, onClose, onOpenMatch }) {
   const info = getTeam(team);
-  const table = useMemo(() => (info ? leagueTable(fixtures, info.div) : []), [fixtures, info]);
+  const [tick, setTick] = useState(0);
+
+  // countdown recomputes every 30s, cleared on unmount
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const table = useMemo(
+    () => (info ? leagueTable(fixtures, info.div, 'all') : []),
+    [fixtures, info]
+  );
   if (!info) return null;
 
+  const [primary] = coloursFor(info.name);
+  const heroInk = inkOn(primary);
   const owner = ownerOf(team, assignments);
-  const pos = positionOf(team, table);
+  const pos = table.findIndex((r) => r.team === team) + 1;
   const row = table.find((r) => r.team === team);
-  const form = formForTeam(team, fixtures);
   const pts = teamPoints(team, fixtures);
-  const range = priceRangeFor(team);
   const oa = overachieveForTeam(team, buildTables(fixtures), buildComplete(fixtures));
-  const hasNext = nextFixtures(team, fixtures, 5).length > 0;
-  const hasRecent = recentResults(team, fixtures, 6).length > 0;
+  const range = priceRangeFor(team);
+  const results = recentResults(team, fixtures, 6);
+  const next = nextFixtures(team, fixtures, 1)[0];
+  const countdown = next ? countdownTo(next.fixture.utcDate) : null;
+
+  // top four plus this club's neighbours
+  const shownRows = useMemo(() => {
+    const idx = table.findIndex((r) => r.team === team);
+    const keep = new Set([0, 1, 2, 3]);
+    for (const d of [-1, 0, 1]) {
+      const j = idx + d;
+      if (j >= 0 && j < table.length) keep.add(j);
+    }
+    return [...keep].sort((a, b) => a - b).map((j) => ({ ...table[j], pos: j + 1 }));
+  }, [table, team]);
 
   return (
-    <div className="ms-backdrop" onClick={onClose}>
-      <div className="ms-topbar">
-        <button className="ms-back" onClick={(e) => { e.stopPropagation(); onClose(); }}>
-          <span className="ms-back-chevron">‹</span>Back
-        </button>
-        <div className="ms-drag-handle" />
-        <div className="ms-topbar-end" />
+    <div className="club-backdrop">
+      <div className="club-hero" style={{ background: primary, color: heroInk }}>
+        <button className="club-back" onClick={onClose}>← Table</button>
+        <div className="club-name">{info.short}</div>
+        <div className="club-meta">
+          <span className="club-meta-left">
+            {info.div === 1 ? 'Premier League' : 'Championship'}
+            {row && row.p > 0 ? ` · ${ordinal(pos)}` : ` · tipped ${ordinal(info.rank)}`}
+          </span>
+          {owner && <span className="club-meta-right">{owner}'s</span>}
+        </div>
       </div>
-      <div className="ms-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className={`card regiment pot-border-${info.pot.toLowerCase()}`} style={{ marginTop: 8 }}>
-          <div className="reg-head">
-            <Crest team={team} size={44} className="reg-crest" />
-            <span className="reg-name">{info.short}</span>
-            <span className="reg-codename">{info.codename}</span>
-          </div>
-          <div className="reg-meta">
-            <span className="reg-pot">
-              {POT_LABELS[info.pot]} · tipped {info.rank} of {info.div === 1 ? 20 : 24} · wins pay {range.lo}–{range.hi}
-            </span>
-            {owner && <span className="reg-owner">CO: {owner}</span>}
-          </div>
-          <p className="reg-roots">{info.roots}</p>
-        </div>
 
-        <div className="card">
-          <div className="en-ms-stats">
-            <div className="en-ms-stat"><b>{row && row.p > 0 ? ordinal(pos) : '—'}</b><span>{info.div === 1 ? 'Premier League' : 'Championship'}</span></div>
-            <div className="en-ms-stat"><b>{row ? `${row.w}-${row.d}-${row.l}` : '—'}</b><span>W-D-L</span></div>
-            <div className="en-ms-stat"><b>{row ? `${row.gf}:${row.ga}` : '—'}</b><span>goals</span></div>
-            <div className="en-ms-stat"><b>{pts.total}</b><span>sweep pts</span></div>
-            <div className="en-ms-stat">
-              <b className={oa.pts > 0 ? 'oa-good' : ''}>{oa.live ? (oa.places > 0 ? `+${oa.places}` : '0') : '—'}</b>
-              <span>vs tipped{oa.pts > 0 ? ` (+${oa.pts})` : ''}</span>
+      <div className="club-body">
+        <p className="club-desc">{info.roots}</p>
+
+        <div className="stat-strip">
+          <div className="stat-cell">
+            <div className="stat-val">{pts.total}</div>
+            <div className="stat-lab">Sweep pts</div>
+          </div>
+          <div className="stat-cell">
+            <div className="stat-val">{pts.w}–{pts.d}–{pts.l}</div>
+            <div className="stat-lab">W–D–L</div>
+          </div>
+          <div className="stat-cell">
+            <div className="stat-val">
+              {row ? (row.gd > 0 ? `+${row.gd}` : row.gd) : 0}
             </div>
-            <div className="en-ms-form">
-              {form.length
-                ? <span className="pips">{form.map((r, i) => <span key={i} className={`pip pip-${r.toLowerCase()}`}>{r}</span>)}</span>
-                : <span className="pip-none">no results yet</span>}
-            </div>
+            <div className="stat-lab">Goal diff</div>
           </div>
         </div>
 
-        {hasNext && (
-          <div className="card">
-            <NextFive team={team} fixtures={fixtures} onOpenMatch={onOpenMatch} />
+        {oa.live && oa.places > 0 && (
+          <p className="editorial" style={{ marginTop: 14 }}>
+            {oa.places} place{oa.places === 1 ? '' : 's'} above its tip — worth{' '}
+            {oa.pts} to {owner || 'nobody'} at {SCORING.OVERACHIEVE} a place.
+          </p>
+        )}
+
+        {next && (
+          <div className="next-box">
+            <div>
+              <div className="next-eyebrow">Next</div>
+              <div className="next-opp">
+                {next.isHome ? 'v' : 'at'} {getTeam(next.opp)?.short}
+              </div>
+            </div>
+            <div>
+              <div className="next-count">{countdown || 'Kicking off'}</div>
+              <div className="next-lab">{countdown ? 'To kick-off' : 'Under way'}</div>
+              <div className="next-lab">Win pays {next.win}</div>
+            </div>
           </div>
         )}
 
-        {hasRecent && (
-          <div className="card">
-            <RecentForm team={team} fixtures={fixtures} onOpenMatch={onOpenMatch} />
-          </div>
+        <div className="section-title">League Table</div>
+        {shownRows.map((r, i) => (
+          <button
+            key={r.team}
+            className={`mini-row ${i === 0 ? 'first' : ''} ${i === shownRows.length - 1 ? 'lastrow' : ''} ${r.team === team ? 'here' : ''}`}
+            style={r.team === team ? { background: `${primary}12` } : undefined}
+            onClick={() => { /* already here */ }}
+          >
+            <span className="mini-pos">{r.pos}</span>
+            <Stripe team={r.team} variant="tbl" />
+            <span className="mini-name">{getTeam(r.team)?.short || r.team}</span>
+            <span className="mini-num mini-p">{r.p}</span>
+            <span className="mini-num mini-gd">{r.gd > 0 ? `+${r.gd}` : r.gd}</span>
+            <span className="mini-pts">{r.pts}</span>
+          </button>
+        ))}
+
+        {results.length > 0 && (
+          <>
+            <div className="section-title">Results</div>
+            {results.map((r) => (
+              <button
+                key={r.fixture.id}
+                className="res-row"
+                onClick={() => { onClose(); onOpenMatch && onOpenMatch(r.fixture); }}
+              >
+                <span className="res-mw">MW{r.fixture.matchday}</span>
+                <span className="res-opp">
+                  {getTeam(r.opp)?.short} ({r.isHome ? 'h' : 'a'})
+                </span>
+                <span className="res-score">{r.my}–{r.their}</span>
+                <span className={`res-sq fsq fsq-${r.result.toLowerCase()}`}>{r.result}</span>
+              </button>
+            ))}
+          </>
         )}
+
+        <p className="muted small" style={{ marginTop: 18 }}>
+          Tipped {ordinal(info.rank)} of {info.div === 1 ? 20 : 24}. Wins pay {range?.lo}–{range?.hi}
+          {' '}depending on the opponent and the venue.
+        </p>
       </div>
     </div>
   );
