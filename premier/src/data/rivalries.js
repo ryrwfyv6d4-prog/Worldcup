@@ -90,36 +90,36 @@ const RIVALRIES = [
 // on purpose: this is what these fixtures were, not an advert for what they
 // should be.
 const FIRMS = {
-  'Manchester City FC|Manchester United FC':
-    "United's Red Army were the template for the seventies travelling mob; City's Guvnors answered in the eighties. Both are now a documentary and a lot of dads in the pub.",
-  'Newcastle United FC|Sunderland AFC':
-    "Newcastle's Gremlins and Sunderland's Seaburn Casuals. The confrontation at Seaburn in 2000 drew some of the longest hooliganism sentences English courts had handed down.",
-  'Leeds United FC|Manchester United FC':
-    "The Service Crew against the Red Army. More than any other fixture, this is the one that put the phrase 'the English disease' into seventies newspapers.",
-  'Chelsea FC|Fulham FC':
-    "Chelsea's Headhunters were the most notorious firm in the country and the target of a famous undercover police operation. Fulham, to their eternal credit, never really bothered.",
   'Millwall FC|West Ham United FC':
-    "The big one: West Ham's Inter City Firm against Millwall's Bushwackers. New Cross in 1976, Upton Park in 2009. Still the most heavily policed fixture in London, and the reason 'no one likes us' became a song.",
+    "The Inter City Firm against the Bushwackers, and the most documented feud in the English game. Trouble around the 1976 meetings ended with a Millwall supporter dead under a train at New Cross. When the clubs were drawn together again in the League Cup on 25 August 2009, there were three pitch invasions at Upton Park and a man was stabbed in the street outside. The policing bill is now the reason the fixture is dreaded rather than anticipated.",
+  'Newcastle United FC|Sunderland AFC':
+    "Newcastle's Gremlins and Sunderland's Seaburn Casuals arranged to meet away from the ground entirely, on Seaburn seafront in 2000. Several hundred were involved, it was filmed, and the courts handed down some of the longest sentences English football violence had produced. Both firms were effectively finished by the prosecutions.",
+  'Chelsea FC|Fulham FC':
+    "Chelsea's Headhunters were notorious enough that police ran an undercover operation against them in the mid-eighties. The convictions that followed were quashed on appeal in 1989 after the evidence fell apart, which became a case study in how not to infiltrate a firm. Fulham, a few hundred yards away, never had anything comparable and were rather proud of it.",
   'Cardiff City FC|Swansea City AFC':
-    "The Soul Crew against the Swansea Jacks — policed like a state visit, away fans bussed in convoy. By most measures the most genuinely bitter derby in Britain.",
-  'Portsmouth FC|Southampton FC':
-    "Pompey's 6.57 Crew, named after the early train to away games, against the Southampton mob. Seventeen miles and a great deal of history nobody is especially proud of.",
-  'West Bromwich Albion FC|Wolverhampton Wanderers FC':
-    "Wolves' Subway Army against Albion's Section Five. Black Country furnaces, Black Country tempers.",
-  'Blackburn Rovers FC|Burnley FC':
-    "Burnley's Suicide Squad against the Blackburn mob. Cotton towns eight miles apart, and the reason this fixture spent years with its kick-off time chosen by the police rather than the TV.",
-  'Blackburn Rovers FC|Preston North End FC':
-    "Two founder members of the Football League, a hundred and forty years of grievance, and the Preston Para Squad to carry it.",
-  'Charlton Athletic FC|Millwall FC':
-    "The Bushwackers against Charlton's B Mob, fought out across one bend of the Thames in the old armament belt.",
+    "The Soul Crew against the Swansea Jacks. Ninian Park in 1993 is the one everyone cites, and the fixture has since been played with away fans bussed in police convoy, sometimes under a full escort from the county line. It is routinely graded the highest-risk match in Britain.",
+  'Manchester City FC|Manchester United FC':
+    "City's Guvnors against United's Red Army. The reference point is 27 April 1974: Denis Law backheeled the goal that helped send his old club down, United supporters came onto the pitch to get the game abandoned, and the result stood anyway. It set the tone for a decade in which United's travelling support became the template every other firm copied.",
   'Birmingham City FC|West Bromwich Albion FC':
-    "Birmingham's Zulu Warriors were one of the few genuinely multiracial firms of the eighties, which quietly said more about the city than the fighting did.",
-  'Cardiff City FC|Wrexham AFC':
-    "North against south, the Soul Crew against the Wrexham Frontline. National service, both directions.",
+    "Birmingham's Zulu Warriors were unusual in being genuinely multiracial when most firms were not, which said more about the city than the fighting did. St Andrew's in May 1985 was the low point: a riot during a match against Leeds brought a wall down and killed a fifteen-year-old boy, on the same afternoon as the Bradford fire. The Popplewell inquiry covered both.",
   'Brighton & Hove Albion FC|Crystal Palace FC':
-    "Nobody can properly explain this one. Forty miles apart, no shared border, barely any history — and still a category A fixture on police paperwork.",
+    "The strangest rivalry in England, because there is no geography behind it. It traces to bad-tempered FA Cup ties in 1976 and Brighton manager Alan Mullery's reaction to Palace supporters afterwards, and the clubs have simply never let it go. Still a category A fixture on police paperwork half a century later.",
+  'Blackburn Rovers FC|Burnley FC':
+    "Burnley's Suicide Squad and the Blackburn mob, eight miles apart in East Lancashire. For years this was the fixture whose kick-off time was chosen by the police rather than the broadcasters, with the ground segregated street by street outside as well as in.",
+  'Portsmouth FC|Southampton FC':
+    "Pompey's 6.57 Crew took their name from the first train out of Portsmouth Harbour on a Saturday. Seventeen miles of genuine hatred, a fixture that has spent long stretches with restricted or banned away support, and one that both sets of police forces plan for months ahead.",
+  'Leeds United FC|Manchester United FC':
+    "The Service Crew against the Red Army through the seventies and eighties, when this fixture did more than any other to put the phrase 'the English disease' into the papers. The hostility long outlived the firms and now mostly lives in the away end and the songs.",
+  'West Bromwich Albion FC|Wolverhampton Wanderers FC':
+    "Wolves' Subway Army were named for the underpasses around Molineux where they waited for visiting support. Albion's lot answered in kind. Two furnace towns four miles apart, and a fixture the West Midlands force still treats as a full weekend operation.",
+  'Charlton Athletic FC|Millwall FC':
+    "The Bushwackers against Charlton's B Mob, fought out across one bend of the Thames in the old armament belt. Sharpened by the years Charlton spent groundsharing at Selhurst Park, which left both sets with a grievance about territory.",
+  'Blackburn Rovers FC|Preston North End FC':
+    "Two founder members of the Football League with a hundred and forty years of grievance behind them, and the Preston Para Squad to carry it through the eighties.",
+  'Cardiff City FC|Wrexham AFC':
+    "North against south, the Soul Crew against the Wrexham Frontline, in a fixture that only comes round when the divisions allow it — which is part of why it still has an edge.",
   'Everton FC|Liverpool FC':
-    "Famously the derby that mostly did not go that way. Families split down the middle, so the County Road Cutters and their Anfield counterparts largely saved it for everyone else.",
+    "Famously the derby that mostly did not go that way. Families split down the middle, the two ends often mixed, and the County Road Cutters and their Anfield counterparts largely saved it for everyone else. In 1984 both sets of supporters travelled to Wembley together.",
 };
 
 const key = (a, b) => [a, b].sort().join('|');
@@ -136,6 +136,11 @@ export function getRivalry(teamA, teamB) {
 export function getFirms(teamA, teamB) {
   return FIRMS[key(teamA, teamB)] || null;
 }
+
+// Shown under the firms note so the section reads as what it is: a record of
+// what these fixtures were, not a highlight reel.
+export const FIRMS_FOOTNOTE =
+  'Historical record. Most of these firms were broken up by prosecutions, banning orders and all-seater grounds decades ago.';
 
 // Pot pairing → a line of framing. Keyed by the sorted pot pair.
 const POT_FRAMING = {

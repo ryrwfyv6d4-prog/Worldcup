@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { getTeam, POT_LABELS } from '../data/england2027.js';
 import { matchValue, phaseFor, midseasonRankFor } from '../utils/odds.js';
-import { getMatchup } from '../data/rivalries.js';
+import { getMatchup, FIRMS_FOOTNOTE } from '../data/rivalries.js';
 import Crest from './Crest.jsx';
 import { leagueTable, formForTeam, positionOf, reverseFixture } from '../utils/scoring.js';
 
@@ -117,7 +117,10 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
               </div>
               <p>{matchup.blurb}</p>
               {matchup.firms && (
-                <p className="en-ms-firms"><b>The firms.</b> {matchup.firms}</p>
+                <>
+                  <p className="en-ms-firms"><b>The firms.</b> {matchup.firms}</p>
+                  <p className="en-ms-firms-note">{FIRMS_FOOTNOTE}</p>
+                </>
               )}
             </div>
           )}
