@@ -16,7 +16,7 @@ export default function Navigation({ tab, setTab }) {
           className={`nav-btn ${tab === t.id ? 'active' : ''}`}
           onClick={() => setTab(t.id)}
         >
-          {t.label}
+          <span className="nav-lab">{t.label}</span>
         </button>
       ))}
     </nav>

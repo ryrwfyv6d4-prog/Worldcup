@@ -144,7 +144,6 @@ function MatchRow({ fixture: f, assignments, onOpen }) {
   const ho = ownerOf(f.homeTeam.name, assignments);
   const ao = ownerOf(f.awayTeam.name, assignments);
   const derby = getRivalry(f.homeTeam.name, f.awayTeam.name);
-  const bothOwned = ho && ao;
   const done = f.status === 'FINISHED';
   const live = f.status === 'IN_PLAY';
 
@@ -166,8 +165,9 @@ function MatchRow({ fixture: f, assignments, onOpen }) {
         </span>
       </span>
       <span className="fx-right">
-        {bothOwned && !done && !live ? (
-          <span className="fx-derby">{derby ? 'proper derby' : 'shed derby'}</span>
+        {/* every club is owned with a full shed, so only real derbies earn the tag */}
+        {derby && !done && !live ? (
+          <span className="fx-derby">derby</span>
         ) : live ? (
           <>
             <span className="fx-score">{f.score.home}–{f.score.away}</span>
@@ -178,9 +178,7 @@ function MatchRow({ fixture: f, assignments, onOpen }) {
             <span className="fx-score done">{f.score.home}–{f.score.away}</span>
             <span className="fx-status">Full time</span>
           </>
-        ) : (
-          <span className="fx-notstarted">not started</span>
-        )}
+        ) : null /* kick-off time is already on the left — nothing to add */}
       </span>
     </button>
   );
