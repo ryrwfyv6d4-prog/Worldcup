@@ -87,6 +87,51 @@ export function teamPoints(team, fixtures) {
   return { total, w, d, l, gf, ga };
 }
 
+// What one fixture is worth to one club, and what it actually paid once
+// settled. Same arithmetic teamPoints runs, exposed per match so a result can
+// show its own price instead of leaving you to work it out from the score.
+export function fixturePoints(fixture, team) {
+  const isHome = fixture.homeTeam.name === team;
+  const isAway = fixture.awayTeam.name === team;
+  if (!isHome && !isAway) return null;
+
+  const val = valueForFixture(fixture, team);
+  const base = { win: val.win, draw: val.draw, settled: false, pts: null, outcome: null };
+  if (fixture.status !== 'FINISHED') return base;
+
+  const w = fixture.score.winner;
+  const outcome = w === 'DRAW' ? 'D'
+    : (w === 'HOME_TEAM' && isHome) || (w === 'AWAY_TEAM' && isAway) ? 'W' : 'L';
+  return {
+    ...base,
+    settled: true,
+    outcome,
+    pts: outcome === 'W' ? val.win : outcome === 'D' ? val.draw : 0,
+  };
+}
+
+// Who banked what across a set of fixtures — the matchweek's bottom line.
+export function pointsHaul(fixtures, assignments) {
+  const owner = new Map();
+  for (const [name, teams] of Object.entries(assignments)) {
+    for (const t of teams || []) if (t) owner.set(t, name);
+  }
+  const haul = {};
+  for (const f of fixtures) {
+    if (f.status !== 'FINISHED') continue;
+    for (const side of [f.homeTeam.name, f.awayTeam.name]) {
+      const who = owner.get(side);
+      if (!who) continue;
+      const fp = fixturePoints(f, side);
+      haul[who] = (haul[who] || 0) + (fp?.pts || 0);
+    }
+  }
+  return Object.entries(haul)
+    .filter(([, pts]) => pts > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, pts]) => ({ name, pts }));
+}
+
 // ── Overachievement: places finished above your pre-season rank ──────────────
 export function overachieveForTeam(team, tables, complete) {
   const t = getTeam(team);

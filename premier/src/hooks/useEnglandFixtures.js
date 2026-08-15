@@ -159,7 +159,10 @@ export function useEnglandFixtures() {
 
   const fetchEspn = useCallback(async () => {
     const fmt = (dt) => dt.toISOString().slice(0, 10).replace(/-/g, '');
-    const from = fmt(new Date(Date.now() - 36 * 3600 * 1000));
+    // Look back ten days, not one. openfootball backfills results a day or two
+    // late, and without the overlap a settled match would drop out of the app
+    // between ESPN's window closing and the league feed catching up.
+    const from = fmt(new Date(Date.now() - 10 * 864e5));
     const to = fmt(new Date(Date.now() + 36 * 3600 * 1000));
     const unmatched = [];
     const games = [];

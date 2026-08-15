@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { getTeam } from '../data/england2027.js';
-import { valueForFixture } from '../utils/odds.js';
+import { fixturePoints, pointsHaul } from '../utils/scoring.js';
 import { getRivalry } from '../data/rivalries.js';
 import Stripe from './Stripe.jsx';
 import { fixturesLine } from '../utils/editorial.js';
@@ -80,6 +80,8 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
     return groups;
   }, [shown]);
 
+  const haul = useMemo(() => pointsHaul(shown, assignments), [shown, assignments]);
+
   const mineCount = shown.filter(
     (f) => myTeams.includes(f.homeTeam.name) || myTeams.includes(f.awayTeam.name)
   ).length;
@@ -103,6 +105,29 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
           <button className="btn" onClick={() => setMd(Math.max(1, shownMd - 1))} disabled={shownMd <= 1}>Prev</button>
           <span className="md-label">Matchweek {shownMd} <small>of {maxMd}</small></span>
           <button className="btn" onClick={() => setMd(Math.min(maxMd, shownMd + 1))} disabled={shownMd >= maxMd}>Next</button>
+        </div>
+      )}
+
+      {haul.length > 0 && (
+        <div className="haul">
+          <div className="haul-head">
+            Banked {filter === 'mine' ? 'from these games' : `in matchweek ${shownMd}`}
+          </div>
+          <div className="haul-rows">
+            {/* top five keeps the summary from pushing the fixtures off screen */}
+            {haul.slice(0, 5).map((p, i) => (
+              <div className={`haul-row ${i === 0 ? 'top' : ''}`} key={p.name}>
+                <span className="haul-name">{p.name}</span>
+                <span className="haul-bar" style={{ width: `${(p.pts / haul[0].pts) * 100}%` }} />
+                <span className="haul-pts">+{p.pts}</span>
+              </div>
+            ))}
+          </div>
+          {haul.length > 5 && (
+            <div className="haul-rest">
+              {haul.slice(5).map((p) => `${p.name} +${p.pts}`).join(' · ')}
+            </div>
+          )}
         </div>
       )}
 
@@ -138,6 +163,20 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
   );
 }
 
+// Before kick-off this is the price on offer; after it, what the club actually
+// banked. Same number either way, so a settled row still reads as points.
+function Worth({ fixture, team }) {
+  const fp = fixturePoints(fixture, team);
+  if (!fp) return null;
+  if (!fp.settled) return <span className="fx-worth">+{fp.win}</span>;
+  if (fp.outcome === 'L') return <span className="fx-paid nil">0</span>;
+  return (
+    <span className={`fx-paid ${fp.outcome === 'D' ? 'drew' : ''}`}>
+      +{fp.pts}
+    </span>
+  );
+}
+
 function MatchRow({ fixture: f, assignments, onOpen }) {
   const h = getTeam(f.homeTeam.name);
   const a = getTeam(f.awayTeam.name);
@@ -155,13 +194,13 @@ function MatchRow({ fixture: f, assignments, onOpen }) {
           <Stripe team={f.homeTeam.name} />
           <span className={`fx-club-name ${done ? 'dim' : ''}`}>{h?.short || f.homeTeam.name}</span>
           {ho && <span className="fx-owner">{ho}</span>}
-          {ho && !done && <span className="fx-worth">+{valueForFixture(f, f.homeTeam.name).win}</span>}
+          {ho && <Worth fixture={f} team={f.homeTeam.name} />}
         </span>
         <span className="fx-club">
           <Stripe team={f.awayTeam.name} />
           <span className={`fx-club-name ${done ? 'dim' : ''}`}>{a?.short || f.awayTeam.name}</span>
           {ao && <span className="fx-owner">{ao}</span>}
-          {ao && !done && <span className="fx-worth">+{valueForFixture(f, f.awayTeam.name).win}</span>}
+          {ao && <Worth fixture={f} team={f.awayTeam.name} />}
         </span>
       </span>
       <span className="fx-right">
