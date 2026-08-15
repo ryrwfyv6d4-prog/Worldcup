@@ -18,6 +18,10 @@ jobs:
         working-directory: premier
         run: node scripts/check-feeds.mjs
 
+      - name: ESPN match summary shape
+        working-directory: premier
+        run: node scripts/probe-summary.mjs
+
       - name: openfootball fixture feed
         run: |
           for f in 1-premierleague 2-championship; do
