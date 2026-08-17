@@ -201,6 +201,10 @@ body {
   width: 100%; padding: 14px; font-size: 12px; letter-spacing: .18em;
   margin-top: 12px; font-family: var(--font-display); font-weight: 700;
 }
+/* An anchor styled as a button needs the block/centring a <button> gets free */
+.draw-night-link {
+  display: block; text-align: center; text-decoration: none; margin-bottom: 8px;
+}
 .btn-jump { margin: 8px 0; }
 .btn-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
 .team-btn {

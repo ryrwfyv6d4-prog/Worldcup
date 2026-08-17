@@ -78,6 +78,17 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
         club came from.
       </p>
 
+      {/* The ceremony lives in its own page so it can go full screen on a telly
+          and run off a bare file with no network. It publishes straight to the
+          shared state, so a draw done there lands here. */}
+      <a className="btn btn-primary btn-big draw-night-link" href="./draw-night.html">
+        Draw night →
+      </a>
+      <p className="muted small">
+        Cards, one player at a time, big club last. Use the buttons below only if
+        you want a quick draw with no ceremony.
+      </p>
+
       {!drawn && (
         <>
           <div className="card">

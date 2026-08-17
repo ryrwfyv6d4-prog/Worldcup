@@ -31,6 +31,10 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
         navigateFallback: `${BASE}index.html`,
+        // Draw night is its own page. Without this the navigation fallback can
+        // hand back the app shell instead, which is not something to discover
+        // with eleven people watching.
+        navigateFallbackDenylist: [/draw-night\.html$/],
         // Live scores and the league feed must never be served stale from cache
         runtimeCaching: [
           {
