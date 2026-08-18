@@ -4,11 +4,21 @@
 // the World Cup draft-night page worked. That means the show and the app can
 // never disagree, and the running order is fixed before anyone is in the room.
 //
-//   node scripts/draw-night.mjs                 # draw fresh, random
-//   node scripts/draw-night.mjs --seed 1234     # reproducible
-//   node scripts/draw-night.mjs --show          # print, write nothing
+// Re-running KEEPS the draw already in the page. Only --redraw or --seed pull
+// a new one, so adding a hype reel or fixing a blurb can never scramble it by
+// accident.
+//
+//   node scripts/draw-night.mjs                 # refresh the page, keep the draw
+//   node scripts/draw-night.mjs --redraw        # draw fresh, random
+//   node scripts/draw-night.mjs --seed 1234     # draw fresh, reproducible
+//   node scripts/draw-night.mjs --show          # print a fresh draw, write nothing
+//   node scripts/draw-night.mjs --reel <url>    # hype reel: YouTube link or URL
+//
+// A hype reel is picked up automatically from public/hype.mp4 (or .webm/.mov)
+// if one is sitting there — the local file is the safe choice for the night,
+// since it plays with no network at all.
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { randomInt } from 'node:crypto';
 import { TEAMS, buildPots, getTeam } from '../src/data/england2027.js';
 import { COLOURS } from '../src/data/colours.js';
@@ -27,6 +37,23 @@ const args = process.argv.slice(2);
 const seedArg = args.indexOf('--seed');
 const seed = seedArg > -1 ? Number(args[seedArg + 1]) : null;
 const showOnly = args.includes('--show');
+const reelArg = args.indexOf('--reel');
+
+// A file next to the page beats a URL: nothing to buffer and nothing to fail
+function findReel() {
+  if (args.includes('--no-reel')) return null;
+  if (reelArg > -1 && args[reelArg + 1]) {
+    const src = args[reelArg + 1];
+    return { type: /youtu\.?be/.test(src) ? 'youtube' : 'url', src };
+  }
+  for (const name of ['hype.mp4', 'hype.webm', 'hype.mov', 'hype.m4v']) {
+    if (existsSync(new URL(`../public/${name}`, import.meta.url))) {
+      return { type: 'file', src: `./${name}` };
+    }
+  }
+  return null;
+}
+const reel = findReel();
 
 // Seeded when asked so a draw can be reproduced, crypto-random otherwise
 function makeRandom(s) {
@@ -49,17 +76,42 @@ function shuffle(arr, rnd) {
   return a;
 }
 
+// What the page already holds, if anything
+function existingPicks() {
+  try {
+    const html = readFileSync(PAGE, 'utf8');
+    const m = html.match(/<script id="draw-data" type="application\/json">([\s\S]*?)<\/script>/);
+    if (!m) return null;
+    const raw = m[1].trim();
+    if (!raw || raw.startsWith('{')) return null;   // placeholder, never drawn
+    const prev = JSON.parse(Buffer.from(raw, 'base64').toString('utf8'));
+    const out = {};
+    for (const p of prev.players || []) out[p.name] = p.picks;
+    const names = Object.keys(out);
+    if (names.length !== PLAYERS.length || PLAYERS.some((n) => !out[n])) return null;
+    return out;
+  } catch { return null; }
+}
+
+const redraw = args.includes('--redraw') || seed != null || showOnly;
+const kept = redraw ? null : existingPicks();
+
 const rnd = makeRandom(seed);
 const plan = buildPots(PLAYERS.length);
 if (!plan.viable) throw new Error(`${PLAYERS.length} players does not divide into the 44 clubs`);
 
 // One club per tier per player. plan.tiers runs strongest first, so picks[0] is
 // the Tier 1 club and the page flips the array in reverse.
-const picks = {};
-for (const p of PLAYERS) picks[p] = [];
-for (const tier of plan.tiers) {
-  const order = shuffle(tier.clubs, rnd);
-  PLAYERS.forEach((p, i) => { if (order[i]) picks[p].push(order[i]); });
+let picks;
+if (kept) {
+  picks = kept;
+} else {
+  picks = {};
+  for (const p of PLAYERS) picks[p] = [];
+  for (const tier of plan.tiers) {
+    const order = shuffle(tier.clubs, rnd);
+    PLAYERS.forEach((p, i) => { if (order[i]) picks[p].push(order[i]); });
+  }
 }
 
 const short = new Map(TEAMS.map((t) => [t.name, t.short]));
@@ -82,10 +134,13 @@ const data = {
   clubs,
   tiers: plan.tiers.map((t) => t.clubs),
   worker: WORKER,
+  reel,
 };
 
 // ── Report ──────────────────────────────────────────────────────────────────
-console.log(`Draw for ${PLAYERS.length} players${seed == null ? '' : ` (seed ${seed})`}\n`);
+console.log(kept
+  ? `Keeping the draw already in the page (--redraw to pull a new one)\n`
+  : `Draw for ${PLAYERS.length} players${seed == null ? '' : ` (seed ${seed})`}\n`);
 for (const name of PLAYERS) {
   const line = picks[name].map((c, i) => `T${i + 1} ${short.get(c)}`).join('  ·  ');
   console.log(`  ${name.padEnd(10)} ${line}`);
@@ -94,6 +149,9 @@ for (const name of PLAYERS) {
 const dealt = Object.values(picks).flat();
 const unique = new Set(dealt);
 console.log(`\n  ${dealt.length} clubs dealt, ${unique.size} distinct, ${TEAMS.length - unique.size} unclaimed`);
+console.log(reel
+  ? `  hype reel: ${reel.type} — ${reel.src}`
+  : '  hype reel: none (drop one at premier/public/hype.mp4, or pass --reel <url>)');
 if (unique.size !== dealt.length) throw new Error('a club was dealt twice');
 if (dealt.length !== TEAMS.length) throw new Error(`dealt ${dealt.length} of ${TEAMS.length} clubs`);
 for (const [name, list] of Object.entries(picks)) {
