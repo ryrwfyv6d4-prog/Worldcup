@@ -1,9 +1,44 @@
 import { useMemo, useState } from 'react';
-import { buildLadder, computeOutlook, formForTeam, feedEvents } from '../utils/scoring.js';
+import { buildLadder, formForTeam, feedEvents } from '../utils/scoring.js';
+import { getProjection } from '../utils/projection.js';
 import { MEDALS, SCORING, ENTRY_FEE, PAYOUTS, getTeam } from '../data/england2027.js';
 import { matchValue, priceRangeFor } from '../utils/odds.js';
 import { RowStripes } from './Stripe.jsx';
 import { tableLine, lastPlaceJibe } from '../utils/editorial.js';
+
+// Chances of the three things that pay, straight off the simulation. Shown as
+// bars because the exact percentage matters far less than who is in the hunt.
+function Forecast({ o, n }) {
+  const pct = (v) => (v >= 0.995 ? 100 : Math.round(v * 100));
+  const bars = [
+    { key: 'first', label: '1st', v: o.pFirst },
+    { key: 'second', label: '2nd', v: o.pSecond },
+    { key: 'last', label: 'Last', v: o.pLast },
+  ];
+  return (
+    <div className="forecast">
+      <div className="forecast-head">Where this ends up</div>
+      {bars.map((b) => (
+        <div className={`forecast-row ${b.key}`} key={b.key}>
+          <span className="forecast-lab">{b.label}</span>
+          <span className="forecast-track">
+            <span className="forecast-fill" style={{ width: `${Math.max(pct(b.v), b.v > 0 ? 2 : 0)}%` }} />
+          </span>
+          <span className="forecast-val">{b.v < 0.005 ? '<1%' : `${pct(b.v)}%`}</span>
+        </div>
+      ))}
+      <div className="forecast-note">
+        Typical finish {ordinalOf(o.medianRank)} of {n}, over 800 simulated seasons.
+      </div>
+    </div>
+  );
+}
+
+function ordinalOf(x) {
+  if (x == null) return '—';
+  const s = ['th', 'st', 'nd', 'rd'], v = x % 100;
+  return x + (s[(v - 20) % 10] || s[v] || s[0]);
+}
 
 // The leader's recent form, taken across all their clubs, newest first
 function combinedForm(row, fixtures, n = 5) {
@@ -47,7 +82,7 @@ function ledgerFor(row, fixtures) {
     }
     // banked extras
     if (b.oa?.pts > 0) {
-      events.push({ ts: 'zzz', label: `${info?.short} ${b.oa.pos}th, tipped ${b.oa.tipped}`, pts: b.oa.pts });
+      events.push({ ts: 'zzz', label: `${info?.short} ${ordinalOf(b.oa.pos)}, tipped ${ordinalOf(b.oa.tipped)}`, pts: b.oa.pts });
     }
     for (const m of b.medals) {
       events.push({ ts: 'zzz', label: `${info?.short} — ${MEDALS[m].label}`, pts: MEDALS[m].pts });
@@ -64,7 +99,7 @@ export default function Leaderboard({
     [assignments, fixtures, manualMedals]
   );
   const outlook = useMemo(
-    () => computeOutlook(assignments, fixtures, manualMedals),
+    () => getProjection(assignments, fixtures, manualMedals).players,
     [assignments, fixtures, manualMedals]
   );
   const [open, setOpen] = useState(null);
@@ -131,17 +166,24 @@ export default function Leaderboard({
                   <div className="lb-ptslabel">
                     {isLeader ? 'points' : `−${gap}`}
                   </div>
+                  {o.pFirst != null && (
+                    <div className="lb-odds" title="Chance of finishing first">
+                      {o.pFirst >= 0.005 ? `${Math.round(o.pFirst * 100)}%` : '<1%'} to win
+                    </div>
+                  )}
                 </div>
               </div>
 
               {isOpen && (
                 <div className="ledger" onClick={(e) => e.stopPropagation()}>
+                  {o.projected != null && <Forecast o={o} n={ladder.length} />}
                   {(() => {
                     const events = ledgerFor(row, fixtures);
                     if (!events.length) {
                       return (
                         <div className="ledger-empty">
-                          Nothing banked yet. {o.projected != null && `Projected ${o.projected} by May.`}
+                          Nothing banked yet.{' '}
+                          {o.projected != null && `Projected ${o.projected} by May.`}
                         </div>
                       );
                     }
@@ -157,7 +199,9 @@ export default function Leaderboard({
                           <div className="ledger-more">{events.length - 12} more</div>
                         )}
                         {o.projected != null && (
-                          <div className="ledger-more">Projected {o.projected} by May</div>
+                          <div className="ledger-more">
+                            Projected {o.projected} by May ({o.floor}–{o.ceiling})
+                          </div>
                         )}
                       </>
                     );

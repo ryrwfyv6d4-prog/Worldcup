@@ -231,7 +231,7 @@ body {
 /* ── Screen 1 · The Table ─────────────────────────────────────────────────── */
 .leaderboard { margin-top: 4px; }
 .lb-row {
-  position: relative; padding: 12px 0 12px 14px;
+  position: relative; padding: 12px 0 12px 26px;
   border-top: 1px solid var(--ink); cursor: pointer;
 }
 .lb-row.leader { border-top-width: 2px; }
@@ -855,3 +855,69 @@ body {
 
 .crest { flex-shrink: 0; vertical-align: middle; }
 .crest-img { object-fit: contain; }
+
+/* ── Projections ──────────────────────────────────────────────────────────── */
+/* Where the season is heading, on the ladder, the tables and each club page */
+
+.lb-odds {
+  font: 700 8.5px var(--font-ui); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-faint); margin-top: 3px; white-space: nowrap;
+}
+.lb-row.leader .lb-odds { color: var(--spot); }
+
+.forecast {
+  border-bottom: 1px solid var(--rule-light); padding-bottom: 10px; margin-bottom: 8px;
+}
+.forecast-head {
+  font: 800 8.5px var(--font-ui); letter-spacing: .16em; text-transform: uppercase;
+  color: var(--ink-faint); margin-bottom: 6px;
+}
+.forecast-row { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+.forecast-lab {
+  width: 34px; flex-shrink: 0; font: 700 10px var(--font-ui);
+  text-transform: uppercase; letter-spacing: .1em; color: var(--ink-muted);
+}
+.forecast-track { flex: 1; height: 8px; background: var(--rule-light); }
+.forecast-fill { display: block; height: 100%; background: var(--ink-faint); }
+.forecast-row.first .forecast-fill { background: var(--spot); }
+.forecast-row.last .forecast-fill { background: var(--rule-dotted); }
+.forecast-val {
+  width: 38px; text-align: right; flex-shrink: 0;
+  font: 800 11px var(--font-ui); font-variant-numeric: tabular-nums; color: var(--ink);
+}
+.forecast-note { margin-top: 5px; font-size: 10.5px; color: var(--ink-faint); }
+
+/* Projected league table */
+.proj-table .proj-range {
+  font-variant-numeric: tabular-nums; color: var(--ink-muted); white-space: nowrap;
+}
+.proj-table small { font-size: 8.5px; font-weight: 800; letter-spacing: .02em; }
+.oa-bad { color: var(--spot); }
+
+/* Projected finish on a club page */
+.proj-box {
+  border: 1.5px solid var(--ink); padding: 11px 12px; margin-top: 14px;
+}
+.proj-head {
+  font: 800 8.5px var(--font-ui); letter-spacing: .16em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.proj-main { display: flex; align-items: baseline; gap: 9px; margin-top: 3px; }
+.proj-pos {
+  font-family: var(--font-display); font-size: 40px; font-weight: 800; line-height: .9;
+}
+.proj-range-lab {
+  font-family: var(--font-editorial); font-style: italic; font-size: 14px;
+  color: var(--ink-muted); line-height: 1.25;
+}
+.proj-chances {
+  display: flex; gap: 16px; flex-wrap: wrap; margin-top: 9px;
+  padding-top: 8px; border-top: 1px solid var(--rule-light);
+  font: 600 10px var(--font-ui); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.proj-chances b {
+  font-family: var(--font-display); font-size: 17px; font-weight: 800;
+  color: var(--ink); margin-right: 3px; font-variant-numeric: tabular-nums;
+}
+.proj-foot { margin-top: 8px; font-size: 11px; line-height: 1.5; color: var(--ink-muted); }

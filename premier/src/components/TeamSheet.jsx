@@ -7,6 +7,9 @@ import {
   buildTables, buildComplete, overachieveForTeam,
 } from '../utils/scoring.js';
 import Stripe from './Stripe.jsx';
+import { getProjection } from '../utils/projection.js';
+
+const pctOf = (v) => (v >= 0.995 ? '100%' : v < 0.005 ? '<1%' : `${Math.round(v * 100)}%`);
 
 const ordinal = (n) => {
   if (n == null) return '—';
@@ -46,6 +49,10 @@ export default function TeamSheet({ team, fixtures, assignments, onClose, onOpen
   const table = useMemo(
     () => (info ? leagueTable(fixtures, info.div, 'all') : []),
     [fixtures, info]
+  );
+  const proj = useMemo(
+    () => getProjection(assignments, fixtures).clubs[team],
+    [assignments, fixtures, team]
   );
   if (!info) return null;
 
@@ -105,6 +112,43 @@ export default function TeamSheet({ team, fixtures, assignments, onClose, onOpen
             <div className="stat-lab">Goal diff</div>
           </div>
         </div>
+
+        {proj && (
+          <div className="proj-box">
+            <div className="proj-head">Where it finishes</div>
+            <div className="proj-main">
+              <span className="proj-pos">{ordinal(proj.median)}</span>
+              <span className="proj-range-lab">
+                {proj.best === proj.worst
+                  ? 'in almost every season'
+                  : `${ordinal(proj.best)} to ${ordinal(proj.worst)} in 9 seasons out of 10`}
+              </span>
+            </div>
+            <div className="proj-chances">
+              {info.div === 1 ? (
+                <>
+                  <span><b>{pctOf(proj.pTitle)}</b> title</span>
+                  <span><b>{pctOf(proj.pTop)}</b> top four</span>
+                  <span><b>{pctOf(proj.pDown)}</b> down</span>
+                </>
+              ) : (
+                <>
+                  <span><b>{pctOf(proj.pTop)}</b> promoted</span>
+                  <span><b>{pctOf(proj.pPlayoff)}</b> play-offs</span>
+                  <span><b>{pctOf(proj.pDown)}</b> down</span>
+                </>
+              )}
+            </div>
+            <p className="proj-foot">
+              Tipped {ordinal(proj.tipped)}.{' '}
+              {proj.median < proj.tipped
+                ? `Beating that by ${proj.tipped - proj.median} place${proj.tipped - proj.median === 1 ? '' : 's'} is worth +${(proj.tipped - proj.median) * SCORING.OVERACHIEVE} to ${owner || 'nobody'}.`
+                : proj.median > proj.tipped
+                  ? 'The projection has it finishing below its tip, so no overachievement bonus.'
+                  : 'The projection has it finishing exactly where it was tipped.'}
+            </p>
+          </div>
+        )}
 
         {oa.live && oa.places > 0 && (
           <p className="editorial" style={{ marginTop: 14 }}>
