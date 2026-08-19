@@ -12,13 +12,15 @@
 //   node scripts/draw-night.mjs --redraw        # draw fresh, random
 //   node scripts/draw-night.mjs --seed 1234     # draw fresh, reproducible
 //   node scripts/draw-night.mjs --show          # print a fresh draw, write nothing
-//   node scripts/draw-night.mjs --reel <url>    # hype reel: YouTube link or URL
+//   node scripts/draw-night.mjs --reel <url>          # hype reel, on the ticket screen
+//   node scripts/draw-night.mjs --highlights <url>    # package that opens the draw
 //
-// A hype reel is picked up automatically from public/hype.mp4 (or .webm/.mov)
-// if one is sitting there — the local file is the safe choice for the night,
-// since it plays with no network at all.
+// Both videos are picked up automatically from public/hype.mp4 and
+// public/highlights.mp4 (or .webm/.mov/.m4v) if they are sitting there. A local
+// file is the safe choice for the night, since it plays with no network at all.
+// --no-reel and --no-highlights leave them out.
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { randomInt } from 'node:crypto';
 import { TEAMS, buildPots, getTeam } from '../src/data/england2027.js';
 import { COLOURS } from '../src/data/colours.js';
@@ -39,23 +41,31 @@ const args = process.argv.slice(2);
 const seedArg = args.indexOf('--seed');
 const seed = seedArg > -1 ? Number(args[seedArg + 1]) : null;
 const showOnly = args.includes('--show');
-const reelArg = args.indexOf('--reel');
+// mp4 first: the only container that plays everywhere, including whatever
+// browser the telly turns out to have
+const VIDEO_EXT = ['mp4', 'webm', 'm4v', 'mov'];
 
-// A file next to the page beats a URL: nothing to buffer and nothing to fail
-function findReel() {
-  if (args.includes('--no-reel')) return null;
-  if (reelArg > -1 && args[reelArg + 1]) {
-    const src = args[reelArg + 1];
-    return { type: /youtu\.?be/.test(src) ? 'youtube' : 'url', src };
+// A file next to the page beats a URL: nothing to buffer and nothing to fail.
+// The scan is case-insensitive because Highlights.MP4 straight off a phone
+// should just work rather than silently produce no video.
+function findVideo(flag, base) {
+  if (args.includes(`--no-${flag}`)) return null;
+  const i = args.indexOf(`--${flag}`);
+  if (i > -1 && args[i + 1]) {
+    const src = args[i + 1];
+    if (/youtu\.?be/.test(src)) return { type: 'youtube', src };
+    return { type: /^https?:/.test(src) ? 'url' : 'file', src };
   }
-  for (const name of ['hype.mp4', 'hype.webm', 'hype.mov', 'hype.m4v']) {
-    if (existsSync(new URL(`../public/${name}`, import.meta.url))) {
-      return { type: 'file', src: `./${name}` };
-    }
-  }
-  return null;
+  const re = new RegExp(`^${base}\\.(${VIDEO_EXT.join('|')})$`, 'i');
+  const hit = readdirSync(new URL('../public/', import.meta.url))
+    .filter((f) => re.test(f))
+    .sort((a, b) => VIDEO_EXT.indexOf(a.split('.').pop().toLowerCase())
+                  - VIDEO_EXT.indexOf(b.split('.').pop().toLowerCase()))[0];
+  return hit ? { type: 'file', src: `./${hit}` } : null;
 }
-const reel = findReel();
+
+const reel = findVideo('reel', 'hype');
+const highlights = findVideo('highlights', 'highlights');
 
 // Seeded when asked so a draw can be reproduced, crypto-random otherwise
 function makeRandom(s) {
@@ -180,6 +190,7 @@ const data = {
   tiers: plan.tiers.map((t) => t.clubs),
   worker: WORKER,
   reel,
+  highlights,
   forecast,
 };
 
@@ -200,9 +211,17 @@ if (forecast) {
   console.log(`  forecast: ${forecast.runs} seasons over ${forecast.fixtures} fixtures — `
     + `${top.name} favourite on ${top.projected} (${Math.round(top.pFirst * 100)}%)`);
 }
-console.log(reel
-  ? `  hype reel: ${reel.type} — ${reel.src}`
-  : '  hype reel: none (drop one at premier/public/hype.mp4, or pass --reel <url>)');
+const sayVideo = (label, v, hint) => console.log(
+  v ? `  ${label}: ${v.type} — ${v.src}` : `  ${label}: none (${hint})`);
+sayVideo('hype reel ', reel, 'drop one at premier/public/hype.mp4, or pass --reel <url>');
+sayVideo('highlights', highlights, 'drop one at premier/public/highlights.mp4, or pass --highlights <url>');
+if (highlights) {
+  console.log('              plays once, straight after Begin the Draw');
+  if (highlights.type === 'youtube') {
+    console.log('              WARNING: a YouTube embed cannot tell the page it has ended.');
+    console.log('              Only Skip or Escape will move the show on. A local file is safer.');
+  }
+}
 if (unique.size !== dealt.length) throw new Error('a club was dealt twice');
 if (dealt.length !== TEAMS.length) throw new Error(`dealt ${dealt.length} of ${TEAMS.length} clubs`);
 for (const [name, list] of Object.entries(picks)) {
