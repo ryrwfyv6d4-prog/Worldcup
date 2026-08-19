@@ -142,10 +142,12 @@ body{
   font-family:var(--fe);font-size:clamp(14px,2.4vw,20px);line-height:1.4;
   color:rgba(239,234,224,.72);margin-top:9px;
 }
+/* The one line that matters once all four are turned over */
 .comm-proj{
-  font:600 11px var(--fu);letter-spacing:.1em;text-transform:uppercase;
-  color:rgba(239,234,224,.42);margin-top:6px;
+  font:800 clamp(12px,1.7vw,15px) var(--fu);letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gold);margin-top:14px;opacity:0;transition:opacity .45s;
 }
+.comm-proj.in{opacity:1}
 
 /* The verdict — what the odds make of the draw, revealed on a button so the
    host gets a beat out of it */
@@ -280,8 +282,8 @@ td.who{font:800 14px var(--fu);white-space:nowrap}
     <div class="comm">
       <div class="comm-h" id="comm-h"></div>
       <div class="comm-firm" id="comm-firm"></div>
-      <div class="comm-proj" id="comm-proj"></div>
       <div class="comm-s" id="comm-s"></div>
+      <div class="comm-proj" id="comm-proj"></div>
     </div>
   </div>
   <div class="hint">Space or tap to advance</div>
@@ -466,6 +468,7 @@ function ord(n) {
 function clearComm() {
   commH.textContent = ''; commFirm.textContent = '';
   commS.textContent = ''; commProj.textContent = '';
+  commProj.classList.remove('in');
 }
 
 function setComm(club) {
@@ -473,12 +476,18 @@ function setComm(club) {
   commH.textContent = c ? c.short : club;
   commFirm.textContent = c && c.firm && c.firm !== '—' ? c.firm : '';
   commS.textContent = c ? c.blurb : '';
+}
 
-  // What 800 simulated seasons make of the club just turned over
-  var f = FORECAST && FORECAST.clubs[club];
-  commProj.textContent = f
-    ? 'Tipped ' + ord(f.tipped) + ' · projected ' + ord(f.median)
-    : '';
+// Where the whole hand lands, said once, after the fourth card is over. Ranked
+// the same way the Verdict ranks at the end, so the two can never disagree.
+function setPlayerProjection(p) {
+  if (!FORECAST || !FORECAST.players.length) return;
+  var rows = FORECAST.players;
+  var pos = 0;
+  for (var i = 0; i < rows.length; i++) if (rows[i].name === p.name) pos = i + 1;
+  if (!pos) return;
+  commProj.textContent = 'Projected to finish ' + ord(pos) + ' of ' + rows.length;
+  commProj.classList.add('in');
 }
 
 /* ── Steps ──────────────────────────────────────────────────────────────── */
@@ -539,6 +548,7 @@ async function flip(p, i, big) {
     confetti(p.picks[i]);
     await wait(700);
     $('spot').classList.remove('on');
+    setPlayerProjection(p);
   }
 }
 
