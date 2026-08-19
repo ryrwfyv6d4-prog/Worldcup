@@ -34,7 +34,9 @@ export default defineConfig({
         // Draw night is its own page. Without this the navigation fallback can
         // hand back the app shell instead, which is not something to discover
         // with eleven people watching.
-        navigateFallbackDenylist: [/draw-night\.html$/],
+        // Matched against pathname + search, so allow for a ?v= cache-buster —
+        // anchored at $ alone, draw-night.html?v=2 would fall through to the shell
+        navigateFallbackDenylist: [/draw-night\.html(\?|$)/],
         // Live scores and the league feed must never be served stale from cache
         runtimeCaching: [
           {
