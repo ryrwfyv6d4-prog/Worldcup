@@ -23,6 +23,8 @@ import { randomInt } from 'node:crypto';
 import { TEAMS, buildPots, getTeam } from '../src/data/england2027.js';
 import { COLOURS } from '../src/data/colours.js';
 import { FIRM_LINES } from '../src/data/firms.js';
+import { parseLeagueTxt } from '../src/utils/leagueFeed.js';
+import { projectSeason } from '../src/utils/projection.js';
 
 // The eleven, in the order they were drawn on World Cup draft night
 const PLAYERS = [
@@ -129,12 +131,56 @@ for (const t of TEAMS) {
   };
 }
 
+// ── The verdict ─────────────────────────────────────────────────────────────
+// Run the same season simulation the app uses and bake the answer in, so the
+// last screen can tell everyone who got the best draw without needing a
+// network on the night. If the feed can't be reached, the show just skips it.
+const FEEDS = [
+  { div: 1, url: 'https://raw.githubusercontent.com/openfootball/england/master/2026-27/1-premierleague.txt' },
+  { div: 2, url: 'https://raw.githubusercontent.com/openfootball/england/master/2026-27/2-championship.txt' },
+];
+
+async function buildForecast() {
+  if (args.includes('--no-forecast')) return null;
+  try {
+    const fixtures = (await Promise.all(FEEDS.map(async (f) => {
+      const res = await fetch(f.url, { signal: AbortSignal.timeout(20000) });
+      if (!res.ok) throw new Error(`feed ${f.div} returned ${res.status}`);
+      return parseLeagueTxt(await res.text(), f.div);
+    }))).flat();
+    if (!fixtures.length) throw new Error('no fixtures parsed');
+
+    const assignments = {};
+    for (const p of PLAYERS) assignments[p] = picks[p];
+    const proj = projectSeason(assignments, fixtures, {});
+
+    const clubs = {};
+    for (const [name, c] of Object.entries(proj.clubs)) {
+      clubs[name] = { median: c.median, best: c.best, worst: c.worst, tipped: c.tipped };
+    }
+    return {
+      runs: proj.runs,
+      fixtures: fixtures.length,
+      players: PLAYERS
+        .map((name) => ({ name, ...proj.players[name] }))
+        .sort((a, b) => b.projected - a.projected),
+      clubs,
+    };
+  } catch (err) {
+    console.log(`  forecast: skipped — ${err.message}`);
+    return null;
+  }
+}
+
+const forecast = await buildForecast();
+
 const data = {
   players: PLAYERS.map((name) => ({ name, picks: picks[name] })),
   clubs,
   tiers: plan.tiers.map((t) => t.clubs),
   worker: WORKER,
   reel,
+  forecast,
 };
 
 // ── Report ──────────────────────────────────────────────────────────────────
@@ -149,6 +195,11 @@ for (const name of PLAYERS) {
 const dealt = Object.values(picks).flat();
 const unique = new Set(dealt);
 console.log(`\n  ${dealt.length} clubs dealt, ${unique.size} distinct, ${TEAMS.length - unique.size} unclaimed`);
+if (forecast) {
+  const top = forecast.players[0];
+  console.log(`  forecast: ${forecast.runs} seasons over ${forecast.fixtures} fixtures — `
+    + `${top.name} favourite on ${top.projected} (${Math.round(top.pFirst * 100)}%)`);
+}
 console.log(reel
   ? `  hype reel: ${reel.type} — ${reel.src}`
   : '  hype reel: none (drop one at premier/public/hype.mp4, or pass --reel <url>)');
