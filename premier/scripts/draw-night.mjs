@@ -22,7 +22,7 @@
 
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { randomInt } from 'node:crypto';
-import { TEAMS, buildPots, getTeam } from '../src/data/england2027.js';
+import { TEAMS, buildPots, getTeam, SCORING, MEDALS, ENTRY_FEE, PAYOUTS } from '../src/data/england2027.js';
 import { COLOURS } from '../src/data/colours.js';
 import { FIRM_LINES } from '../src/data/firms.js';
 import { parseLeagueTxt } from '../src/utils/leagueFeed.js';
@@ -193,6 +193,32 @@ async function buildForecast() {
 
 const forecast = await buildForecast();
 
+// ── The rules card ──────────────────────────────────────────────────────────
+// Generated from the same constants the app scores with, so what goes up on the
+// wall on the night is what the ladder actually does all season.
+const plClubs = TEAMS.filter((t) => t.div === 1).length;
+const chClubs = TEAMS.filter((t) => t.div === 2).length;
+const threes = PLAYERS.length * 2 - plClubs;   // players forced onto a third Championship club
+
+const rules = {
+  pot: `$${ENTRY_FEE} a head. ${PLAYERS.length} in, so $${ENTRY_FEE * PLAYERS.length} in the tin.`,
+  squad: `${plan.perPlayer} clubs each, one from every tier, across the Premier League and the Championship.`,
+  split: `${plClubs} top-flight clubs will not divide ${PLAYERS.length} ways, so ${threes} of you carry three Championship sides. The prices make up for it.`,
+  results: `Every win is priced on how likely it was. Beat a club rated above you, or win away from home, and it pays more. Any draw is +${SCORING.DRAW}.`,
+  overachieve: `Finish above where the bookies tipped you and take +${SCORING.OVERACHIEVE} a place, from ${SCORING.OVERACHIEVE_MIN_GAMES} games in.`,
+  honours: [
+    `Win the Premier League +${MEDALS.VC.pts}`,
+    `Top four +${MEDALS.DSO.pts}`,
+    `Promoted +${MEDALS.PROMOTION.pts}`,
+    `Survive as a bottom-half side +${MEDALS.SURVIVAL.pts}`,
+    `Play-off final +${MEDALS.BIG_PUSH.pts}`,
+    `Championship title +${MEDALS.CHAMP_TITLE.pts}`,
+    `A cup +${MEDALS.CUP.pts}`,
+  ],
+  payouts: PAYOUTS.map((x) => `${x.label} ${Math.round(x.pct * 100)}%`).join(' · '),
+  closer: 'Blind, final, no trades, no appeals.',
+};
+
 const data = {
   players: PLAYERS.map((name) => ({ name, picks: picks[name] })),
   clubs,
@@ -201,6 +227,7 @@ const data = {
   reel,
   highlights,
   forecast,
+  rules,
 };
 
 // ── Report ──────────────────────────────────────────────────────────────────
