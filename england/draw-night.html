@@ -178,6 +178,7 @@ body{
 }
 .shield{width:60%;aspect-ratio:1/1.15;position:relative;display:flex;align-items:center;justify-content:center}
 .shield svg{width:100%;height:100%;display:block}
+.crest-img{width:100%;height:100%;object-fit:contain;display:block}
 .card-name{
   font-family:var(--fd);font-weight:700;text-transform:uppercase;line-height:.95;
   font-size:clamp(9px,2.1vw,17px);text-align:center;
@@ -324,7 +325,7 @@ td.who{font:800 14px var(--fu);white-space:nowrap}
       Sovereignty was never ceded. It was never raised.<br><br>
       <em>Dan owns this. Dan has always owned this.</em>
     </div>
-    <div class="ack-skip">Tap anywhere to continue</div>
+    <div class="ack-skip">Tap anywhere to continue &nbsp;·&nbsp; F for full screen</div>
   </div>
 </div>
 
@@ -420,6 +421,21 @@ document.getElementById('i-clubs').textContent = Object.keys(CLUBS).length + ' C
 
 /* ── Painted crest. Real badges are trademarked and a remote image is one more
       thing to fail on the night, so the shield is drawn from club colours. ── */
+/* The app's real crests sit next to this page at ./crests/<TLA>.png. Three of
+   the 44 have never resolved upstream, and a bare copy of this file may not have
+   the folder at all, so anything that fails to load falls back to the painted
+   shield rather than leaving a broken image on the screen. */
+function mountCrest(holder, club) {
+  var c = CLUBS[club];
+  if (!c || !c.tla) { holder.innerHTML = shield(club); return; }
+  var img = document.createElement('img');
+  img.className = 'crest-img';
+  img.alt = '';
+  img.addEventListener('error', function () { holder.innerHTML = shield(club); });
+  img.src = './crests/' + c.tla + '.png';
+  holder.appendChild(img);
+}
+
 function shield(club) {
   var c = CLUBS[club] || { tla: '???', colours: ['#555', '#fff'] };
   var a = c.colours[0], b = c.colours[1];
@@ -598,6 +614,38 @@ if (HIGHLIGHTS && HIGHLIGHTS.type === 'file') {
 }
 var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
+/* ── Full screen ────────────────────────────────────────────────────────────
+   Browsers only grant this from a real gesture, so it is taken on the first
+   tap of the night rather than on load, and it is never allowed to throw —
+   a refusal should cost the show nothing. F toggles it at any point. */
+function fsElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+
+function enterFullscreen() {
+  if (fsElement()) return;
+  var el = document.documentElement;
+  var go = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+  if (!go) return;
+  try {
+    var r = go.call(el);
+    if (r && r.catch) r.catch(function () { /* refused; the show is unaffected */ });
+  } catch (e) { /* older browser */ }
+}
+
+function exitFullscreen() {
+  var go = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+  if (!go) return;
+  try {
+    var r = go.call(document);
+    if (r && r.catch) r.catch(function () {});
+  } catch (e) {}
+}
+
+function toggleFullscreen() {
+  if (fsElement()) exitFullscreen(); else enterFullscreen();
+}
+
 var FORECAST = DATA.forecast || null;
 
 function ord(n) {
@@ -681,10 +729,11 @@ async function deal(p) {
       + '<div class="face back">T' + (i + 1) + '</div>'
       + '<div class="face front">'
       +   '<span class="card-tier">T' + (i + 1) + '</span>'
-      +   '<span class="shield">' + shield(club) + '</span>'
+      +   '<span class="shield"></span>'
       +   '<span class="card-name">' + (CLUBS[club] ? CLUBS[club].short : club) + '</span>'
       +   '<span class="card-div">' + (CLUBS[club] && CLUBS[club].div === 1 ? 'Premier League' : 'Championship') + '</span>'
       + '</div></div>';
+    mountCrest(card.querySelector('.shield'), club);
     grid.appendChild(card);
   });
   // deal left to right
@@ -905,17 +954,21 @@ if (REEL) {
     playVideo(REEL, function () { screen('screen-intro'); });
   });
 }
-$('screen-welcome').addEventListener('click', function () { screen('screen-intro'); });
+$('screen-welcome').addEventListener('click', function () {
+  enterFullscreen();
+  screen('screen-intro');
+});
 $('video-skip').addEventListener('click', endVideo);
 
-$('begin').addEventListener('click', advance);
+$('begin').addEventListener('click', function () { enterFullscreen(); advance(); });
 
 var SKIP_KEYS = ['Escape', 'Space', 'ArrowRight', 'Enter'];
 var GO_KEYS = ['Space', 'ArrowRight', 'Enter', 'ArrowDown', 'PageDown'];
 
 document.addEventListener('keydown', function (e) {
+  if (e.code === 'KeyF') { e.preventDefault(); toggleFullscreen(); return; }
   if ($('screen-welcome').classList.contains('on')) {
-    e.preventDefault(); screen('screen-intro'); return;
+    e.preventDefault(); enterFullscreen(); screen('screen-intro'); return;
   }
   // While a video is up it owns the keyboard. Returning here is what stops a
   // keypress queueing an advance that would fire the moment the video ends and
