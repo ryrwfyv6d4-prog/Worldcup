@@ -202,7 +202,7 @@ const threes = PLAYERS.length * 2 - plClubs;   // players forced onto a third Ch
 
 const rules = {
   pot: `$${ENTRY_FEE} a head. ${PLAYERS.length} in, so $${ENTRY_FEE * PLAYERS.length} in the tin.`,
-  squad: `${plan.perPlayer} clubs each, one from every tier, across the Premier League and the Championship.`,
+  squad: `${plan.perPlayer} clubs each, one out of every hat, across the Premier League and the Championship.`,
   split: `${plClubs} top-flight clubs will not divide ${PLAYERS.length} ways, so ${threes} of you carry three Championship sides. The prices make up for it.`,
   results: `Every win is priced on how likely it was. Beat a club rated above you, or win away from home, and it pays more. Any draw is +${SCORING.DRAW}.`,
   overachieve: `Finish above where the bookies tipped you and take +${SCORING.OVERACHIEVE} a place, from ${SCORING.OVERACHIEVE_MIN_GAMES} games in.`,
