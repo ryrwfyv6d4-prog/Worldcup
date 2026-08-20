@@ -64,9 +64,6 @@ function findVideo(flag, base) {
   return hit ? { type: 'file', src: `./${hit}` } : null;
 }
 
-const reel = findVideo('reel', 'hype');
-const highlights = findVideo('highlights', 'highlights');
-
 // Seeded when asked so a draw can be reproduced, crypto-random otherwise
 function makeRandom(s) {
   if (s == null) return (n) => randomInt(n);
@@ -89,24 +86,36 @@ function shuffle(arr, rnd) {
 }
 
 // What the page already holds, if anything
-function existingPicks() {
+function existingData() {
   try {
     const html = readFileSync(PAGE, 'utf8');
     const m = html.match(/<script id="draw-data" type="application\/json">([\s\S]*?)<\/script>/);
     if (!m) return null;
     const raw = m[1].trim();
     if (!raw || raw.startsWith('{')) return null;   // placeholder, never drawn
-    const prev = JSON.parse(Buffer.from(raw, 'base64').toString('utf8'));
-    const out = {};
-    for (const p of prev.players || []) out[p.name] = p.picks;
-    const names = Object.keys(out);
-    if (names.length !== PLAYERS.length || PLAYERS.some((n) => !out[n])) return null;
-    return out;
+    return JSON.parse(Buffer.from(raw, 'base64').toString('utf8'));
   } catch { return null; }
+}
+
+const prev = existingData();
+
+function existingPicks() {
+  if (!prev) return null;
+  const out = {};
+  for (const p of prev.players || []) out[p.name] = p.picks;
+  const names = Object.keys(out);
+  if (names.length !== PLAYERS.length || PLAYERS.some((n) => !out[n])) return null;
+  return out;
 }
 
 const redraw = args.includes('--redraw') || seed != null || showOnly;
 const kept = redraw ? null : existingPicks();
+
+// A video chosen by flag has no file on disk to rediscover, so without this a
+// later plain re-run would quietly drop it
+const reel = findVideo('reel', 'hype') || (args.includes('--no-reel') ? null : prev && prev.reel) || null;
+const highlights = findVideo('highlights', 'highlights')
+  || (args.includes('--no-highlights') ? null : prev && prev.highlights) || null;
 
 const rnd = makeRandom(seed);
 const plan = buildPots(PLAYERS.length);
@@ -218,8 +227,8 @@ sayVideo('highlights', highlights, 'drop one at premier/public/highlights.mp4, o
 if (highlights) {
   console.log('              plays once, straight after Begin the Draw');
   if (highlights.type === 'youtube') {
-    console.log('              WARNING: a YouTube embed cannot tell the page it has ended.');
-    console.log('              Only Skip or Escape will move the show on. A local file is safer.');
+    console.log('              needs wifi. It ends itself once YouTube\'s player API loads;');
+    console.log('              if that is blocked, Skip or Escape moves the show on.');
   }
 }
 if (unique.size !== dealt.length) throw new Error('a club was dealt twice');
