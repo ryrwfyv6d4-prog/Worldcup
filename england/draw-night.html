@@ -144,6 +144,26 @@ body{
 }
 .tier.in{opacity:1}
 
+/* The hat the cards come out of. Sits over the row while dealing and clears
+   out once the four are down, so it never fights the reveal for space. */
+.hat-wrap{position:relative;width:100%;height:0}
+.hat{
+  position:absolute;left:50%;bottom:-15%;
+  width:clamp(130px,21vh,270px);transform:translate(-50%,0) scale(.4);
+  opacity:0;transition:opacity .38s,transform .38s cubic-bezier(.2,.8,.3,1);
+  z-index:30;pointer-events:none;
+  filter:drop-shadow(0 12px 26px rgba(0,0,0,.55));
+}
+.hat.in{opacity:1;transform:translate(-50%,0) scale(1)}
+.hat.out{opacity:0;transform:translate(-50%,10%) scale(.75)}
+.hat svg{width:100%;height:auto;display:block}
+.hat.tip{animation:hatTip .42s cubic-bezier(.3,.9,.4,1)}
+@keyframes hatTip{
+  0%,100%{transform:translate(-50%,0) scale(1) rotate(0)}
+  35%{transform:translate(-50%,-7px) scale(1.06) rotate(-5deg)}
+  70%{transform:translate(-50%,-2px) scale(1.02) rotate(3deg)}
+}
+
 /* Cards share the row, so four of them fill a phone and cap out on a TV */
 .grid{display:flex;gap:clamp(7px,1.6vw,16px);margin-top:clamp(14px,3vh,28px);
   justify-content:center;width:100%;max-width:min(1400px,94vw)}
@@ -151,10 +171,21 @@ body{
 /* Card: 3D flip, back = baize, front = painted crest */
 .card{
   flex:1 1 0; min-width:0; max-width:min(330px,22vw,30vh); aspect-ratio:5/7;
-  perspective:900px; opacity:0; transform:translateY(-40px) scale(.9);
-  transition:opacity .35s,transform .35s;
+  perspective:900px; opacity:0; position:relative; z-index:1;
 }
-.card.dealt{opacity:1;transform:none}
+/* --from is inside the crown, where the card is hidden by the hat itself;
+   --lift is clear of the brim. Both are set per card once the row has laid
+   out, because only then is the distance to each slot known. */
+.card.dealt{
+  opacity:1;
+  animation:outOfHat .82s cubic-bezier(.22,.72,.24,1) forwards;
+}
+@keyframes outOfHat{
+  0%{transform:var(--from);opacity:0}
+  12%{opacity:1}
+  40%{transform:var(--lift)}
+  100%{transform:none;opacity:1}
+}
 .card-inner{
   position:relative;width:100%;height:100%;
   transform-style:preserve-3d;transition:transform .7s cubic-bezier(.4,0,.2,1);
@@ -300,7 +331,9 @@ td.who{font:800 14px var(--fu);white-space:nowrap}
   padding:8px;display:none;user-select:text;
 }
 @media (prefers-reduced-motion:reduce){
-  .card-inner,.banner,.card,.tier,#spot{transition-duration:.01s}
+  .card-inner,.banner,.card,.tier,#spot,.hat{transition-duration:.01s}
+  .card.dealt{animation-duration:.01s}
+  .hat.tip{animation:none}
   .shudder{animation:none}
 }
 </style>
@@ -363,6 +396,17 @@ td.who{font:800 14px var(--fu);white-space:nowrap}
   <div id="stage">
     <div class="banner" id="banner">&nbsp;</div>
     <div class="tier" id="tier"></div>
+    <div class="hat-wrap"><div class="hat" id="hat" aria-hidden="true">
+      <svg viewBox="0 0 120 100">
+        <ellipse cx="60" cy="83" rx="57" ry="12" fill="#0B1A11"/>
+        <ellipse cx="60" cy="80" rx="57" ry="12" fill="#141210"/>
+        <ellipse cx="60" cy="80" rx="57" ry="12" fill="none" stroke="#2C4A36" stroke-width="1.5"/>
+        <path d="M33 80 L37 20 Q37 11 46 11 L74 11 Q83 11 83 20 L87 80 Z" fill="#141210"/>
+        <path d="M33 80 L37 20 Q37 11 46 11 L60 11 L60 80 Z" fill="#1C1A16"/>
+        <path d="M34.5 68 L85.5 68 L86.3 56 L33.7 56 Z" fill="#8A1A18"/>
+        <path d="M37 20 Q37 11 46 11 L74 11 Q83 11 83 20" fill="none" stroke="#2C4A36" stroke-width="1.5"/>
+      </svg>
+    </div></div>
     <div class="grid" id="grid"></div>
     <div class="comm">
       <div class="comm-h" id="comm-h"></div>
@@ -715,6 +759,7 @@ function showRules() {
 /* ── Steps ──────────────────────────────────────────────────────────────── */
 async function showPlayer(p) {
   screen('screen-stage');
+  $('hat').classList.remove('in', 'tip', 'out');
   banner.classList.remove('in'); tier.classList.remove('in');
   clearComm(); grid.innerHTML = '';
   await wait(320);
@@ -740,12 +785,39 @@ async function deal(p) {
     mountCrest(card.querySelector('.shield'), club);
     grid.appendChild(card);
   });
-  // deal left to right
+
+  var hat = $('hat');
+  hat.classList.add('in');
+  await wait(420);
+
+  // The row is laid out now, so each card knows how far it has to travel.
+  // Everything is measured rather than guessed, which keeps it right on a
+  // phone and on a 65in telly without a second set of numbers.
+  var hb = hat.getBoundingClientRect();
+  var mouthX = hb.left + hb.width / 2;
+  var mouthY = hb.top + hb.height * 0.52;    // down inside the crown
+  var liftY = hb.top - hb.height * 0.34;     // clear of the brim
   var cards = grid.children;
   for (var i = 0; i < cards.length; i++) {
-    cards[i].classList.add('dealt');
-    await wait(150);
+    var r = cards[i].getBoundingClientRect();
+    var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    var tilt = (i - 1.5) * 3;
+    cards[i].style.setProperty('--from',
+      'translate(' + (mouthX - cx) + 'px,' + (mouthY - cy) + 'px) scale(.10) rotate(' + (tilt * 4) + 'deg)');
+    cards[i].style.setProperty('--lift',
+      'translate(' + (mouthX - cx) + 'px,' + (liftY - cy) + 'px) scale(.46) rotate(' + tilt + 'deg)');
   }
+
+  for (var j = 0; j < cards.length; j++) {
+    hat.classList.remove('tip');
+    void hat.offsetWidth;                     // restart the tip for each draw
+    hat.classList.add('tip');
+    cards[j].classList.add('dealt');
+    await wait(300);
+  }
+  hat.classList.add('out');
+  await wait(430);
+  hat.classList.remove('in', 'tip', 'out');
 }
 
 async function flip(p, i, big) {
