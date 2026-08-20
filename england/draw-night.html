@@ -131,26 +131,26 @@ body{
 }
 
 /* ── Stage ────────────────────────────────────────────────────────────────── */
-#stage{width:100%;max-width:1000px;display:flex;flex-direction:column;align-items:center;gap:0}
+#stage{width:100%;max-width:min(1500px,94vw);display:flex;flex-direction:column;align-items:center;gap:0}
 .banner{
   font-family:var(--fd);font-weight:800;text-transform:uppercase;line-height:.9;
-  font-size:clamp(44px,11vw,104px);letter-spacing:-.01em;
+  font-size:clamp(44px,min(12vw,13vh),200px);letter-spacing:-.01em;
   opacity:0;transform:translateY(14px);transition:opacity .5s,transform .5s;
 }
 .banner.in{opacity:1;transform:none}
 .tier{
-  font:700 11px var(--fu);letter-spacing:.34em;text-transform:uppercase;color:var(--gold);
-  height:18px;margin-top:6px;opacity:0;transition:opacity .3s;
+  font:700 clamp(11px,1.3vh,20px) var(--fu);letter-spacing:.34em;text-transform:uppercase;
+  color:var(--gold);height:1.6em;margin-top:.5em;opacity:0;transition:opacity .3s;
 }
 .tier.in{opacity:1}
 
 /* Cards share the row, so four of them fill a phone and cap out on a TV */
 .grid{display:flex;gap:clamp(7px,1.6vw,16px);margin-top:clamp(14px,3vh,28px);
-  justify-content:center;width:100%;max-width:660px}
+  justify-content:center;width:100%;max-width:min(1400px,94vw)}
 
 /* Card: 3D flip, back = baize, front = painted crest */
 .card{
-  flex:1 1 0; min-width:0; max-width:150px; aspect-ratio:5/7;
+  flex:1 1 0; min-width:0; max-width:min(330px,22vw,30vh); aspect-ratio:5/7;
   perspective:900px; opacity:0; transform:translateY(-40px) scale(.9);
   transition:opacity .35s,transform .35s;
 }
@@ -174,34 +174,35 @@ body{
   padding:8% 5%;gap:5%;box-shadow:0 10px 26px rgba(0,0,0,.4);
 }
 .card-tier{
-  position:absolute;top:4%;left:6%;font:800 8px var(--fu);letter-spacing:.1em;color:var(--ink-faint);
+  position:absolute;top:4%;left:6%;font:800 clamp(8px,1.15vh,16px) var(--fu);letter-spacing:.1em;color:var(--ink-faint);
 }
 .shield{width:60%;aspect-ratio:1/1.15;position:relative;display:flex;align-items:center;justify-content:center}
 .shield svg{width:100%;height:100%;display:block}
 .crest-img{width:100%;height:100%;object-fit:contain;display:block}
 .card-name{
   font-family:var(--fd);font-weight:700;text-transform:uppercase;line-height:.95;
-  font-size:clamp(9px,2.1vw,17px);text-align:center;
+  font-size:clamp(9px,min(2.6vw,3.1vh),36px);text-align:center;
 }
-.card-div{font:700 6.5px var(--fu);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
+.card-div{font:700 clamp(6.5px,1.05vh,15px) var(--fu);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
 
 /* Commentary */
-.comm{margin-top:clamp(14px,3.4vh,30px);text-align:center;max-width:660px;min-height:112px;padding:0 6px}
+.comm{margin-top:clamp(14px,3vh,34px);text-align:center;max-width:min(1150px,88vw);min-height:112px;padding:0 6px}
 .comm-h{
   font-family:var(--fd);font-weight:800;text-transform:uppercase;
-  font-size:clamp(26px,6vw,54px);line-height:.94;color:var(--paper);
+  font-size:clamp(26px,min(6vw,7.5vh),96px);line-height:.94;color:var(--paper);
 }
 .comm-firm{
-  font:800 10.5px var(--fu);letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-top:5px;
+  font:800 clamp(10.5px,1.35vh,20px) var(--fu);letter-spacing:.22em;text-transform:uppercase;
+  color:var(--gold);margin-top:.5em;
 }
 .comm-s{
-  font-family:var(--fe);font-size:clamp(14px,2.4vw,20px);line-height:1.4;
-  color:rgba(239,234,224,.72);margin-top:9px;
+  font-family:var(--fe);font-size:clamp(14px,min(2.1vw,2.7vh),32px);line-height:1.4;
+  color:rgba(239,234,224,.72);margin-top:.5em;
 }
 /* The one line that matters once all four are turned over */
 .comm-proj{
-  font:800 clamp(12px,1.7vw,15px) var(--fu);letter-spacing:.16em;text-transform:uppercase;
-  color:var(--gold);margin-top:14px;opacity:0;transition:opacity .45s;
+  font:800 clamp(12px,min(1.7vw,2vh),26px) var(--fu);letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gold);margin-top:.9em;opacity:0;transition:opacity .45s;
 }
 .comm-proj.in{opacity:1}
 
