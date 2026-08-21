@@ -14,6 +14,7 @@
 //   node scripts/draw-night.mjs --show          # print a fresh draw, write nothing
 //   node scripts/draw-night.mjs --reel <url>          # hype reel, on the ticket screen
 //   node scripts/draw-night.mjs --highlights <url>    # package that opens the draw
+//   node scripts/draw-night.mjs --audio-alt MCI,NEW   # use a club's alternate tune
 //
 // Both videos are picked up automatically from public/hype.mp4 and
 // public/highlights.mp4 (or .webm/.mov/.m4v) if they are sitting there. A local
@@ -150,6 +151,34 @@ for (const t of TEAMS) {
   };
 }
 
+// ── Club audio ──────────────────────────────────────────────────────────────
+// Only the URLs are baked, never the audio. The page streams Apple's public
+// preview unless a local file has been dropped next to it, which keeps other
+// people's music out of a public repository.
+function buildAudio() {
+  if (args.includes('--no-audio')) return null;
+  let manifest;
+  try {
+    manifest = JSON.parse(readFileSync(new URL('./club-audio.json', import.meta.url), 'utf8'));
+  } catch { return null; }
+  const altArg = args.indexOf('--audio-alt');
+  const alts = new Set(
+    altArg > -1 && args[altArg + 1] ? args[altArg + 1].split(',').map((x) => x.trim().toUpperCase()) : []
+  );
+  const out = {};
+  for (const t of manifest.tracks || []) {
+    const useAlt = alts.has(t.code) && t.alt_previewUrl;
+    out[t.code] = {
+      url: useAlt ? t.alt_previewUrl : t.previewUrl,
+      track: useAlt ? (t.alt_track || t.track) : t.track,
+      artist: t.artist,
+    };
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+const audio = buildAudio();
+
 // ── The verdict ─────────────────────────────────────────────────────────────
 // Run the same season simulation the app uses and bake the answer in, so the
 // last screen can tell everyone who got the best draw without needing a
@@ -226,6 +255,7 @@ const data = {
   worker: WORKER,
   reel,
   highlights,
+  audio,
   forecast,
   rules,
 };
@@ -249,6 +279,9 @@ if (forecast) {
 }
 const sayVideo = (label, v, hint) => console.log(
   v ? `  ${label}: ${v.type} — ${v.src}` : `  ${label}: none (${hint})`);
+console.log(audio
+  ? `  club audio: ${Object.keys(audio).length} clubs — streams the preview unless public/audio/<CODE>.mp3 exists`
+  : '  club audio: none');
 sayVideo('hype reel ', reel, 'drop one at premier/public/hype.mp4, or pass --reel <url>');
 sayVideo('highlights', highlights, 'drop one at premier/public/highlights.mp4, or pass --highlights <url>');
 if (highlights) {
