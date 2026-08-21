@@ -12,6 +12,7 @@ export const EMPTY_STATE = {
   wallPosts: [],     // { id, person, text, ts }
   polls: [],         // { id, person, q, options: [..], votes: { person: optionIndex }, ts }
   manualMedals: {},  // { teamName: ['CUP','BIG_PUSH'] } — awarded by hand in HQ
+  bonusPoints: {},   // { player: { key: { pts, label } } } — shed bonuses, e.g. draw-night forfeits
 };
 
 function readLocal() {

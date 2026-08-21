@@ -88,19 +88,23 @@ function ledgerFor(row, fixtures) {
       events.push({ ts: 'zzz', label: `${info?.short} — ${MEDALS[m].label}`, pts: MEDALS[m].pts });
     }
   }
+  // Shed bonuses aren't tied to a club, so they sort to the very top
+  for (const bonus of row.bonuses || []) {
+    events.push({ ts: 'zzzz', label: bonus.label, pts: bonus.pts });
+  }
   return events.sort((a, b) => b.ts.localeCompare(a.ts));
 }
 
 export default function Leaderboard({
-  assignments, fixtures, manualMedals, whoAmI, onSelectTeam,
+  assignments, fixtures, manualMedals, bonusPoints, whoAmI, onSelectTeam,
 }) {
   const ladder = useMemo(
-    () => buildLadder(assignments, fixtures, manualMedals),
-    [assignments, fixtures, manualMedals]
+    () => buildLadder(assignments, fixtures, manualMedals, bonusPoints),
+    [assignments, fixtures, manualMedals, bonusPoints]
   );
   const outlook = useMemo(
-    () => getProjection(assignments, fixtures, manualMedals).players,
-    [assignments, fixtures, manualMedals]
+    () => getProjection(assignments, fixtures, manualMedals, bonusPoints).players,
+    [assignments, fixtures, manualMedals, bonusPoints]
   );
   const [open, setOpen] = useState(null);
 
@@ -192,7 +196,7 @@ export default function Leaderboard({
                         {events.slice(0, 12).map((e, j) => (
                           <div key={j} className={`ledger-row ${e.pts === 0 ? 'zero' : ''}`}>
                             <span>{e.label}</span>
-                            <b>{e.pts > 0 ? `+${e.pts}` : '0'}</b>
+                            <b>{e.pts > 0 ? `+${e.pts}` : e.pts}</b>
                           </div>
                         ))}
                         {events.length > 12 && (

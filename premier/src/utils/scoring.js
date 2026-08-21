@@ -180,7 +180,15 @@ export function medalsForTeam(team, tables, complete, manualMedals = {}) {
 }
 
 // ── Player totals & the ladder ──────────────────────────────────────────────
-export function calculatePoints(player, assignments, tables, complete, fixtures, manualMedals) {
+// Shed bonuses that don't come off a club — draw-night forfeits, shithousery
+// points, whatever HQ has awarded by hand. Stored per player as
+// { key: { pts, label } } so each one can be adjusted or withdrawn on its own.
+function bonusListFor(player, bonusPoints) {
+  const entries = Object.entries((bonusPoints && bonusPoints[player]) || {});
+  return entries.map(([key, b]) => ({ key, pts: b.pts, label: b.label }));
+}
+
+export function calculatePoints(player, assignments, tables, complete, fixtures, manualMedals, bonusPoints) {
   const myTeams = (assignments[player] || []).filter(Boolean);
   let total = 0;
   const breakdown = [];
@@ -192,22 +200,26 @@ export function calculatePoints(player, assignments, tables, complete, fixtures,
     total += pts.total + medalPts + oa.pts;
     breakdown.push({ team, ...pts, medals: medalKeys, medalPts, oa, pot: getTeam(team)?.pot });
   }
-  return { total, breakdown };
+  const bonuses = bonusListFor(player, bonusPoints);
+  const bonusTotal = bonuses.reduce((s, b) => s + b.pts, 0);
+  total += bonusTotal;
+  return { total, breakdown, bonuses, bonusTotal };
 }
 
 // Tiebreak: points -> wins -> aggregate goal difference -> goals scored
-export function buildLadder(assignments, fixtures, manualMedals = {}) {
+export function buildLadder(assignments, fixtures, manualMedals = {}, bonusPoints = {}) {
   const tables = buildTables(fixtures);
   const complete = buildComplete(fixtures);
   return Object.keys(assignments)
     .map((name) => {
-      const { total, breakdown } = calculatePoints(name, assignments, tables, complete, fixtures, manualMedals);
+      const { total, breakdown, bonuses, bonusTotal } =
+        calculatePoints(name, assignments, tables, complete, fixtures, manualMedals, bonusPoints);
       const wins = breakdown.reduce((s, b) => s + b.w, 0);
       const gf = breakdown.reduce((s, b) => s + b.gf, 0);
       const ga = breakdown.reduce((s, b) => s + b.ga, 0);
       const oaPts = breakdown.reduce((s, b) => s + b.oa.pts, 0);
       return {
-        name, total, breakdown, oaPts,
+        name, total, breakdown, oaPts, bonuses, bonusTotal,
         teams: (assignments[name] || []).filter(Boolean),
         tb: { wins, gd: gf - ga, gf },
       };

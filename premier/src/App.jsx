@@ -53,12 +53,12 @@ export default function App() {
   const [tab, setTab] = useState('table');
   const { state, update, synced } = useSharedState();
   const { fixtures, loading, error, refresh, lastFetched, espnState } = useEnglandFixtures();
-  const { assignments, manualMedals } = state;
+  const { assignments, manualMedals, bonusPoints } = state;
   const participants = Object.keys(assignments);
 
   const ladder = useMemo(
-    () => buildLadder(assignments, fixtures, manualMedals),
-    [assignments, fixtures, manualMedals]
+    () => buildLadder(assignments, fixtures, manualMedals, bonusPoints),
+    [assignments, fixtures, manualMedals, bonusPoints]
   );
 
   const [whoAmI, setWhoAmI] = useState(() => {
@@ -142,6 +142,7 @@ export default function App() {
             assignments={assignments}
             fixtures={fixtures}
             manualMedals={manualMedals}
+            bonusPoints={bonusPoints}
             whoAmI={whoAmI}
             onSelectTeam={setTeamSheet}
           />

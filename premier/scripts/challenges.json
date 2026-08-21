@@ -1,5 +1,5 @@
 {
-  "_note": "One forfeit per player, played straight after their Hat A reveal. Keyed by player name — a player not in the draw is skipped, and a player with no entry here just moves on. `timer` puts a countdown on the prompt. `crest` blurs a club badge onto the prompt screen. `quote` is read aloud rather than answered.",
+  "_note": "One forfeit per player, played straight after their Hat A reveal. Keyed by player name — a player not in the draw is skipped, and a player with no entry here just moves on. `timer` puts a countdown on the prompt. `crest` blurs a club badge onto the prompt screen. `quote` is read aloud rather than answered. `blur` blurs the prompt and the club-name line itself, for anything (a spelling test, say) that would otherwise be given away by its own text being on screen. `points` is what it's nominally worth if they pass it — the host reviews and can adjust every value at the end of the night before anything is published, so this is a starting point, not a ruling.",
   "challenges": [
     {
       "player": "Hendrik",
@@ -9,7 +9,8 @@
       "notes": [
         "Permanently registered to your profile for the 2026/27 season.",
         "No appeals."
-      ]
+      ],
+      "points": 0
     },
     {
       "player": "Easton",
@@ -18,7 +19,8 @@
       "answer": "Portsmouth. FA Cup, 2008.",
       "notes": [
         "Newcastle's last domestic trophy was 1955. Stop living in hope."
-      ]
+      ],
+      "points": 2
     },
     {
       "player": "Sam Hearn",
@@ -29,7 +31,8 @@
       "answer": "Sheffield United. The Blades.",
       "notes": [
         "If you don't know your own badge, you don't deserve the points."
-      ]
+      ],
+      "points": 2
     },
     {
       "player": "Phil",
@@ -38,7 +41,8 @@
       "answer": "The Swans. Or The Jacks.",
       "notes": [
         "The app had you down for The Welsh Ones."
-      ]
+      ],
+      "points": 2
     },
     {
       "player": "Macri",
@@ -48,7 +52,8 @@
       "notes": [
         "Blackburn and Hull are separated by 0.04 degrees of latitude.",
         "You guessed. That was a coin flip and everyone saw it."
-      ]
+      ],
+      "points": 2
     },
     {
       "player": "Badger",
@@ -58,7 +63,9 @@
       "notes": [
         "There is no second R.",
         "You put an R in, didn't you."
-      ]
+      ],
+      "blur": true,
+      "points": 3
     },
     {
       "player": "Dan",
@@ -68,7 +75,8 @@
       "answer": "League One. Third tier.",
       "notes": [
         "You hesitated because some part of you still had them in the Premier League."
-      ]
+      ],
+      "points": 2
     },
     {
       "player": "Piga",
@@ -77,7 +85,9 @@
       "answer": "M O L I N E U X",
       "notes": [
         "French spelling. English misery."
-      ]
+      ],
+      "blur": true,
+      "points": 3
     },
     {
       "player": "Mcivor",
@@ -87,7 +97,8 @@
       "notes": [
         "After the assassination of Abraham Lincoln.",
         "Before the assassination of John F. Kennedy."
-      ]
+      ],
+      "points": 2
     },
     {
       "player": "TJ",
@@ -97,7 +108,8 @@
       "answer": "Time's up.",
       "notes": [
         "Nobody in this room can verify whether a single one of those was real."
-      ]
+      ],
+      "points": 2
     },
     {
       "player": "Jake",
@@ -107,7 +119,8 @@
       "answer": "Statement logged.",
       "notes": [
         "Failure to read it with enthusiasm carries an immediate penalty."
-      ]
+      ],
+      "points": 0
     }
   ]
 }

@@ -51,7 +51,7 @@ function ratingsFor(fixtures) {
 const median = (sorted) => sorted[Math.floor(sorted.length / 2)];
 const pctile = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))];
 
-export function projectSeason(assignments = {}, fixtures = [], manualMedals = {}, runs = RUNS) {
+export function projectSeason(assignments = {}, fixtures = [], manualMedals = {}, runs = RUNS, bonusPoints = {}) {
   const tables = buildTables(fixtures);
   const complete = buildComplete(fixtures);
   const ratings = ratingsFor(fixtures);
@@ -92,6 +92,12 @@ export function projectSeason(assignments = {}, fixtures = [], manualMedals = {}
     const form = teamPoints(t, fixtures);
     const medals = medalsForTeam(t, tables, complete, manualMedals);
     banked[t] = form.total + medals.reduce((s, k) => s + MEDALS[k].pts, 0);
+  }
+
+  // Shed bonuses sit outside any club — a flat, already-settled add per player
+  const playerBonus = {};
+  for (const p of players) {
+    playerBonus[p] = Object.values(bonusPoints[p] || {}).reduce((s, b) => s + b.pts, 0);
   }
 
   const posRuns = new Map(TEAMS.map((t) => [t.name, []]));
@@ -169,8 +175,8 @@ export function projectSeason(assignments = {}, fixtures = [], manualMedals = {}
       });
     }
 
-    for (const p of players) sweepRuns.get(p).push(totals[p]);
-    const order = [...players].sort((x, y) => totals[y] - totals[x]);
+    for (const p of players) sweepRuns.get(p).push(totals[p] + playerBonus[p]);
+    const order = [...players].sort((x, y) => (totals[y] + playerBonus[y]) - (totals[x] + playerBonus[x]));
     order.forEach((p, i) => rankRuns.get(p).push(i + 1));
   }
 
@@ -209,7 +215,7 @@ export function projectSeason(assignments = {}, fixtures = [], manualMedals = {}
     const share = (fn) => ranks.reduce((s, v) => s + (fn(v) ? 1 : 0), 0) / n;
     const bankedNow = (assignments[p] || [])
       .filter(Boolean)
-      .reduce((s, t) => s + (banked[t] || 0), 0);
+      .reduce((s, t) => s + (banked[t] || 0), 0) + playerBonus[p];
     out[p] = {
       banked: bankedNow,
       projected: Math.round(median(pts)),
@@ -230,16 +236,19 @@ export function projectSeason(assignments = {}, fixtures = [], manualMedals = {}
 // once per meaningful change rather than once per component.
 let cache = null;
 
-export function getProjection(assignments = {}, fixtures = [], manualMedals = {}) {
+export function getProjection(assignments = {}, fixtures = [], manualMedals = {}, bonusPoints = {}) {
   const played = fixtures.reduce((n, f) => n + (f.status === 'FINISHED' ? 1 : 0), 0);
   const key = [
     played,
     fixtures.length,
     Object.entries(assignments).map(([p, t]) => `${p}:${(t || []).join(',')}`).sort().join('|'),
     Object.entries(manualMedals).map(([t, m]) => `${t}:${(m || []).join(',')}`).sort().join('|'),
+    Object.entries(bonusPoints)
+      .map(([p, m]) => `${p}:${Object.entries(m || {}).map(([k, b]) => `${k}=${b.pts}`).sort().join(',')}`)
+      .sort().join('|'),
   ].join('#');
   if (cache && cache.key === key) return cache.value;
-  const value = projectSeason(assignments, fixtures, manualMedals);
+  const value = projectSeason(assignments, fixtures, manualMedals, RUNS, bonusPoints);
   cache = { key, value };
   return value;
 }
