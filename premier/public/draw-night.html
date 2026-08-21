@@ -894,13 +894,18 @@ async function flip(p, i, big) {
 }
 
 /* ── Pyro ───────────────────────────────────────────────────────────────────
-   Canvas rather than DOM nodes: a thousand particles with gravity, trails and
-   additive glow is not something a thousand spans can do without stuttering,
-   and a reveal that stutters is worse than no reveal at all.
+   Curva, not Disneyland. The reveal is built around handheld flares — a row of
+   them burning along the bottom of the screen like an end that has just seen
+   its club come out of the hat — with coloured smoke rolling up through the
+   dark and only a few shells over the top as garnish.
 
-   Two things fire together on Hat A — ground flares up both edges, then shells
-   that rise and burst in the club's own colours. */
-var fx = { canvas: null, ctx: null, parts: [], raf: 0, until: 0, dpr: 1 };
+   Canvas, not DOM nodes: at peak this is a few thousand particles with trails
+   and glow, which a pile of spans cannot do without stuttering. Emitters are
+   frame-driven rather than setTimeout-driven so the whole thing stays in step
+   with the render loop. Sparks draw additively; smoke draws soft and opaque
+   over the top, which is what makes it read as smoke rather than light. */
+var fx = { canvas: null, ctx: null, parts: [], emitters: [], raf: 0, until: 0, dpr: 1, palette: ['#EFEAE0'] };
+var FX_CAP = 3600;   // spawn backpressure, so a slow machine degrades instead of dying
 
 function fxSize() {
   if (!fx.canvas) return;
@@ -921,58 +926,74 @@ function fxReady() {
 }
 
 function rand(a, b) { return a + Math.random() * (b - a); }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 function spark(x, y, vx, vy, colour, life, size, gravity) {
+  if (fx.parts.length > FX_CAP) return;
   fx.parts.push({ x: x, y: y, vx: vx, vy: vy, c: colour,
                   life: life, max: life, s: size, g: gravity == null ? 0.055 : gravity });
 }
 
-// Rises, then throws everything outwards at the top
+function smoke(x, y, colour) {
+  if (fx.parts.length > FX_CAP) return;
+  fx.parts.push({ kind: 'smoke', x: x, y: y,
+                  vx: rand(-0.4, 0.4), vy: rand(-1.1, -0.5),
+                  c: colour, life: rand(110, 190), max: 190,
+                  s: rand(14, 30), grow: rand(0.12, 0.22), g: -0.004 });
+}
+
 function shell(x, topY, colour) {
-  fx.parts.push({ shell: true, x: x, y: window.innerHeight + 10,
+  fx.parts.push({ kind: 'shell', x: x, y: window.innerHeight + 10,
                   vx: rand(-0.35, 0.35), vy: -Math.sqrt(2 * 0.09 * (window.innerHeight - topY)),
                   c: colour, life: 400, max: 400, s: 2.6, g: 0.09 });
 }
 
 function burst(x, y, colour, palette) {
-  var n = 90 + Math.floor(Math.random() * 60);
+  var n = 60 + Math.floor(Math.random() * 40);
   for (var i = 0; i < n; i++) {
     var a = Math.random() * Math.PI * 2;
-    var sp = rand(1.2, 7.5);
+    var sp = rand(1.0, 6.0);
     spark(x, y, Math.cos(a) * sp, Math.sin(a) * sp,
-          Math.random() < 0.72 ? colour : palette[Math.floor(Math.random() * palette.length)],
-          rand(45, 95), rand(1.4, 3.2), 0.052);
-  }
-  // a bright core so the burst reads from across a room
-  for (var j = 0; j < 26; j++) {
-    var b = Math.random() * Math.PI * 2, s2 = rand(0.4, 2.4);
-    spark(x, y, Math.cos(b) * s2, Math.sin(b) * s2, '#FFFFFF', rand(16, 34), rand(2, 4), 0.03);
+          Math.random() < 0.72 ? colour : pick(palette),
+          rand(40, 85), rand(1.3, 2.8), 0.052);
   }
 }
 
-// A jet of sparks climbing the edge of the screen, the way a stadium flare goes
-function flare(x, colour, palette) {
-  var H = window.innerHeight;
-  for (var i = 0; i < 130; i++) {
-    var delay = i * 7;
-    setTimeout(function (xx, col) {
-      return function () {
-        if (!fx.ctx) return;
-        spark(xx + rand(-16, 16), H + 6, rand(-0.9, 0.9), rand(-13, -8.5),
-              Math.random() < 0.55 ? col : palette[Math.floor(Math.random() * palette.length)],
-              rand(38, 78), rand(1.6, 3.4), 0.062);
-      };
-    }(x, colour), delay);
+/* One burning flare. Every frame while it lives: a jet of sparks, the odd
+   ember thrown clear, a puff of smoke, and a strobing core so it flickers the
+   way a real one does instead of glowing steadily. */
+function addFlare(x, y, colour, ms, tall) {
+  fx.emitters.push({ x: x, y: y, c: colour, until: Date.now() + ms, tall: !!tall });
+}
+
+function runEmitters() {
+  var now = Date.now();
+  for (var i = fx.emitters.length - 1; i >= 0; i--) {
+    var e = fx.emitters[i];
+    if (now > e.until) { fx.emitters.splice(i, 1); continue; }
+    var vy = e.tall ? rand(-15, -10) : rand(-9, -5.5);
+    for (var j = 0; j < (e.tall ? 4 : 3); j++) {
+      spark(e.x + rand(-10, 10), e.y, rand(-0.8, 0.8), vy * rand(0.75, 1),
+            Math.random() < 0.6 ? e.c : pick(fx.palette),
+            rand(26, 60), rand(1.5, 3.2), 0.085);
+    }
+    // embers spat sideways, the bit that sells it as burning rather than spraying
+    if (Math.random() < 0.3) {
+      spark(e.x, e.y - 4, rand(-3.4, 3.4), rand(-3, -0.5), '#FFD9A0', rand(50, 110), rand(1, 2), 0.10);
+    }
+    if (Math.random() < 0.16) smoke(e.x + rand(-8, 8), e.y - rand(10, 40), e.c);
+    // the strobing core
+    spark(e.x, e.y - 2, 0, 0, '#FFFFFF', 3, rand(3.5, 7 + (Math.random() < 0.12 ? 7 : 0)), 0);
   }
 }
 
 function fxTick() {
   var ctx = fx.ctx, W = window.innerWidth, H = window.innerHeight;
-  // fade what was drawn before rather than clearing, which is what makes trails
   ctx.globalCompositeOperation = 'destination-out';
-  ctx.fillStyle = 'rgba(0,0,0,0.20)';
+  ctx.fillStyle = 'rgba(0,0,0,0.16)';
   ctx.fillRect(0, 0, W, H);
-  ctx.globalCompositeOperation = 'lighter';
+
+  runEmitters();
 
   for (var i = fx.parts.length - 1; i >= 0; i--) {
     var p = fx.parts[i];
@@ -982,23 +1003,35 @@ function fxTick() {
     p.y += p.vy;
     p.life--;
 
-    if (p.shell && (p.vy >= -0.6 || p.y < H * 0.12)) {
+    if (p.kind === 'shell' && (p.vy >= -0.6 || p.y < H * 0.10)) {
       burst(p.x, p.y, p.c, fx.palette);
       fx.parts.splice(i, 1);
       continue;
     }
     if (p.life <= 0 || p.y > H + 60) { fx.parts.splice(i, 1); continue; }
 
-    ctx.globalAlpha = Math.max(0, Math.min(1, p.life / p.max));
-    ctx.fillStyle = p.c;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
-    ctx.fill();
+    if (p.kind === 'smoke') {
+      p.s += p.grow;
+      p.vx += rand(-0.03, 0.03);           // drift, so columns roll instead of rising in a line
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 0.075 * Math.min(1, p.life / (p.max * 0.55));
+      ctx.fillStyle = p.c;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = Math.max(0, Math.min(1, p.life / p.max));
+      ctx.fillStyle = p.c;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'source-over';
 
-  if (fx.parts.length || Date.now() < fx.until) {
+  if (fx.parts.length || fx.emitters.length || Date.now() < fx.until) {
     fx.raf = requestAnimationFrame(fxTick);
   } else {
     ctx.clearRect(0, 0, W, H);
@@ -1010,23 +1043,32 @@ function pyro(club) {
   if (!fxReady()) return;
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var cols = (CLUBS[club] && CLUBS[club].colours) || ['#EFEAE0'];
-  fx.palette = cols.concat(['#E8A33D', '#EFEAE0', '#FFD36B']);
+  fx.palette = cols.concat(['#E8A33D', '#FFD36B']);
   var W = window.innerWidth, H = window.innerHeight;
+  var BURN = 6800;
 
-  flare(W * 0.06, cols[0], fx.palette);
-  flare(W * 0.94, cols[0], fx.palette);
+  // the row along the bottom — the curva
+  var row = 6;
+  for (var i = 0; i < row; i++) {
+    var x = W * (0.10 + 0.80 * (i / (row - 1))) + rand(-W * 0.02, W * 0.02);
+    (function (xx, delay) {
+      setTimeout(function () {
+        if (fx.ctx) addFlare(xx, H + 4, cols[0], BURN - delay, false);
+      }, delay);
+    }(x, i * rand(120, 260)));
+  }
+  // two tall jets hard against the edges
+  addFlare(W * 0.035, H + 4, cols[0], BURN, true);
+  addFlare(W * 0.965, H + 4, cols[0], BURN, true);
 
-  // shells keep coming for a few seconds, because excessive was the brief
-  var shots = 14;
-  for (var i = 0; i < shots; i++) {
+  // a handful of shells over the top — garnish, not the show
+  for (var k = 0; k < 6; k++) {
     setTimeout(function () {
-      if (!fx.ctx) return;
-      shell(rand(W * 0.12, W * 0.88), rand(H * 0.12, H * 0.42),
-            fx.palette[Math.floor(Math.random() * fx.palette.length)]);
-    }, 120 + i * rand(150, 320));
+      if (fx.ctx) shell(rand(W * 0.2, W * 0.8), rand(H * 0.10, H * 0.35), pick(fx.palette));
+    }, 500 + k * rand(400, 750));
   }
 
-  fx.until = Date.now() + 5200;
+  fx.until = Date.now() + BURN + 1200;
   if (!fx.raf) fx.raf = requestAnimationFrame(fxTick);
 }
 
