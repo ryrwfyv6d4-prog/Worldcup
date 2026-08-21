@@ -112,6 +112,37 @@ function existingPicks() {
 const redraw = args.includes('--redraw') || seed != null || showOnly;
 const kept = redraw ? null : existingPicks();
 
+// ── Running order ───────────────────────────────────────────────────────────
+// The order people get called up on the night, which is a separate thing from
+// the draw. Picks are keyed by name, so shuffling this changes who goes when
+// and nothing else: everyone keeps the exact four clubs they already have, and
+// the assignments the app already holds stay byte-for-byte the same.
+//
+// Persisted in the page so a plain re-bake never quietly reshuffles it. Set it
+// with --order A,B,C, roll a fresh one with --reorder, reset with --no-order.
+function validOrder(list) {
+  if (!Array.isArray(list) || list.length !== PLAYERS.length) return null;
+  const seen = new Set(list);
+  if (seen.size !== list.length) return null;
+  if (PLAYERS.some((n) => !seen.has(n))) return null;
+  return list.slice();
+}
+
+const orderArg = args.indexOf('--order');
+let runOrder = null;
+if (orderArg > -1) {
+  runOrder = validOrder((args[orderArg + 1] || '').split(',').map((s) => s.trim()).filter(Boolean));
+  if (!runOrder) {
+    throw new Error(`--order must list all ${PLAYERS.length} names exactly once: ${PLAYERS.join(', ')}`);
+  }
+}
+// A separate stream from the draw's, so re-rolling the order can never disturb
+// a seeded redraw and vice versa
+if (!runOrder && args.includes('--reorder')) runOrder = shuffle(PLAYERS, makeRandom(null));
+if (!runOrder && !args.includes('--no-order')) runOrder = validOrder(prev && prev.order);
+if (!runOrder) runOrder = PLAYERS.slice();
+const reordered = runOrder.some((n, i) => n !== PLAYERS[i]);
+
 // A video chosen by flag has no file on disk to rediscover, so without this a
 // later plain re-run would quietly drop it
 const reel = findVideo('reel', 'hype') || (args.includes('--no-reel') ? null : prev && prev.reel) || null;
@@ -272,7 +303,8 @@ const rules = {
 };
 
 const data = {
-  players: PLAYERS.map((name) => ({ name, picks: picks[name] })),
+  players: runOrder.map((name) => ({ name, picks: picks[name] })),
+  order: runOrder,
   clubs,
   tiers: plan.tiers.map((t) => t.clubs),
   worker: WORKER,
@@ -288,10 +320,10 @@ const data = {
 console.log(kept
   ? `Keeping the draw already in the page (--redraw to pull a new one)\n`
   : `Draw for ${PLAYERS.length} players${seed == null ? '' : ` (seed ${seed})`}\n`);
-for (const name of PLAYERS) {
-  const line = picks[name].map((c, i) => `T${i + 1} ${short.get(c)}`).join('  ·  ');
-  console.log(`  ${name.padEnd(10)} ${line}`);
-}
+runOrder.forEach((name, i) => {
+  const line = picks[name].map((c, j) => `T${j + 1} ${short.get(c)}`).join('  ·  ');
+  console.log(`  ${String(i + 1).padStart(2)}. ${name.padEnd(10)} ${line}`);
+});
 
 const dealt = Object.values(picks).flat();
 const unique = new Set(dealt);
@@ -309,6 +341,9 @@ console.log(audio
 console.log(challenges
   ? `  forfeits: ${challenges.length} of ${PLAYERS.length}, one after each Hat A reveal`
   : '  forfeits: none');
+console.log(reordered
+  ? '  running order: reordered — the draw itself is untouched, everyone keeps the same four clubs'
+  : '  running order: as drawn (--reorder to roll a new one)');
 sayVideo('hype reel ', reel, 'drop one at premier/public/hype.mp4, or pass --reel <url>');
 sayVideo('highlights', highlights, 'drop one at premier/public/highlights.mp4, or pass --highlights <url>');
 if (highlights) {
