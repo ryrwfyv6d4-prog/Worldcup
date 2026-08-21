@@ -20,7 +20,7 @@ import { TEAMS, DIV_SIZE, SCORING, getTeam } from '../data/england2027.js';
 // divisions, and becomes real unfairness the moment they don't. Scaling each
 // division's prices by 38/rounds makes a full season worth the same either way.
 // Premier League values are unchanged; Championship values come down ~17%.
-const SEASON_ROUNDS = { 1: 38, 2: 46 };
+export const SEASON_ROUNDS = { 1: 38, 2: 46 };
 const BASE_ROUNDS = 38;
 const lengthFactor = (div) => BASE_ROUNDS / SEASON_ROUNDS[div];
 

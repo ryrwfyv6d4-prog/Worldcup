@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { buildLadder, formForTeam, feedEvents } from '../utils/scoring.js';
 import { getProjection } from '../utils/projection.js';
 import { MEDALS, SCORING, ENTRY_FEE, PAYOUTS, getTeam } from '../data/england2027.js';
-import { matchValue, priceRangeFor } from '../utils/odds.js';
+import { matchValue, priceRangeFor, SEASON_ROUNDS } from '../utils/odds.js';
 import { RowStripes } from './Stripe.jsx';
 import { tableLine, lastPlaceJibe } from '../utils/editorial.js';
 
@@ -255,10 +255,56 @@ function ScoringPanel() {
         <span>{MEDALS.PROMOTION.label}</span>
         <b>{MEDALS.PROMOTION.pts}</b>
       </div>
-      <p className="scoring-note">
-        A win is priced on how likely it was — beat a better club, or win away, and it
-        pays more. The app prints the price on every fixture before kick-off.
-      </p>
+      <div className="scoring-why">
+        <p className="scoring-lead">
+          <b>The harder the win, the more it pays.</b> Every club has a chance of winning
+          each match, and that chance sets the price: if they were always going to win it
+          is worth very little, and if nobody gave them a hope it is worth a lot. Most wins
+          land somewhere between {lo} and {hi} points. A draw is always {SCORING.DRAW},
+          whoever you played.
+        </p>
+
+        <div className="scoring-block">
+          <h4>Where the chances come from</h4>
+          <p>
+            The bookies' pre-season order, plus a bit extra for playing at home. That is all
+            it is. The price is printed on every fixture before kick-off, so you always know
+            what a game is worth before it is played.
+          </p>
+        </div>
+
+        <div className="scoring-block">
+          <h4>Prices change once, in January</h4>
+          <p>
+            At New Year the prices are worked out again, this time from where clubs have
+            actually ended up rather than where they were tipped. A club that has been far
+            better or worse than expected gets priced honestly for the second half. Every
+            match keeps whatever price it had on the day it kicked off, so nothing you have
+            already banked can be re-scored afterwards.
+          </p>
+        </div>
+
+        <div className="scoring-block">
+          <h4>Championship wins pay a little less</h4>
+          <p>
+            The Championship plays {SEASON_ROUNDS[2]} games to the Premier League's{' '}
+            {SEASON_ROUNDS[1]}. Left alone, a Championship club would earn about a fifth more
+            over a season purely for playing more often. Their prices come down by roughly
+            the same amount to cancel that out, so a full season is worth the same either
+            way and nobody is better off for the mix they were dealt.
+          </p>
+        </div>
+
+        <div className="scoring-block">
+          <h4>Beating your tip never resets</h4>
+          <p>
+            The {SCORING.OVERACHIEVE} points a place is always measured against where the
+            bookies put your club before a ball was kicked, even after the January
+            re-pricing. If it reset halfway, beating your prediction would stop meaning
+            anything.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

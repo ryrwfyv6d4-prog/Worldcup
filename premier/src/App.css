@@ -302,6 +302,21 @@ body {
 .scoring-row:last-of-type { border-bottom: 0; }
 .scoring-row b { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .scoring-note { font: 500 10.5px var(--font-ui); color: var(--ink-faint); line-height: 1.5; margin-top: 8px; }
+/* The longer explanation under the table: a lead line, then one block per
+   thing people actually argue about on a Sunday night. */
+.scoring-why { margin-top: 14px; border-top: 1px dotted var(--rule-dotted); padding-top: 12px; }
+.scoring-lead {
+  font: 500 12px var(--font-ui); line-height: 1.55; color: var(--ink);
+}
+.scoring-lead b { font-weight: 800; }
+.scoring-block { margin-top: 12px; }
+.scoring-block h4 {
+  font: 700 9.5px var(--font-ui); letter-spacing: .15em; text-transform: uppercase;
+  color: var(--spot); margin-bottom: 3px;
+}
+.scoring-block p {
+  font: 500 11.5px var(--font-ui); line-height: 1.55; color: var(--ink-faint);
+}
 
 /* ── Screen 2 · Fixtures ──────────────────────────────────────────────────── */
 .day-head { display: flex; align-items: baseline; gap: 10px; padding: 18px 0 8px; }
