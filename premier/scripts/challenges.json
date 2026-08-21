@@ -1,42 +1,10 @@
 {
-  "_note": "One forfeit per player, played straight after their Hat A reveal. Keyed by player name — a player not in the draw is skipped, and a player with no entry here just moves on. `timer` puts a countdown on the prompt. `crest` blurs a club badge onto the prompt screen. `quote` is read aloud rather than answered. `blur` blurs the prompt and the club-name line itself, for anything (a spelling test, say) that would otherwise be given away by its own text being on screen. `points` is what it's nominally worth if they pass it — the host reviews and can adjust every value at the end of the night before anything is published, so this is a starting point, not a ruling.",
+  "_note": "One forfeit per player, played straight after their Hat A reveal. Keyed by player name — a player not in the draw is skipped, and a player with no entry here just moves on. `clubs` lists every club the question depends on; if the player no longer holds all of them the forfeit is dropped at bake time, so a redraw can never leave a question about somebody else's team on the screen. `timer` puts a countdown on the prompt. `crest` blurs a club badge onto the prompt screen. `quote` is read aloud rather than answered. `blur` blurs the prompt and the club-name line itself, for anything (a spelling test, say) that would otherwise be given away by its own text being on screen. `points` is what it's nominally worth if they pass it — the host reviews and can adjust every value at the end of the night before anything is published, so this is a starting point, not a ruling.",
   "challenges": [
     {
-      "player": "Hendrik",
-      "focus": "Liverpool / Everton",
-      "prompt": "Merseyside derby conflict. State clearly to the room which of them you support when they play each other.",
-      "answer": "Choice logged.",
-      "notes": [
-        "Permanently registered to your profile for the 2026/27 season.",
-        "No appeals."
-      ],
-      "points": 0
-    },
-    {
-      "player": "Easton",
-      "focus": "Newcastle / Pompey",
-      "prompt": "Out of Newcastle, Coventry, Birmingham and Portsmouth, which one won a major trophy most recently?",
-      "answer": "Portsmouth. FA Cup, 2008.",
-      "notes": [
-        "Newcastle's last domestic trophy was 1955. Stop living in hope."
-      ],
-      "points": 2
-    },
-    {
-      "player": "Sam Hearn",
-      "focus": "Sheffield United",
-      "prompt": "Look at the badge on screen. Which Sheffield is this?",
-      "timer": 5,
-      "crest": "Sheffield United FC",
-      "answer": "Sheffield United. The Blades.",
-      "notes": [
-        "If you don't know your own badge, you don't deserve the points."
-      ],
-      "points": 2
-    },
-    {
-      "player": "Phil",
+      "player": "Dan",
       "focus": "Swansea",
+      "clubs": ["Swansea City AFC"],
       "prompt": "Identify Swansea City's official nickname.",
       "answer": "The Swans. Or The Jacks.",
       "notes": [
@@ -45,31 +13,57 @@
       "points": 2
     },
     {
-      "player": "Macri",
-      "focus": "Blackburn / Hull / Watford",
-      "prompt": "Rank your three clubs geographically. North to south.",
-      "answer": "1. Blackburn   2. Hull   3. Watford",
+      "player": "Easton",
+      "focus": "Everton",
+      "clubs": ["Everton FC"],
+      "prompt": "Everton's last major trophy. What year?",
+      "answer": "1995. The FA Cup.",
       "notes": [
-        "Blackburn and Hull are separated by 0.04 degrees of latitude.",
-        "You guessed. That was a coin flip and everyone saw it."
+        "Some of the people in this room were not born.",
+        "Everton have won nothing since, and you have them for the year."
       ],
       "points": 2
     },
     {
-      "player": "Badger",
-      "focus": "Middlesbrough",
-      "prompt": "Spell Middlesbrough out loud. One letter at a time.",
-      "answer": "M I D D L E S B R O U G H",
+      "player": "Phil",
+      "focus": "Wolves",
+      "clubs": ["Wolverhampton Wanderers FC"],
+      "prompt": "Spell the name of Wolves' ground. Molineux.",
+      "answer": "M O L I N E U X",
       "notes": [
-        "There is no second R.",
-        "You put an R in, didn't you."
+        "French spelling. English misery."
       ],
       "blur": true,
       "points": 3
     },
     {
-      "player": "Dan",
+      "player": "Hendrik",
+      "focus": "Preston",
+      "clubs": ["Preston North End FC"],
+      "prompt": "Which of your four went a whole league season unbeaten and won the double in the same year?",
+      "answer": "Preston North End. 1888-89.",
+      "notes": [
+        "The original Invincibles were not Arsenal.",
+        "They were Preston, and it was 137 years ago."
+      ],
+      "points": 2
+    },
+    {
+      "player": "Sam Hearn",
+      "focus": "Spurs",
+      "clubs": ["Tottenham Hotspur FC"],
+      "prompt": "In what calendar year did Tottenham Hotspur last win the English top flight?",
+      "answer": "1961",
+      "notes": [
+        "After the assassination of Abraham Lincoln.",
+        "Before the assassination of John F. Kennedy."
+      ],
+      "points": 2
+    },
+    {
+      "player": "Jake",
       "focus": "Bolton",
+      "clubs": ["Bolton Wanderers FC"],
       "prompt": "What division are Bolton in right now? Name it immediately.",
       "timer": 5,
       "answer": "League One. Third tier.",
@@ -80,29 +74,21 @@
     },
     {
       "player": "Piga",
-      "focus": "Wolves",
-      "prompt": "Spell the name of Wolves' ground. Molineux.",
-      "answer": "M O L I N E U X",
+      "focus": "Middlesbrough",
+      "clubs": ["Middlesbrough FC"],
+      "prompt": "Spell Middlesbrough out loud. One letter at a time.",
+      "answer": "M I D D L E S B R O U G H",
       "notes": [
-        "French spelling. English misery."
+        "There is no second R.",
+        "You put an R in, didn't you."
       ],
       "blur": true,
       "points": 3
     },
     {
-      "player": "Mcivor",
-      "focus": "Spurs",
-      "prompt": "In what calendar year did Tottenham Hotspur last win the English top flight?",
-      "answer": "1961",
-      "notes": [
-        "After the assassination of Abraham Lincoln.",
-        "Before the assassination of John F. Kennedy."
-      ],
-      "points": 2
-    },
-    {
-      "player": "TJ",
+      "player": "Badger",
       "focus": "Burnley",
+      "clubs": ["Burnley FC"],
       "prompt": "Name three current Burnley players out loud. Starting now.",
       "timer": 5,
       "answer": "Time's up.",
@@ -112,15 +98,40 @@
       "points": 2
     },
     {
-      "player": "Jake",
+      "player": "Macri",
+      "focus": "Liverpool / Hull / Bristol City / Charlton",
+      "clubs": ["Liverpool FC", "Hull City AFC", "Bristol City FC", "Charlton Athletic FC"],
+      "prompt": "Rank all four of your clubs geographically. North to south.",
+      "answer": "1. Hull   2. Liverpool   3. Charlton   4. Bristol City",
+      "notes": [
+        "Charlton and Bristol City are separated by 0.05 degrees of latitude.",
+        "You guessed. That was a coin flip and everyone saw it."
+      ],
+      "points": 2
+    },
+    {
+      "player": "Mcivor",
       "focus": "Millwall",
+      "clubs": ["Millwall FC"],
       "prompt": "Read the following statement out loud to the room.",
-      "quote": "I, Jake, am genuinely proud to represent Millwall Football Club, and I look forward to a peaceful, family-friendly season.",
+      "quote": "I, Mcivor, am genuinely proud to represent Millwall Football Club, and I look forward to a peaceful, family-friendly season.",
       "answer": "Statement logged.",
       "notes": [
         "Failure to read it with enthusiasm carries an immediate penalty."
       ],
       "points": 0
+    },
+    {
+      "player": "TJ",
+      "focus": "Nottingham Forest",
+      "clubs": ["Nottingham Forest FC"],
+      "prompt": "How many European Cups have Nottingham Forest won?",
+      "answer": "Two. 1979 and 1980.",
+      "notes": [
+        "That is more than Arsenal, Spurs, Newcastle and Manchester City have managed between them.",
+        "You have the only club in this draw that has won it twice."
+      ],
+      "points": 2
     }
   ]
 }

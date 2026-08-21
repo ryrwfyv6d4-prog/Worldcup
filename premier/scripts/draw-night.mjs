@@ -224,10 +224,17 @@ function buildChallenges() {
   const stale = [];
   for (const c of manifest.challenges || []) {
     if (!picks[c.player]) continue;                       // not in this draw
-    if (c.crest && !picks[c.player].includes(c.crest)) { stale.push(c.player); continue; }
+    // Every club the question leans on, not just the one with a badge on
+    // screen. A redraw moves clubs between people, and a forfeit asking
+    // somebody about a team they no longer own is worse than no forfeit.
+    const needs = [...(c.clubs || []), ...(c.crest ? [c.crest] : [])];
+    const missing = needs.filter((club) => !picks[c.player].includes(club));
+    if (missing.length) { stale.push(`${c.player} (${missing.map((m) => short.get(m) || m).join(', ')})`); continue; }
     out.push(c);
   }
-  if (stale.length) console.log(`  forfeits: dropped ${stale.join(', ')} — the club they name is no longer theirs`);
+  if (stale.length) {
+    console.log(`  forfeits: dropped ${stale.join('; ')} — no longer their club`);
+  }
   return out.length ? out : null;
 }
 
@@ -342,8 +349,15 @@ console.log(challenges
   ? `  forfeits: ${challenges.length} of ${PLAYERS.length}, one after each Hat A reveal`
   : '  forfeits: none');
 console.log(reordered
-  ? '  running order: reordered — the draw itself is untouched, everyone keeps the same four clubs'
+  ? (kept
+    ? '  running order: reordered — the draw itself is untouched, everyone keeps the same four clubs'
+    : '  running order: not the roster order (--no-order to reset it)')
   : '  running order: as drawn (--reorder to roll a new one)');
+if (!kept) {
+  console.log('\n  THIS IS A NEW DRAW. Everyone\'s clubs have changed.');
+  console.log('  Whatever the app is holding is now out of date — press Publish on the night,');
+  console.log('  or re-run the draw page and publish, before anyone reads the old one.');
+}
 sayVideo('hype reel ', reel, 'drop one at premier/public/hype.mp4, or pass --reel <url>');
 sayVideo('highlights', highlights, 'drop one at premier/public/highlights.mp4, or pass --highlights <url>');
 if (highlights) {
