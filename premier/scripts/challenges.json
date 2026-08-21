@@ -1,0 +1,113 @@
+{
+  "_note": "One forfeit per player, played straight after their Hat A reveal. Keyed by player name — a player not in the draw is skipped, and a player with no entry here just moves on. `timer` puts a countdown on the prompt. `crest` blurs a club badge onto the prompt screen. `quote` is read aloud rather than answered.",
+  "challenges": [
+    {
+      "player": "Hendrik",
+      "focus": "Liverpool / Everton",
+      "prompt": "Merseyside derby conflict. State clearly to the room which of them you support when they play each other.",
+      "answer": "Choice logged.",
+      "notes": [
+        "Permanently registered to your profile for the 2026/27 season.",
+        "No appeals."
+      ]
+    },
+    {
+      "player": "Easton",
+      "focus": "Newcastle / Pompey",
+      "prompt": "Out of Newcastle, Coventry, Birmingham and Portsmouth, which one won a major trophy most recently?",
+      "answer": "Portsmouth. FA Cup, 2008.",
+      "notes": [
+        "Newcastle's last domestic trophy was 1955. Stop living in hope."
+      ]
+    },
+    {
+      "player": "Sam Hearn",
+      "focus": "Sheffield United",
+      "prompt": "Look at the badge on screen. Which Sheffield is this?",
+      "timer": 5,
+      "crest": "Sheffield United FC",
+      "answer": "Sheffield United. The Blades.",
+      "notes": [
+        "If you don't know your own badge, you don't deserve the points."
+      ]
+    },
+    {
+      "player": "Phil",
+      "focus": "Swansea",
+      "prompt": "Identify Swansea City's official nickname.",
+      "answer": "The Swans. Or The Jacks.",
+      "notes": [
+        "The app had you down for The Welsh Ones."
+      ]
+    },
+    {
+      "player": "Macri",
+      "focus": "Blackburn / Hull / Watford",
+      "prompt": "Rank your three clubs geographically. North to south.",
+      "answer": "1. Blackburn   2. Hull   3. Watford",
+      "notes": [
+        "Blackburn and Hull are separated by 0.04 degrees of latitude.",
+        "You guessed. That was a coin flip and everyone saw it."
+      ]
+    },
+    {
+      "player": "Badger",
+      "focus": "Middlesbrough",
+      "prompt": "Spell Middlesbrough out loud. One letter at a time.",
+      "answer": "M I D D L E S B R O U G H",
+      "notes": [
+        "There is no second R.",
+        "You put an R in, didn't you."
+      ]
+    },
+    {
+      "player": "Dan",
+      "focus": "Bolton",
+      "prompt": "What division are Bolton in right now? Name it immediately.",
+      "timer": 5,
+      "answer": "League One. Third tier.",
+      "notes": [
+        "You hesitated because some part of you still had them in the Premier League."
+      ]
+    },
+    {
+      "player": "Piga",
+      "focus": "Wolves",
+      "prompt": "Spell the name of Wolves' ground. Molineux.",
+      "answer": "M O L I N E U X",
+      "notes": [
+        "French spelling. English misery."
+      ]
+    },
+    {
+      "player": "Mcivor",
+      "focus": "Spurs",
+      "prompt": "In what calendar year did Tottenham Hotspur last win the English top flight?",
+      "answer": "1961",
+      "notes": [
+        "After the assassination of Abraham Lincoln.",
+        "Before the assassination of John F. Kennedy."
+      ]
+    },
+    {
+      "player": "TJ",
+      "focus": "Burnley",
+      "prompt": "Name three current Burnley players out loud. Starting now.",
+      "timer": 5,
+      "answer": "Time's up.",
+      "notes": [
+        "Nobody in this room can verify whether a single one of those was real."
+      ]
+    },
+    {
+      "player": "Jake",
+      "focus": "Millwall",
+      "prompt": "Read the following statement out loud to the room.",
+      "quote": "I, Jake, am genuinely proud to represent Millwall Football Club, and I look forward to a peaceful, family-friendly season.",
+      "answer": "Statement logged.",
+      "notes": [
+        "Failure to read it with enthusiasm carries an immediate penalty."
+      ]
+    }
+  ]
+}

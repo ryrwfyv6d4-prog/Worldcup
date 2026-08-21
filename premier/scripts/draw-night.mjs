@@ -179,6 +179,29 @@ function buildAudio() {
 
 const audio = buildAudio();
 
+// ── The forfeits ────────────────────────────────────────────────────────────
+// One per player, played straight after their Hat A reveal. They are written
+// against the clubs people actually drew, so anything naming a club its owner
+// no longer holds is dropped rather than left to read as nonsense on the night.
+function buildChallenges() {
+  if (args.includes('--no-challenges')) return null;
+  let manifest;
+  try {
+    manifest = JSON.parse(readFileSync(new URL('./challenges.json', import.meta.url), 'utf8'));
+  } catch { return null; }
+  const out = [];
+  const stale = [];
+  for (const c of manifest.challenges || []) {
+    if (!picks[c.player]) continue;                       // not in this draw
+    if (c.crest && !picks[c.player].includes(c.crest)) { stale.push(c.player); continue; }
+    out.push(c);
+  }
+  if (stale.length) console.log(`  forfeits: dropped ${stale.join(', ')} — the club they name is no longer theirs`);
+  return out.length ? out : null;
+}
+
+const challenges = buildChallenges();
+
 // ── The verdict ─────────────────────────────────────────────────────────────
 // Run the same season simulation the app uses and bake the answer in, so the
 // last screen can tell everyone who got the best draw without needing a
@@ -258,6 +281,7 @@ const data = {
   audio,
   forecast,
   rules,
+  challenges,
 };
 
 // ── Report ──────────────────────────────────────────────────────────────────
@@ -282,6 +306,9 @@ const sayVideo = (label, v, hint) => console.log(
 console.log(audio
   ? `  club audio: ${Object.keys(audio).length} clubs — streams the preview unless public/audio/<CODE>.mp3 exists`
   : '  club audio: none');
+console.log(challenges
+  ? `  forfeits: ${challenges.length} of ${PLAYERS.length}, one after each Hat A reveal`
+  : '  forfeits: none');
 sayVideo('hype reel ', reel, 'drop one at premier/public/hype.mp4, or pass --reel <url>');
 sayVideo('highlights', highlights, 'drop one at premier/public/highlights.mp4, or pass --highlights <url>');
 if (highlights) {
