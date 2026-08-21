@@ -904,7 +904,7 @@ async function flip(p, i, big) {
    frame-driven rather than setTimeout-driven so the whole thing stays in step
    with the render loop. Sparks draw additively; smoke draws soft and opaque
    over the top, which is what makes it read as smoke rather than light. */
-var fx = { canvas: null, ctx: null, parts: [], emitters: [], raf: 0, until: 0, dpr: 1, palette: ['#EFEAE0'] };
+var fx = { canvas: null, ctx: null, parts: [], emitters: [], raf: 0, until: 0, dpr: 1, palette: ['#EFEAE0'], fade: 0.16 };
 var FX_CAP = 3600;   // spawn backpressure, so a slow machine degrades instead of dying
 
 function fxSize() {
@@ -940,6 +940,16 @@ function smoke(x, y, colour) {
                   vx: rand(-0.4, 0.4), vy: rand(-1.1, -0.5),
                   c: colour, life: rand(110, 190), max: 190,
                   s: rand(14, 30), grow: rand(0.12, 0.22), g: -0.004 });
+}
+
+/* A spinning coin. rx swings with cos(spin) so it flips edge-on and back,
+   which is what reads as spinning rather than just rotating. */
+function coin(x, y, vx, vy) {
+  if (fx.parts.length > FX_CAP) return;
+  fx.parts.push({ kind: 'coin', x: x, y: y, vx: vx, vy: vy,
+                  life: rand(150, 260), max: 260, s: rand(9, 18), g: 0.17,
+                  spin: Math.random() * Math.PI * 2, spinV: rand(0.10, 0.30),
+                  rot: rand(-0.5, 0.5) });
 }
 
 function shell(x, topY, colour) {
@@ -989,9 +999,15 @@ function runEmitters() {
 
 function fxTick() {
   var ctx = fx.ctx, W = window.innerWidth, H = window.innerHeight;
-  ctx.globalCompositeOperation = 'destination-out';
-  ctx.fillStyle = 'rgba(0,0,0,0.16)';
-  ctx.fillRect(0, 0, W, H);
+  // Sparks want a soft fade so they smear into trails. Coins want a hard clear,
+  // otherwise every one of them drags a comet of ghost coins behind it.
+  if (fx.fade >= 1) {
+    ctx.clearRect(0, 0, W, H);
+  } else {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = 'rgba(0,0,0,' + fx.fade + ')';
+    ctx.fillRect(0, 0, W, H);
+  }
 
   runEmitters();
 
@@ -1010,7 +1026,20 @@ function fxTick() {
     }
     if (p.life <= 0 || p.y > H + 60) { fx.parts.splice(i, 1); continue; }
 
-    if (p.kind === 'smoke') {
+    if (p.kind === 'coin') {
+      p.spin += p.spinV;
+      var rx = Math.max(1.1, Math.abs(Math.cos(p.spin)) * p.s);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = Math.min(1, p.life / (p.max * 0.35));
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = '#7A5510';
+      ctx.beginPath(); ctx.ellipse(0, 0, rx, p.s, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = Math.cos(p.spin) >= 0 ? '#FFD97A' : '#D99A28';
+      ctx.beginPath(); ctx.ellipse(0, 0, Math.max(0.5, rx * 0.74), p.s * 0.78, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    } else if (p.kind === 'smoke') {
       p.s += p.grow;
       p.vx += rand(-0.03, 0.03);           // drift, so columns roll instead of rising in a line
       ctx.globalCompositeOperation = 'source-over';
@@ -1039,9 +1068,46 @@ function fxTick() {
   }
 }
 
+/* Some clubs get their own send-off instead of the flares. */
+var FX_OVERRIDE = { TOT: coinShower };
+
+function coinShower() {
+  var W = window.innerWidth, H = window.innerHeight;
+  var SPEND = 6200;
+  fx.fade = 1;                                   // hard clear, no comet trails
+
+  // thrown up from the floor in waves, arcing over and coming back down
+  for (var w = 0; w < 6; w++) {
+    (function (delay) {
+      setTimeout(function () {
+        if (!fx.ctx) return;
+        for (var i = 0; i < 18; i++) {
+          var x = rand(W * 0.05, W * 0.95);
+          coin(x, H + 20, rand(-2.6, 2.6), rand(-24, -15));
+        }
+      }, delay);
+    }(w * rand(480, 760)));
+  }
+  // and a steady drizzle from above, so the screen is never empty of them
+  for (var d = 0; d < 34; d++) {
+    (function (delay) {
+      setTimeout(function () {
+        if (!fx.ctx) return;
+        coin(rand(-20, W + 20), -30, rand(-1.4, 1.4), rand(1, 4));
+      }, 300 + delay);
+    }(d * rand(90, 190)));
+  }
+
+  fx.until = Date.now() + SPEND + 1400;
+  if (!fx.raf) fx.raf = requestAnimationFrame(fxTick);
+}
+
 function pyro(club) {
   if (!fxReady()) return;
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var over = CLUBS[club] && FX_OVERRIDE[CLUBS[club].tla];
+  if (over) { fx.palette = ['#FFD97A', '#E8A33D']; over(); return; }
+  fx.fade = 0.16;                                // flares smear into trails
   var cols = (CLUBS[club] && CLUBS[club].colours) || ['#EFEAE0'];
   fx.palette = cols.concat(['#E8A33D', '#FFD36B']);
   var W = window.innerWidth, H = window.innerHeight;
