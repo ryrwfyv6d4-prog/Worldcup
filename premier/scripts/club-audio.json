@@ -1,12 +1,14 @@
 {
-  "_note": "30-second preview clips from the public iTunes Search API. Apple picks the excerpt, usually the hook rather than the intro, which sidesteps the long-intro problem on BHA and NFO. Source format is .m4a; fetch-audio.py converts to CODE.mp3.",
+  "_note": "30-second preview clips from the public iTunes Search API. Each club's default is its iconic club anthem. alt_previewUrl holds the current walkout or tunnel cue where the two differ. Source format is .m4a; fetch-audio.py converts to CODE.mp3.",
   "tracks": [
     {
       "code": "ARS",
       "club": "Arsenal",
       "track": "The Angel (North London Forever)",
       "artist": "Louis Dunford",
-      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/4d/2c/cb/4d2ccb98-79f9-7c4e-e693-872b0272536e/mzaf_18408813452013296631.plus.aac.p.m4a"
+      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/4d/2c/cb/4d2ccb98-79f9-7c4e-e693-872b0272536e/mzaf_18408813452013296631.plus.aac.p.m4a",
+      "alt_track": "Good Old Arsenal, The Arsenal First Team Squad - the 1971 club record",
+      "alt_previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/59/85/3f/59853f55-d8b7-6c36-1ef0-a2b52f78d705/mzaf_4492178038496740511.plus.aac.p.m4a"
     },
     {
       "code": "MCI",
@@ -14,7 +16,7 @@
       "track": "Blue Moon",
       "artist": "The Marcels",
       "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/1b/00/7e/1b007eec-3cfa-30bd-072b-4a800723c6a8/mzaf_9662703236298643085.plus.aac.p.m4a",
-      "alt_track": "Right Here, Right Now (Fatboy Slim) - the actual tunnel cue",
+      "alt_track": "Right Here, Right Now, Fatboy Slim - the tunnel cue",
       "alt_previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/e5/b4/59/e5b4596f-bc0d-46fb-f450-fcd3bef6a976/mzaf_17532877595948226774.plus.aac.p.m4a"
     },
     {
@@ -27,53 +29,61 @@
     {
       "code": "MUN",
       "club": "Manchester United",
-      "track": "This Is the One",
-      "artist": "The Stone Roses",
-      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/d7/fe/27/d7fe27c4-1503-e39b-5ede-89119b85444c/mzaf_4177221034004248143.plus.aac.p.m4a"
+      "track": "Glory, Glory, Man. United",
+      "artist": "Manchester United Football Team",
+      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/26/be/3d/26be3d0b-902e-0611-c6fc-c21f06fbc731/mzaf_8688496763830919204.plus.aac.p.m4a",
+      "alt_track": "This Is the One, The Stone Roses - the tunnel cue",
+      "alt_previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/32/9e/66/329e6689-db87-eddb-ca37-6fc3df54551a/mzaf_9403408851510035107.plus.aac.p.m4a"
     },
     {
       "code": "CHE",
       "club": "Chelsea",
-      "track": "Liquidator",
-      "artist": "The Harry J. All Stars",
-      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/54/82/30/54823004-fa52-88bc-17bd-ac3c15e24e31/mzaf_6454736301510824273.plus.aac.p.m4a"
+      "track": "Blue Is The Colour",
+      "artist": "Chelsea Football Club",
+      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/6c/3f/ce/6c3fce99-8572-43c2-10a0-1fac7fb52d10/mzaf_2465097792742164568.plus.aac.p.m4a",
+      "alt_track": "Liquidator, The Harry J. All Stars - the tunnel cue",
+      "alt_previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/54/82/30/54823004-fa52-88bc-17bd-ac3c15e24e31/mzaf_6454736301510824273.plus.aac.p.m4a"
     },
     {
       "code": "AVL",
       "club": "Aston Villa",
-      "track": "Escape",
-      "artist": "Craig Armstrong",
-      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/4b/94/3e/4b943e99-3b2c-65f8-eac4-208b26cf3477/mzaf_17928890824331944292.plus.aac.p.m4a"
+      "track": "Villa Till I Die",
+      "artist": "Aston Villa FanChants & AVFC Football Songs",
+      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/Music2/v4/b9/1e/a5/b91ea5f2-5fea-7b8e-64a2-fba62e8f30c2/mzaf_6988808632154801533.plus.aac.p.m4a",
+      "alt_track": "Escape, Craig Armstrong - the tunnel cue",
+      "alt_previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/4b/94/3e/4b943e99-3b2c-65f8-eac4-208b26cf3477/mzaf_17928890824331944292.plus.aac.p.m4a"
     },
     {
       "code": "NEW",
       "club": "Newcastle United",
-      "track": "Going Home (Theme of \"Local Hero\")",
-      "artist": "Mark Knopfler",
-      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/22/ba/cd/22bacd35-1ee0-c815-7649-60523d22d657/mzaf_3613342260422358972.plus.aac.p.m4a",
-      "alt_track": "The Blaydon Races (Newcastle United Fans) - the current tunnel cue",
-      "alt_previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/d0/b7/5c/d0b75cef-fc91-5aa2-8435-e781c3920310/mzaf_17015575487178752983.plus.aac.p.m4a"
+      "track": "The Blaydon Races",
+      "artist": "Newcastle United Fans",
+      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/d0/b7/5c/d0b75cef-fc91-5aa2-8435-e781c3920310/mzaf_17015575487178752983.plus.aac.p.m4a",
+      "alt_track": "Going Home (Theme of \"Local Hero\"), Mark Knopfler",
+      "alt_previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/22/ba/cd/22bacd35-1ee0-c815-7649-60523d22d657/mzaf_3613342260422358972.plus.aac.p.m4a"
     },
     {
       "code": "TOT",
       "club": "Tottenham Hotspur",
-      "track": "Glory, Glory, Tottenham Hotspur",
+      "track": "Glory, Glory, Tottenham Hotspur (feat. Chas & Dave)",
       "artist": "Tottenham Hotspur FA Cup Final Squad & Chas & Dave",
       "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview123/v4/38/6f/bf/386fbfab-a210-7c13-b0ee-6ed0ece139f1/mzaf_9835500181730981176.plus.aac.p.m4a",
-      "alt_track": "Duel of the Fates (John Williams) - the actual tunnel cue",
+      "alt_track": "Duel of the Fates, John Williams - the tunnel cue",
       "alt_previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/c2/c8/52/c2c852ac-ea6a-9fac-c1ce-aa389df6f803/mzaf_12984852979243985528.plus.aac.p.m4a"
     },
     {
       "code": "BHA",
       "club": "Brighton & Hove Albion",
-      "track": "Sussex By the Sea",
-      "artist": "The Band of the Grenadier Guards",
-      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview114/v4/22/d9/cd/22d9cdc6-dd2e-a0f2-a026-872f301c2c37/mzaf_16714148610260277227.plus.aac.p.m4a"
+      "track": "Good Ol' Sussex By the Sea",
+      "artist": "Brighton & Hove Albion Fans",
+      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/Music/v4/fe/e4/cf/fee4cfd5-c3ad-d472-7307-0727776916c1/mzaf_506652357470167665.plus.aac.p.m4a",
+      "alt_track": "Sussex By the Sea, Band of the Grenadier Guards - brass band version",
+      "alt_previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview114/v4/22/d9/cd/22d9cdc6-dd2e-a0f2-a026-872f301c2c37/mzaf_16714148610260277227.plus.aac.p.m4a"
     },
     {
       "code": "CRY",
       "club": "Crystal Palace",
-      "track": "Glad All Over (2019 Remaster)",
+      "track": "Glad All Over (2019 - Remaster)",
       "artist": "The Dave Clark Five",
       "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/28/c7/0e/28c70e4b-bf26-b530-70e8-19172dd597fd/mzaf_4950316252956379339.plus.aac.p.m4a"
     },
@@ -82,7 +92,9 @@
       "club": "Nottingham Forest",
       "track": "Mull of Kintyre",
       "artist": "Wings",
-      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/e7/28/b3/e728b3df-8bbb-4795-8f5f-9b22d41595ae/mzaf_16427445957411452919.plus.aac.p.m4a"
+      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/e7/28/b3/e728b3df-8bbb-4795-8f5f-9b22d41595ae/mzaf_16427445957411452919.plus.aac.p.m4a",
+      "alt_track": "We've Got the Whole World in Our Hands, Nottingham Forest & Paper Lace - the 1978 club record",
+      "alt_previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/2b/15/58/2b155869-6f9f-b0cd-1a25-60ac8c57c918/mzaf_13225862475223951267.plus.aac.p.m4a"
     }
   ]
 }
