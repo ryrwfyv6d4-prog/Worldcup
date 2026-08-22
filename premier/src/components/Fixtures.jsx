@@ -4,6 +4,7 @@ import { fixturePoints, pointsHaul } from '../utils/scoring.js';
 import { getRivalry } from '../data/rivalries.js';
 import Stripe from './Stripe.jsx';
 import { fixturesLine } from '../utils/editorial.js';
+import { useHighlight } from '../hooks/useHighlight.js';
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -185,8 +186,14 @@ function MatchRow({ fixture: f, assignments, onOpen }) {
   const derby = getRivalry(f.homeTeam.name, f.awayTeam.name);
   const done = f.status === 'FINISHED';
   const live = f.status === 'IN_PLAY';
+  const highlight = useHighlight(
+    f.homeTeam.name, f.awayTeam.name, done, f.score?.home, f.score?.away
+  );
 
+  // The row is a button, so the highlights link sits beside it rather than
+  // inside it — a link nested in a button is invalid and swallows the tap.
   return (
+    <div className={`fx-row-wrap ${highlight ? 'has-hl' : ''}`}>
     <button className="fx-row" onClick={onOpen}>
       <span className="fx-time">{fmtTime(f.utcDate)}</span>
       <span className="fx-clubs">
@@ -220,5 +227,18 @@ function MatchRow({ fixture: f, assignments, onOpen }) {
         ) : null /* kick-off time is already on the left — nothing to add */}
       </span>
     </button>
+    {highlight && (
+      <a
+        className="fx-hl"
+        href={highlight}
+        target="_blank"
+        rel="noreferrer"
+        title="Watch the highlights"
+        aria-label={`Highlights: ${h?.short || f.homeTeam.name} v ${a?.short || f.awayTeam.name}`}
+      >
+        <span aria-hidden="true">▶</span>
+      </a>
+    )}
+    </div>
   );
 }

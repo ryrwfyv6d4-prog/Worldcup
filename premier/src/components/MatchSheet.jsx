@@ -6,6 +6,7 @@ import { coloursFor } from '../data/colours.js';
 import Crest from './Crest.jsx';
 import Stripe from './Stripe.jsx';
 import { useMatchDetail } from '../hooks/useMatchDetail.js';
+import { useHighlight } from '../hooks/useHighlight.js';
 import {
   leagueTable, formForTeam, positionOf, reverseFixture, fixturePoints,
 } from '../utils/scoring.js';
@@ -55,6 +56,9 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
 
   const done = fixture.status === 'FINISHED';
   const live = fixture.status === 'IN_PLAY';
+  const highlight = useHighlight(
+    fixture.homeTeam.name, fixture.awayTeam.name, done, fixture.score?.home, fixture.score?.away
+  );
   const played = done || live;
 
   const sides = [
@@ -131,6 +135,12 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
               </div>
             ))}
           </div>
+        )}
+
+        {highlight && (
+          <a className="mp-hl" href={highlight} target="_blank" rel="noreferrer">
+            <span aria-hidden="true">▶</span> Watch the highlights
+          </a>
         )}
 
         {/* ── Tabs ──────────────────────────────────────────────────────── */}

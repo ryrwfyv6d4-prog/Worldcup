@@ -237,6 +237,126 @@ export default {
         return json({ videoId, source: videoId ? source : null });
       }
 
+      // GET /epl/highlight — same idea as /highlight, for the England sweep.
+      // Query: ?home=Brentford FC&homeShort=Brentford
+      //        &away=Tottenham Hotspur FC&awayShort=Spurs&hs=1&as=2
+      //
+      // Stan Sport hold the Premier League here and title every upload the same
+      // way ("Brentford v Tottenham Hotspur | Highlights | Premier League
+      // 2026/27"), so a channel-scoped search lands it. They do not carry the
+      // Championship, so if the channel search comes back empty we fall back to
+      // one unrestricted search and lean on strict title matching to keep the
+      // re-uploads out.
+      //
+      // Both the full name and the short name come from the client rather than
+      // being duplicated here, so the club list only ever lives in one place.
+      if (request.method === 'GET' && path === '/epl/highlight') {
+        const home = url.searchParams.get('home') || '';
+        const away = url.searchParams.get('away') || '';
+        const homeShort = url.searchParams.get('homeShort') || home;
+        const awayShort = url.searchParams.get('awayShort') || away;
+        const hs = url.searchParams.get('hs');
+        const as_ = url.searchParams.get('as');
+        if (!home || !away) return json({ videoId: null });
+
+        const hasScore = hs != null && hs !== '' && as_ != null && as_ !== '';
+        const cacheKey = hasScore
+          ? `epl-highlights/v1/${home}|${away}|${hs}-${as_}.json`
+          : `epl-highlights/v1/${home}|${away}.json`;
+
+        const cached = await env.WALL.get(cacheKey);
+        if (cached) {
+          const c = JSON.parse(await cached.text());
+          if (c.videoId) return json({ videoId: c.videoId, source: c.source || 'cache' });
+          // Negative result: a match may simply not be uploaded yet, so retry
+          // after 30 minutes rather than caching "no" for the season.
+          if (Date.now() - (c.ts || 0) < 30 * 60 * 1000) return json({ videoId: null });
+        }
+
+        const keys = [env.YOUTUBE_API_KEY, env.YOUTUBE_API_KEY_BACKUP].filter(Boolean);
+        if (!keys.length) return json({ videoId: null });
+
+        const STAN_HANDLE = 'stansportfc';
+        const norm = (s) => s
+          .normalize('NFD').replace(/[̀-ͯ]/g, '')
+          .toLowerCase()
+          .replace(/&/g, 'and')
+          .replace(/\b(fc|afc)\b/g, '')
+          .replace(/[^a-z0-9]+/g, ' ')
+          .trim();
+
+        // A club counts as present if the title carries either the name the
+        // feed uses or the short name the app shows. Between them they cover
+        // both "Tottenham Hotspur" and "Spurs" without a hand-kept alias list.
+        const clubInTitle = (full, short, title) => {
+          const t = norm(title);
+          return t.includes(norm(full)) || t.includes(norm(short));
+        };
+        const titleFits = (title) => {
+          const t = norm(title);
+          if (!t.includes('highlight')) return false;
+          if (!t.includes('2026') && !t.includes('2027')) return false;
+          return clubInTitle(home, homeShort, title) && clubInTitle(away, awayShort, title);
+        };
+
+        // Resolve the handle to a channel id once, then keep it forever
+        async function stanChannelId(apiKey) {
+          const key = `epl-highlights/channel/${STAN_HANDLE}.json`;
+          const hit = await env.WALL.get(key);
+          if (hit) return JSON.parse(await hit.text()).id;
+          try {
+            const r = await fetch(
+              `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${STAN_HANDLE}&key=${apiKey}`
+            );
+            const j = await r.json();
+            const id = j.items?.[0]?.id || null;
+            if (id) {
+              await env.WALL.put(key, JSON.stringify({ id, ts: Date.now() }),
+                { httpMetadata: { contentType: 'application/json' } });
+            }
+            return id;
+          } catch { return null; }
+        }
+
+        const query = `${homeShort} v ${awayShort} highlights`;
+
+        async function search(apiKey, channelId) {
+          try {
+            const base = 'https://www.googleapis.com/youtube/v3/search?part=snippet&type=video'
+              + `&q=${encodeURIComponent(query)}&maxResults=10&order=relevance`
+              + '&publishedAfter=2026-07-01T00%3A00%3A00Z';
+            const r = await fetch(base + (channelId ? `&channelId=${channelId}` : '') + `&key=${apiKey}`);
+            const j = await r.json();
+            if (j.error?.errors?.[0]?.reason === 'quotaExceeded') return 'QUOTA_EXCEEDED';
+            const m = (j.items || []).find((i) => titleFits(i.snippet?.title || ''));
+            return m?.id?.videoId || null;
+          } catch { return null; }
+        }
+
+        let videoId = null;
+        let source = 'stan';
+        for (const apiKey of keys) {
+          const chan = await stanChannelId(apiKey);
+          if (chan) {
+            const hit2 = await search(apiKey, chan);
+            if (hit2 === 'QUOTA_EXCEEDED') continue;
+            if (hit2) { videoId = hit2; break; }
+          }
+          // Championship, or a Premier League match Stan have not posted
+          const open = await search(apiKey, null);
+          if (open === 'QUOTA_EXCEEDED') continue;
+          if (open) { videoId = open; source = 'search'; break; }
+          break;
+        }
+
+        await env.WALL.put(
+          cacheKey,
+          JSON.stringify(videoId ? { videoId, source, ts: Date.now() } : { videoId: null, ts: Date.now() }),
+          { httpMetadata: { contentType: 'application/json' } }
+        );
+        return json({ videoId, source: videoId ? source : null });
+      }
+
       // GET /predictions — load all predictions
       if (request.method === 'GET' && path === '/predictions') {
         const item = await env.WALL.get('predictions.json');

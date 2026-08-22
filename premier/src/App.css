@@ -322,11 +322,29 @@ body {
 .day-head { display: flex; align-items: baseline; gap: 10px; padding: 18px 0 8px; }
 .day-name { font-family: var(--font-display); font-size: 22px; font-weight: 700; text-transform: uppercase; }
 .day-rule { flex: 1; height: 1px; background: var(--ink); }
+/* The wrapper owns the rule so a row with a highlights button still reads as
+   one line, rather than the button hanging below its own border. */
+.fx-row-wrap { display: flex; align-items: stretch; border-bottom: 1px solid var(--rule-light); }
+.fx-row-wrap .fx-row { border-bottom: 0; }
 .fx-row {
   display: flex; align-items: center; gap: 12px; width: 100%;
   padding: 12px 0; border: 0; border-bottom: 1px solid var(--rule-light);
   background: none; text-align: left; cursor: pointer;
 }
+/* Watch the highlights. Only ever rendered once a video has actually been
+   found, so it never sits there as a link to nothing. */
+.fx-hl {
+  flex: 0 0 auto; align-self: center; margin-left: 8px;
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--spot); color: var(--paper);
+  font-size: 12px; line-height: 1; text-decoration: none;
+  padding-left: 2px; /* optically centres the triangle */
+  transition: transform .12s ease, opacity .12s ease;
+}
+.fx-hl:hover { transform: scale(1.08); }
+.fx-hl:active { opacity: .7; }
+@media (prefers-reduced-motion: reduce) { .fx-hl { transition: none; } .fx-hl:hover { transform: none; } }
 .fx-time {
   width: 52px; flex-shrink: 0; font: 600 12px var(--font-ui);
   color: var(--ink-muted); font-variant-numeric: tabular-nums;
@@ -583,6 +601,14 @@ body {
   margin-top: 8px; font-size: 11px; line-height: 1.5; color: var(--ink-faint);
 }
 
+/* Watch the highlights, straight under the scoreline */
+.mp-hl {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin: 14px var(--gutter) 4px; padding: 12px 16px;
+  background: var(--spot); color: var(--paper); text-decoration: none;
+  font: 800 11px var(--font-ui); letter-spacing: .16em; text-transform: uppercase;
+}
+.mp-hl:active { opacity: .78; }
 .mp-tabs { margin: 0 var(--gutter); }
 .mp-pane { padding: 4px var(--gutter) 0; }
 .mp-empty { padding: 22px 0; text-align: center; }
