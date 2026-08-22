@@ -672,6 +672,51 @@ body {
 }
 
 /* Line-ups */
+/* ── The pitch ──────────────────────────────────────────────────────────────
+   Players are absolutely positioned from percentages worked out in
+   utils/formation.js, so the shape comes from the formation rather than from
+   anything hard-coded here. Aspect ratio keeps it a pitch at any width. */
+.pitch {
+  position: relative; width: 100%; aspect-ratio: 68 / 96;
+  margin-bottom: 18px; border: 1.5px solid var(--ink);
+  background: var(--pitch, #16412a);
+  overflow: hidden;
+}
+.pitch-lines { position: absolute; inset: 0; pointer-events: none; }
+.pitch-lines span { position: absolute; border: 1.5px solid rgba(255,255,255,.16); }
+.pitch-half { left: 0; right: 0; top: 50%; border-width: 0 0 1.5px 0; }
+.pitch-circle {
+  left: 50%; top: 50%; width: 26%; aspect-ratio: 1;
+  transform: translate(-50%,-50%); border-radius: 50%;
+}
+.pitch-box { left: 21%; right: 21%; height: 13%; }
+.pitch-box.top { top: 0; border-top: 0; }
+.pitch-box.bottom { bottom: 0; border-bottom: 0; }
+
+.pp {
+  position: absolute; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  width: 19%; text-align: center;
+}
+.pp-shirt {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font: 800 10px var(--font-ui); color: #fff;
+  box-shadow: 0 0 0 1.5px rgba(255,255,255,.7);
+  font-variant-numeric: tabular-nums;
+}
+.pp-name {
+  font: 700 9px var(--font-ui); color: #fff; line-height: 1.15;
+  text-shadow: 0 1px 3px rgba(0,0,0,.9);
+  overflow-wrap: anywhere;
+}
+/* Came off: still shown where they played, but faded out of the picture */
+.pp.off { opacity: .45; }
+@media (min-width: 520px) {
+  .pp-shirt { width: 26px; height: 26px; font-size: 11px; }
+  .pp-name { font-size: 10.5px; }
+}
+
 .mp-xi { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1.5px solid var(--ink); }
 .mp-xi-col { padding: 10px 9px; min-width: 0; }
 .mp-xi-col + .mp-xi-col { border-left: 1px solid var(--ink); }

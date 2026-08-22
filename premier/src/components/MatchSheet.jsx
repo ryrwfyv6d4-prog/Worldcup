@@ -7,6 +7,7 @@ import Crest from './Crest.jsx';
 import Stripe from './Stripe.jsx';
 import { useMatchDetail } from '../hooks/useMatchDetail.js';
 import { useHighlight } from '../hooks/useHighlight.js';
+import { buildShape, shirtColours } from '../utils/formation.js';
 import {
   leagueTable, formForTeam, positionOf, reverseFixture, fixturePoints,
 } from '../utils/scoring.js';
@@ -299,12 +300,57 @@ function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played,
 }
 
 // ── Line-ups ──────────────────────────────────────────────────────────────
+// Both sides on one pitch, home attacking up. Only drawn when the feed gives
+// enough to place all twenty-two honestly; otherwise the lists below stand on
+// their own.
+function Pitch({ home, away, sides }) {
+  const hs = buildShape(home);
+  const as = buildShape(away);
+  if (!hs || !as) return null;
+
+  const [homeKit, awayKit] = shirtColours(coloursFor(sides[0].name), coloursFor(sides[1].name));
+  const rows = [
+    { shape: hs, side: sides[0], end: 'home', kit: homeKit },
+    { shape: as, side: sides[1], end: 'away', kit: awayKit },
+  ];
+
+  return (
+    <div className="pitch" aria-hidden="true">
+      <div className="pitch-lines">
+        <span className="pitch-half" />
+        <span className="pitch-circle" />
+        <span className="pitch-box top" />
+        <span className="pitch-box bottom" />
+      </div>
+      {rows.map(({ shape, end, kit }) => shape.slots.map(({ player, x, depth }) => {
+        // home works up from the bottom, away down from the top, and away is
+        // mirrored so the two sides face each other the right way round
+        const top = end === 'home' ? 100 - depth * 48 : depth * 48;
+        const left = end === 'home' ? x : 100 - x;
+        return (
+          <div
+            className={`pp ${end} ${player.subbedOut ? 'off' : ''}`}
+            key={`${end}-${player.id || player.name}`}
+            style={{ top: `${top}%`, left: `${left}%` }}
+          >
+            <span className="pp-shirt" style={{ background: kit }}>
+              {player.jersey || ''}
+            </span>
+            <span className="pp-name">{player.name}</span>
+          </div>
+        );
+      }))}
+    </div>
+  );
+}
+
 function Lineups({ detail, state, sides, played }) {
   if (!detail?.lineups) return <Empty state={state} played={played} what="Line-ups" />;
   const { home, away } = detail.lineups;
 
   return (
     <div className="mp-pane">
+      <Pitch home={home} away={away} sides={sides} />
       <div className="mp-xi">
         {[[home, sides[0]], [away, sides[1]]].map(([side, s], i) => (
           <div className="mp-xi-col" key={i}>
