@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getTeam, SCORING } from '../data/england2027.js';
 import { coloursFor, inkOn } from '../data/colours.js';
 import { priceRangeFor } from '../utils/odds.js';
@@ -7,6 +7,7 @@ import {
   buildTables, buildComplete, overachieveForTeam,
 } from '../utils/scoring.js';
 import Stripe from './Stripe.jsx';
+import { useSwipeToClose } from '../hooks/useSwipeToClose.js';
 import { getProjection } from '../utils/projection.js';
 
 const pctOf = (v) => (v >= 0.995 ? '100%' : v < 0.005 ? '<1%' : `${Math.round(v * 100)}%`);
@@ -39,6 +40,8 @@ function countdownTo(iso) {
 export default function TeamSheet({ team, fixtures, assignments, onClose, onOpenMatch }) {
   const info = getTeam(team);
   const [tick, setTick] = useState(0);
+  const sheetRef = useRef(null);
+  useSwipeToClose(sheetRef, onClose);
 
   // countdown recomputes every 30s, cleared on unmount
   useEffect(() => {
@@ -80,9 +83,11 @@ export default function TeamSheet({ team, fixtures, assignments, onClose, onOpen
   }, [table, team]);
 
   return (
-    <div className="club-backdrop">
+    <div className="club-backdrop" ref={sheetRef}>
       <div className="club-hero" style={{ background: primary, color: heroInk }}>
-        <button className="club-back" onClick={onClose}>← Table</button>
+        <button className="club-back" onClick={onClose} aria-label="Back to the table">
+          <span className="mp-back-chev" aria-hidden="true">‹</span> Table
+        </button>
         <div className="club-name">{info.short}</div>
         <div className="club-meta">
           <span className="club-meta-left">

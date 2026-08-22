@@ -413,12 +413,19 @@ body {
 .club-backdrop {
   position: fixed; inset: 0; z-index: 60; background: var(--paper);
   display: flex; flex-direction: column; max-width: 520px; margin: 0 auto;
+  touch-action: pan-y; will-change: transform;
 }
 .club-hero { flex-shrink: 0; padding: calc(var(--safe-top) + 14px) var(--gutter) 18px; }
+/* Same again on the club sheet: was 10px at .8 opacity over a club colour,
+   which on the darker kits was very nearly invisible. */
 .club-back {
-  font: 700 10px var(--font-ui); letter-spacing: .2em; text-transform: uppercase;
-  opacity: .8; background: none; border: 0; color: inherit; cursor: pointer; padding: 0;
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 40px; padding: 6px 14px 6px 10px; margin: -4px 0 2px;
+  font: 800 11px var(--font-ui); letter-spacing: .16em; text-transform: uppercase;
+  background: rgba(255, 255, 255, .16); border: 1.5px solid currentColor;
+  color: inherit; cursor: pointer;
 }
+.club-back:active { background: rgba(255, 255, 255, .3); }
 .club-name {
   font-family: var(--font-display); font-size: 52px; font-weight: 800;
   text-transform: uppercase; line-height: .85; margin-top: 14px;
@@ -512,20 +519,37 @@ body {
 .poll-label { position: relative; flex: 1; }
 .poll-count { position: relative; font-weight: 800; font-variant-numeric: tabular-nums; }
 
+/* Says "this can be dragged" without a line of instructions. Left edge,
+   because the gesture is a rightward flick back. */
+.mp::before, .club-backdrop::before {
+  content: ''; position: absolute; left: 3px; top: 50%; z-index: 2;
+  width: 3px; height: 46px; margin-top: -23px; border-radius: 3px;
+  background: var(--ink); opacity: .18; pointer-events: none;
+}
+
 /* ── Match page ───────────────────────────────────────────────────────────── */
 .mp {
   position: fixed; inset: 0; z-index: 60; background: var(--paper);
   display: flex; flex-direction: column; max-width: 520px; margin: 0 auto;
+  /* we handle sideways drags ourselves; the browser keeps vertical scrolling */
+  touch-action: pan-y; will-change: transform;
 }
 .mp-bar {
   flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
   gap: 10px; padding: calc(var(--safe-top) + 10px) var(--gutter) 8px;
   background: var(--ink); color: var(--paper);
 }
+/* Back was 10px of text with no padding — about a 12px tap target, which is
+   why it kept getting missed. Boxed, and tall enough to actually hit. */
 .mp-back {
-  background: none; border: 0; color: var(--paper); cursor: pointer; padding: 0;
-  font: 800 10px var(--font-ui); letter-spacing: .16em; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 40px; padding: 6px 14px 6px 10px; margin: -4px 0;
+  background: rgba(239, 234, 224, .14); border: 1.5px solid rgba(239, 234, 224, .55);
+  color: var(--paper); cursor: pointer;
+  font: 800 11px var(--font-ui); letter-spacing: .16em; text-transform: uppercase;
 }
+.mp-back:active { background: rgba(239, 234, 224, .3); }
+.mp-back-chev { font-size: 19px; line-height: 0; font-weight: 400; margin-top: -2px; }
 .mp-comp {
   font: 700 9px var(--font-ui); letter-spacing: .16em; text-transform: uppercase;
   color: rgba(239, 234, 224, .7); text-align: right;

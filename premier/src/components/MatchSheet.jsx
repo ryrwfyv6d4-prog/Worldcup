@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { getTeam } from '../data/england2027.js';
 import { phaseFor, midseasonRankFor } from '../utils/odds.js';
 import { getMatchup, FIRMS_FOOTNOTE } from '../data/rivalries.js';
@@ -8,6 +8,7 @@ import Stripe from './Stripe.jsx';
 import { useMatchDetail } from '../hooks/useMatchDetail.js';
 import { useHighlight } from '../hooks/useHighlight.js';
 import { buildShape, shirtColours } from '../utils/formation.js';
+import { useSwipeToClose } from '../hooks/useSwipeToClose.js';
 import {
   leagueTable, formForTeam, positionOf, reverseFixture, fixturePoints,
 } from '../utils/scoring.js';
@@ -43,6 +44,8 @@ const EVENT_MARK = { goal: '⚽', own: '⚽', yellow: '▮', red: '▮', sub: '�
 export default function MatchSheet({ fixture, fixtures, assignments, onClose, onSelectTeam }) {
   const [tab, setTab] = useState('report');
   const { detail, state } = useMatchDetail(fixture);
+  const sheetRef = useRef(null);
+  useSwipeToClose(sheetRef, onClose);
 
   const table = useMemo(
     () => leagueTable(fixtures, fixture.division),
@@ -84,9 +87,11 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
   const openTeam = (name) => { onClose(); if (onSelectTeam) onSelectTeam(name); };
 
   return (
-    <div className="mp">
+    <div className="mp" ref={sheetRef}>
       <div className="mp-bar">
-        <button className="mp-back" onClick={onClose}>← Back</button>
+        <button className="mp-back" onClick={onClose} aria-label="Back">
+          <span className="mp-back-chev" aria-hidden="true">‹</span> Back
+        </button>
         <span className="mp-comp">
           {fixture.division === 1 ? 'Premier League' : 'Championship'} · MW{fixture.matchday}
         </span>
