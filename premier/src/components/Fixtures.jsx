@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { getTeam } from '../data/england2027.js';
 import { fixturePoints, pointsHaul } from '../utils/scoring.js';
 import { getRivalry } from '../data/rivalries.js';
+import { clubLabel } from '../utils/teamMatch.js';
 import Stripe from './Stripe.jsx';
 import { fixturesLine } from '../utils/editorial.js';
 import { useHighlight } from '../hooks/useHighlight.js';
@@ -199,13 +200,13 @@ function MatchRow({ fixture: f, assignments, onOpen }) {
       <span className="fx-clubs">
         <span className="fx-club">
           <Stripe team={f.homeTeam.name} />
-          <span className={`fx-club-name ${done ? 'dim' : ''}`}>{h?.short || f.homeTeam.name}</span>
+          <span className={`fx-club-name ${done ? 'dim' : ''}`}>{h?.short || clubLabel(f.homeTeam.name)}</span>
           {ho && <span className="fx-owner">{ho}</span>}
           {ho && <Worth fixture={f} team={f.homeTeam.name} />}
         </span>
         <span className="fx-club">
           <Stripe team={f.awayTeam.name} />
-          <span className={`fx-club-name ${done ? 'dim' : ''}`}>{a?.short || f.awayTeam.name}</span>
+          <span className={`fx-club-name ${done ? 'dim' : ''}`}>{a?.short || clubLabel(f.awayTeam.name)}</span>
           {ao && <span className="fx-owner">{ao}</span>}
           {ao && <Worth fixture={f} team={f.awayTeam.name} />}
         </span>
@@ -234,7 +235,7 @@ function MatchRow({ fixture: f, assignments, onOpen }) {
         target="_blank"
         rel="noreferrer"
         title="Watch the highlights"
-        aria-label={`Highlights: ${h?.short || f.homeTeam.name} v ${a?.short || f.awayTeam.name}`}
+        aria-label={`Highlights: ${h?.short || clubLabel(f.homeTeam.name)} v ${a?.short || clubLabel(f.awayTeam.name)}`}
       >
         <span aria-hidden="true">▶</span>
       </a>

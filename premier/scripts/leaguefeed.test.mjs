@@ -9,6 +9,7 @@
 
 import { parseLeagueTxt } from '../src/utils/leagueFeed.js';
 import { TEAMS } from '../src/data/england2027.js';
+import { resolveClub, clubLabel } from '../src/utils/teamMatch.js';
 
 let pass = 0, fail = 0;
 const check = (name, cond, extra = '') => {
@@ -78,6 +79,25 @@ check('middle-score away clean', mid[0]?.awayTeam.name === 'Millwall FC', mid[0]
 console.log('— things that must not become fixtures —');
 check('no fixture without a matchday', parseLeagueTxt('  Sat Aug 15 2026\n    15:00  A FC v B FC\n', 1).length === 0);
 check('comments skipped', parseLeagueTxt('# Matches 380\n', 1).length === 0);
+
+console.log('— the name mapping —');
+// every club must resolve from its full name and its short name, and never
+// cross-match onto a different club (Man City v Man Utd, the three Cities)
+let nameFails = 0;
+for (const t of TEAMS) {
+  if (resolveClub(t.name) !== t.name) { nameFails += 1; console.log('  FAIL full:', t.name); }
+  if (resolveClub(t.short) !== t.name) { nameFails += 1; console.log('  FAIL short:', t.short); }
+  if (clubLabel(t.name) !== t.short) { nameFails += 1; console.log('  FAIL label:', t.name); }
+}
+check(`all ${TEAMS.length} clubs map both ways`, nameFails === 0, `${nameFails} failures`);
+
+// and a name that has picked up a score still finds its club
+check('rescues a glued-on score', clubLabel('Leeds United FC 0-1 (0-0)') === 'Leeds',
+  clubLabel('Leeds United FC 0-1 (0-0)'));
+check('rescues without half-time', clubLabel('Coventry City FC 3-0') === 'Coventry',
+  clubLabel('Coventry City FC 3-0'));
+// a club that genuinely is not ours still reads tidily rather than raw
+check('unknown club tidied', clubLabel('Barnsley FC') === 'Barnsley', clubLabel('Barnsley FC'));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

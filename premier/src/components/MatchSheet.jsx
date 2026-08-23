@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { getTeam } from '../data/england2027.js';
+import { clubLabel } from '../utils/teamMatch.js';
 import { phaseFor, midseasonRankFor } from '../utils/odds.js';
 import { getMatchup, FIRMS_FOOTNOTE } from '../data/rivalries.js';
 import { coloursFor } from '../data/colours.js';
@@ -107,7 +108,7 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
               onClick={() => openTeam(s.name)}
             >
               <Crest team={s.name} size={54} />
-              <span className="mp-club">{s.info?.short || s.name}</span>
+              <span className="mp-club">{s.info?.short || clubLabel(s.name)}</span>
               <span className="mp-owner">{s.owner || 'unclaimed'}</span>
             </button>
           ))}
@@ -194,7 +195,7 @@ function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played,
           return (
             <div className="mp-money-row" key={s.key}>
             <Stripe team={s.name} variant="tbl" />
-            <span className="mp-money-club">{s.info?.short || s.name}</span>
+            <span className="mp-money-club">{s.info?.short || clubLabel(s.name)}</span>
             <span className="mp-money-owner">{s.owner || '—'}</span>
             {banked ? (
               <span className={`mp-money-val ${p.outcome === 'L' ? 'nil' : ''}`}>
@@ -247,7 +248,7 @@ function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played,
           const form = formForTeam(s.name, fixtures);
           return (
             <div className="mp-form-col" key={s.key}>
-              <div className="mp-form-club">{s.info?.short || s.name}</div>
+              <div className="mp-form-club">{s.info?.short || clubLabel(s.name)}</div>
               <div className="mp-form-line">
                 <b>{row && row.p > 0 ? ordinal(pos) : '—'}</b> in the table
               </div>
@@ -360,7 +361,7 @@ function Lineups({ detail, state, sides, played }) {
         {[[home, sides[0]], [away, sides[1]]].map(([side, s], i) => (
           <div className="mp-xi-col" key={i}>
             <div className="mp-xi-head">
-              <span className="mp-xi-club">{s.info?.short || s.name}</span>
+              <span className="mp-xi-club">{s.info?.short || clubLabel(s.name)}</span>
               {side?.formation && <span className="mp-xi-form">{side.formation}</span>}
             </div>
             {(side?.xi || []).map((p) => (
@@ -408,8 +409,8 @@ function Stats({ detail, state, sides, played }) {
   return (
     <div className="mp-pane">
       <div className="mp-stat-key">
-        <span><i style={{ background: hc }} />{sides[0].info?.short || sides[0].name}</span>
-        <span><i style={{ background: ac }} />{sides[1].info?.short || sides[1].name}</span>
+        <span><i style={{ background: hc }} />{sides[0].info?.short || clubLabel(sides[0].name)}</span>
+        <span><i style={{ background: ac }} />{sides[1].info?.short || clubLabel(sides[1].name)}</span>
       </div>
       {detail.stats.map((r) => (
         <div className="mp-stat" key={r.label}>

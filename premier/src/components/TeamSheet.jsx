@@ -6,6 +6,7 @@ import {
   leagueTable, teamPoints, recentResults, nextFixtures,
   buildTables, buildComplete, overachieveForTeam,
 } from '../utils/scoring.js';
+import { clubLabel } from '../utils/teamMatch.js';
 import Stripe from './Stripe.jsx';
 import { useSwipeToClose } from '../hooks/useSwipeToClose.js';
 import { getProjection } from '../utils/projection.js';
@@ -188,7 +189,7 @@ export default function TeamSheet({ team, fixtures, assignments, onClose, onOpen
           >
             <span className="mini-pos">{r.pos}</span>
             <Stripe team={r.team} variant="tbl" />
-            <span className="mini-name">{getTeam(r.team)?.short || r.team}</span>
+            <span className="mini-name">{clubLabel(r.team)}</span>
             <span className="mini-num mini-p">{r.p}</span>
             <span className="mini-num mini-gd">{r.gd > 0 ? `+${r.gd}` : r.gd}</span>
             <span className="mini-pts">{r.pts}</span>

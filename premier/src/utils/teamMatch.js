@@ -76,8 +76,41 @@ export function resolveClub(externalName) {
   if (!n) return null;
   if (CANON.has(n)) return CANON.get(n);
   if (ALIASES[n]) return ALIASES[n];
-  // last resort: unique prefix match (e.g. "bournemouth" → "afcbournemouth")
-  const hits = [...CANON.keys()].filter((k) => k.includes(n) || n.includes(k));
-  if (hits.length === 1) return CANON.get(hits[0]);
-  return null;
+  // Last resort: containment either way, e.g. "bournemouth" → "afcbournemouth",
+  // or "leedsunitedfc0100" (a name that swallowed a score) → "leedsunited".
+  //
+  // Judged on how many distinct CLUBS match, not how many keys: both the full
+  // name and the short name of one club are in here, so "leeds" and
+  // "leedsunited" are two keys for the same side and must not read as an
+  // ambiguous match. Short fragments are ignored, since a three-letter needle
+  // finds half the league.
+  if (n.length < 4) return null;
+  const clubs = new Set(
+    [...CANON.keys()]
+      .filter((k) => k.length >= 4 && (k.includes(n) || n.includes(k)))
+      .map((k) => CANON.get(k))
+  );
+  return clubs.size === 1 ? [...clubs][0] : null;
+}
+
+// What to actually print for a club.
+//
+// Everything on screen should read "Coventry", not "Coventry City FC", and
+// certainly never a raw feed string. Every caller used to fall back to
+// whatever the feed said, so one bad line put "Coventry City FC 0-1 (0-0)"
+// straight into the UI. This resolves first, and if a club really is unknown
+// it still tidies the name rather than printing it raw.
+export function clubLabel(name, teams) {
+  if (!name) return '';
+  const canon = resolveClub(name);
+  const list = teams || TEAMS;
+  if (canon) {
+    const t = list.find((x) => x.name === canon);
+    if (t) return t.short;
+  }
+  return String(name)
+    .replace(/\s+\d+\s*-\s*\d+(\s*\(\s*\d+\s*-\s*\d+\s*\))?\s*$/, '')  // a score that got glued on
+    .replace(/^(a\.?f\.?c\.?)\s+/i, '')
+    .replace(/\s+(a\.?f\.?c\.?|f\.?c\.?)$/i, '')
+    .trim() || String(name);
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getTeam } from '../data/england2027.js';
+import { clubLabel } from '../utils/teamMatch.js';
 
 // Highlights for a finished match, resolved through the worker.
 //
@@ -29,8 +29,8 @@ async function resolve(cacheKey, home, away, hs, as_) {
   const params = new URLSearchParams({
     home,
     away,
-    homeShort: getTeam(home)?.short || home,
-    awayShort: getTeam(away)?.short || away,
+    homeShort: clubLabel(home),
+    awayShort: clubLabel(away),
   });
   if (hs != null && as_ != null) { params.set('hs', String(hs)); params.set('as', String(as_)); }
 

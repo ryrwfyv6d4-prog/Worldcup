@@ -1,9 +1,10 @@
 // The editorial lines under each masthead. Generated from the live standings so
 // they stay true — never hard-coded copy.
 import { getTeam } from '../data/england2027.js';
+import { clubLabel } from './teamMatch.js';
 
 function clubList(teams, n = 2) {
-  return teams.slice(0, n).map((t) => getTeam(t)?.short || t).join(' and ');
+  return teams.slice(0, n).map((t) => clubLabel(t)).join(' and ');
 }
 
 // Standings strapline: leader + gap, and whoever is propping it up.

@@ -4,6 +4,8 @@
 // needs to read the same fixtures the app does, and importing a React hook to
 // get at a text parser would be daft.
 
+import { resolveClub } from './teamMatch.js';
+
 const MONTHS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
 
 // UK offset: BST (+1) roughly late Mar → late Oct, else GMT. Good enough for
@@ -76,6 +78,14 @@ export function parseLeagueTxt(txt, div) {
       home = m2[1].trim(); hs = parseInt(m2[2], 10); as = parseInt(m2[3], 10); away = m2[4].trim();
     }
     if (!home || !away) continue;
+
+    // Everything downstream keys off the club name — owner, crest, colours,
+    // pricing, the lot — so pin both sides to a canonical name here rather
+    // than trusting the feed's spelling. This also recovers a name that has
+    // picked up something it should not have: the resolver still finds Leeds
+    // in "Leeds United FC 0-1 (0-0)".
+    home = resolveClub(home) || home;
+    away = resolveClub(away) || away;
 
     let utcDate = null;
     if (date.y != null) {

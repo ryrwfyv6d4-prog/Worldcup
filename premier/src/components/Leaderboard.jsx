@@ -3,6 +3,7 @@ import { buildLadder, formForTeam, feedEvents } from '../utils/scoring.js';
 import { getProjection } from '../utils/projection.js';
 import { MEDALS, SCORING, ENTRY_FEE, PAYOUTS, getTeam } from '../data/england2027.js';
 import { matchValue, priceRangeFor, SEASON_ROUNDS } from '../utils/odds.js';
+import { clubLabel } from '../utils/teamMatch.js';
 import { RowStripes } from './Stripe.jsx';
 import { tableLine, lastPlaceJibe } from '../utils/editorial.js';
 
@@ -152,7 +153,7 @@ export default function Leaderboard({
                 <div className="lb-info">
                   <div className="lb-name">{row.name}{whoAmI === row.name ? ' ·' : ''}</div>
                   <div className="lb-clubs">
-                    {row.teams.map((t) => getTeam(t)?.short || t).join(' · ')}
+                    {row.teams.map((t) => clubLabel(t)).join(' · ')}
                   </div>
                   {isLeader && form.length > 0 && (
                     <div className="form-squares">
