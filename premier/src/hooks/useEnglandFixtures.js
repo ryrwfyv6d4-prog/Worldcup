@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { resolveClub } from '../utils/teamMatch.js';
+import { TEAMS } from '../data/england2027.js';
 import { computeMidseasonRanks, setMidseasonRanks } from '../utils/odds.js';
 import { parseLeagueTxt } from '../utils/leagueFeed.js';
 
@@ -17,7 +18,11 @@ const ESPN_LEAGUES = [
 ];
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
 
-const CACHE_KEY = 'epl_fixtures_cache_v2';
+// Bumped whenever the parser changes shape. Fixtures are cached ALREADY
+// PARSED, so a parser fix does nothing for anyone still holding a good-looking
+// cache entry written by the old one — which is exactly what happened when the
+// away team was coming through with the score stuck to it.
+const CACHE_KEY = 'epl_fixtures_cache_v3';
 const CACHE_TTL = 30 * 60 * 1000;
 
 // Merge ESPN live/final data over the base schedule. ESPN only ever upgrades a
@@ -52,12 +57,36 @@ function mergeEspn(base, espnGames) {
   });
 }
 
+// Cached fixtures are only worth keeping if every club in them is still a club
+// we recognise. Bumping the key fixes today's stale data; this makes any future
+// bad parse throw itself away on the next read instead of sitting on someone's
+// phone looking plausible.
+const KNOWN_CLUBS = new Set(TEAMS.map((t) => t.name));
+
+function cacheLooksSane(fixtures) {
+  if (!Array.isArray(fixtures) || !fixtures.length) return false;
+  for (const f of fixtures) {
+    const h = f?.homeTeam?.name, a = f?.awayTeam?.name;
+    // Deliberately an exact check rather than resolveClub: the parser pins
+    // every name to canonical before caching, so anything that is merely
+    // resolvable — "Coventry City FC 3-0 (2-0)" still finds Coventry — came
+    // from an older parser and the whole entry has to go.
+    if (!KNOWN_CLUBS.has(h) || !KNOWN_CLUBS.has(a)) return false;
+  }
+  return true;
+}
+
 function readCache() {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const { ts, data } = JSON.parse(raw);
-    if (Date.now() - ts < CACHE_TTL) return { ...data, ts };
+    if (Date.now() - ts >= CACHE_TTL) return null;
+    if (!cacheLooksSane(data && data.fixtures)) {
+      localStorage.removeItem(CACHE_KEY);
+      return null;
+    }
+    return { ...data, ts };
   } catch { /* ignore */ }
   return null;
 }
