@@ -42,20 +42,40 @@ export function parseLeagueTxt(txt, div) {
       continue;
     }
 
-    // Match line: optional "HH:MM", then "A v B" or "A 2-1 (1-0) B"
+    // Match line: optional "HH:MM", then the teams and, once played, a score.
+    //
+    // openfootball puts the score at the END of the line, after the away side:
+    //     20:00  Arsenal FC   v Coventry City FC   3-0 (2-0)
+    // so the away name has to have it peeled off. Getting this wrong is quiet
+    // and nasty: the club name silently becomes "Coventry City FC 3-0 (2-0)",
+    // which matches nothing, and the match reads as still to be played.
     const ml = line.match(/^\s{4,}(?:(\d{1,2}):(\d{2})\s+)?(.+)$/);
     if (!ml || !date || !matchday) continue;
     const body = ml[3].trim();
 
+    // "3-0", optionally followed by the half time "(2-0)", at the end
+    const TRAILING_SCORE = /^(.*?)\s+(\d+)\s*-\s*(\d+)(?:\s*\(\s*\d+\s*-\s*\d+\s*\))?\s*$/;
+
     let home = null, away = null, hs = null, as = null;
-    let m2 = body.match(/^(.+?)\s+v\s+(.+)$/);
+    let m2 = body.match(/^(.+?)\s+v\.?\s+(.+)$/i);
     if (m2) {
-      home = m2[1].trim(); away = m2[2].trim();
+      home = m2[1].trim();
+      const rest = m2[2].trim();
+      const sc = rest.match(TRAILING_SCORE);
+      if (sc) {
+        away = sc[1].trim();
+        hs = parseInt(sc[2], 10);
+        as = parseInt(sc[3], 10);
+      } else {
+        away = rest;
+      }
     } else {
+      // Other openfootball files put the score in the middle: "A 2-1 (1-0) B"
       m2 = body.match(/^(.+?)\s+(\d+)-(\d+)(?:\s+\(\d+-\d+\))?\s+(.+)$/);
       if (!m2) continue;
       home = m2[1].trim(); hs = parseInt(m2[2], 10); as = parseInt(m2[3], 10); away = m2[4].trim();
     }
+    if (!home || !away) continue;
 
     let utcDate = null;
     if (date.y != null) {
