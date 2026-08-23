@@ -28,8 +28,11 @@ function Forecast({ o, n }) {
           <span className="forecast-val">{b.v < 0.005 ? '<1%' : `${pct(b.v)}%`}</span>
         </div>
       ))}
+      {/* First, second and last are not an arbitrary three — they are the
+          only places that pay, so this is really "am I in the money". */}
       <div className="forecast-note">
-        Typical finish {ordinalOf(o.medianRank)} of {n}, over 800 simulated seasons.
+        The three places that pay. Typical finish {ordinalOf(o.medianRank)} of {n},
+        over 800 simulated seasons.
       </div>
     </div>
   );
@@ -168,12 +171,19 @@ export default function Leaderboard({
                 </div>
                 <div className="lb-right">
                   <div className="lb-pts">{row.total}</div>
+                  {/* "−5" read as a negative score. Say what it is. */}
                   <div className="lb-ptslabel">
-                    {isLeader ? 'points' : `−${gap}`}
+                    {isLeader ? 'points' : `${gap} behind`}
                   </div>
-                  {o.pFirst != null && (
-                    <div className="lb-odds" title="Chance of finishing first">
-                      {o.pFirst >= 0.005 ? `${Math.round(o.pFirst * 100)}%` : '<1%'} to win
+                  {/* Where this ends up, not the chance of winning. The chance
+                      inverts against the current order — a shorter total with
+                      better clubs is the likelier winner — which is true but
+                      reads as a mistake sitting under the points with nothing
+                      to explain it. A projected total says the same thing and
+                      cannot contradict itself. The full odds are a tap away. */}
+                  {o.projected != null && (
+                    <div className="lb-odds" title="Projected total by the end of the season">
+                      on for {o.projected}
                     </div>
                   )}
                 </div>

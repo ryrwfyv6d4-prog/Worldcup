@@ -56,6 +56,17 @@ jobs:
         working-directory: premier
         run: npm ci
 
+      - name: Check the fixture parser against the live feed
+        working-directory: premier
+        run: node scripts/check-fixtures.mjs
+        continue-on-error: true
+
+      - name: Unit tests
+        working-directory: premier
+        run: |
+          node scripts/leaguefeed.test.mjs
+          node scripts/formation.test.mjs
+
       - name: Check live-score feed (diagnostic only, never blocks)
         working-directory: premier
         run: node scripts/check-feeds.mjs

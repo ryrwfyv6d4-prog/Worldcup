@@ -1,9 +1,13 @@
 name: Check feeds
 
-# Manual diagnostic. The dev container has no outbound access to ESPN, so this
-# is how the live-score wiring gets verified.
+# The dev container has no outbound access to ESPN, so this is how the live
+# feeds get verified. Runs every morning as well as on demand: the fixture
+# parser broke silently once because a format change produced output that was
+# well-formed and wrong, and nothing was watching for it.
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 19 * * *'   # ~5am Melbourne, before anyone opens the app
 
 jobs:
   check:
@@ -13,6 +17,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      # The one that matters: runs the real parser over the real feed and
+      # asserts what a person would notice. Fails the job.
+      - name: openfootball fixture parser
+        working-directory: premier
+        run: node scripts/check-fixtures.mjs
 
       - name: ESPN live-score feed
         working-directory: premier
