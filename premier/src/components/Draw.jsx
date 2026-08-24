@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { buildPots, DEFAULT_PLAYERS, TEAMS, getTeam } from '../data/england2027.js';
+import { clubLabel } from '../utils/teamMatch.js';
 
 function shuffle(arr) {
   const a = [...arr];
@@ -172,7 +173,8 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
                   const info = getTeam(t);
                   return (
                     <span key={t} className="chip chip-team">
-                      {info.short} <em>{info.codename}</em>
+                      {info?.short || clubLabel(t)}
+                      {info?.codename && <em>{info.codename}</em>}
                     </span>
                   );
                 })}
@@ -187,13 +189,82 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
               </div>
             </div>
           )}
+          <Swap assignments={assignments} setAssignments={setAssignments} />
+
           <div className="btn-row">
             {!drawLocked && <button className="btn btn-primary" onClick={() => setDrawLocked(true)}>Lock it in</button>}
             {!drawLocked && <button className="btn btn-danger" onClick={reset}>Scrap & redraw</button>}
-            {drawLocked && <p className="muted">The draw is locked.</p>}
+            {drawLocked && <p className="muted">The draw is locked. Swaps above still work.</p>}
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// Trade two clubs between two players.
+//
+// The draw is meant to be final, and mostly is — but people do swap on the
+// night, and a locked draw with no way to correct it means the app stops
+// matching reality and every number after it is quietly wrong. Points follow
+// the club, so a swap moves everything already banked with it.
+function Swap({ assignments, setAssignments }) {
+  const owned = Object.entries(assignments)
+    .flatMap(([person, teams]) => (teams || []).filter(Boolean).map((team) => ({ person, team })));
+
+  const [a, setA] = useState('');
+  const [b, setB] = useState('');
+  const [done, setDone] = useState(null);
+
+  const one = owned.find((o) => o.team === a);
+  const two = owned.find((o) => o.team === b);
+  const ready = one && two && one.person !== two.person;
+
+  const doSwap = () => {
+    if (!ready) return;
+    const next = {};
+    for (const [person, teams] of Object.entries(assignments)) {
+      next[person] = (teams || []).map((t) => {
+        if (person === one.person && t === one.team) return two.team;
+        if (person === two.person && t === two.team) return one.team;
+        return t;
+      });
+    }
+    setAssignments(next);
+    setDone(`${getTeam(one.team)?.short || one.team} to ${two.person}, `
+      + `${getTeam(two.team)?.short || two.team} to ${one.person}.`);
+    setA(''); setB('');
+  };
+
+  const options = (exclude) => owned
+    .filter((o) => !exclude || o.person !== exclude)
+    .map((o) => (
+      <option key={o.team} value={o.team}>
+        {getTeam(o.team)?.short || o.team} — {o.person}
+      </option>
+    ));
+
+  return (
+    <div className="card">
+      <h3>Swap two clubs</h3>
+      <p className="muted small">
+        Trades a club between two people. Everything already banked moves with it.
+      </p>
+      <div className="swap-row">
+        <select className="swap-pick" value={a} onChange={(e) => { setA(e.target.value); setDone(null); }}>
+          <option value="">Choose a club…</option>
+          {options(null)}
+        </select>
+        <span className="swap-for">for</span>
+        <select className="swap-pick" value={b} onChange={(e) => { setB(e.target.value); setDone(null); }}>
+          <option value="">Choose a club…</option>
+          {options(one ? one.person : null)}
+        </select>
+      </div>
+      <div className="btn-row">
+        <button className="btn btn-primary" onClick={doSwap} disabled={!ready}>Swap them</button>
+      </div>
+      {done && <p className="muted small">{done}</p>}
     </div>
   );
 }

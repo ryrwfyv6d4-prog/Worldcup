@@ -2,6 +2,13 @@ import { useMemo } from 'react';
 import { getTeam } from '../data/england2027.js';
 import { valueForFixture } from '../utils/odds.js';
 
+// Never "3th": the suffix depends on the number, not on the common case
+function ordinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+
 // Results strip under the masthead. Score lines in paper, point gains in gold,
 // the odd jibe in grey. The item list is rendered TWICE so the -50% marquee
 // loops seamlessly.
@@ -49,7 +56,7 @@ function buildItems(fixtures, assignments, ladder) {
   // a closing jibe about whoever is propping the table up
   if (ladder && ladder.length > 2) {
     const last = ladder[ladder.length - 1];
-    items.push({ kind: 'jibe', text: `${last.name} still ${ladder.length}th` });
+    items.push({ kind: 'jibe', text: `${last.name} still ${ordinal(ladder.length)}` });
   }
   return items;
 }
