@@ -3,11 +3,17 @@ import { clubLabel } from '../utils/teamMatch.js';
 
 // Highlights for a finished match, resolved through the worker.
 //
-// The worker does the YouTube lookup and shares one R2-cached answer across
-// everyone, so the whole shed costs about one API call per match rather than
-// one per person per open. No key is shipped in this bundle — if the worker is
-// unreachable there is simply no button, which is the right failure: a dead
-// link is worse than no link.
+// Stan Sport only. They hold the Premier League here and title every upload the
+// same way, so a search of their channel either finds the match or there is no
+// video worth linking. They do not carry the Championship, so those games have
+// no button — an open search would find them, but it would also find
+// re-uploads and compilations, and a button that might send you anywhere is
+// worse than no button.
+//
+// The worker does the lookup and shares one R2-cached answer across everyone,
+// so the whole shed costs about one API call per match rather than one per
+// person per open. No key is shipped in this bundle — if the worker is
+// unreachable there is simply no button, same failure, same reason.
 const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
 const CACHE_KEY = 'epl_hl_v1';
 

@@ -267,10 +267,12 @@ export default {
         const cached = await env.WALL.get(cacheKey);
         if (cached) {
           const c = JSON.parse(await cached.text());
-          if (c.videoId) return json({ videoId: c.videoId, source: c.source || 'cache' });
+          // Anything cached before this was Stan-only could have come from the
+          // open search, so only a hit we know is Stan's is worth serving.
+          if (c.videoId && c.source === 'stan') return json({ videoId: c.videoId, source: 'stan' });
           // Negative result: a match may simply not be uploaded yet, so retry
           // after 30 minutes rather than caching "no" for the season.
-          if (Date.now() - (c.ts || 0) < 30 * 60 * 1000) return json({ videoId: null });
+          if (!c.videoId && Date.now() - (c.ts || 0) < 30 * 60 * 1000) return json({ videoId: null });
         }
 
         const keys = [env.YOUTUBE_API_KEY, env.YOUTUBE_API_KEY_BACKUP].filter(Boolean);
@@ -320,12 +322,15 @@ export default {
 
         const query = `${homeShort} v ${awayShort} highlights`;
 
+        // Always channel-scoped. Taking the channel as a required argument is
+        // what stops an open search creeping back in later.
         async function search(apiKey, channelId) {
+          if (!channelId) return null;
           try {
             const base = 'https://www.googleapis.com/youtube/v3/search?part=snippet&type=video'
               + `&q=${encodeURIComponent(query)}&maxResults=10&order=relevance`
               + '&publishedAfter=2026-07-01T00%3A00%3A00Z';
-            const r = await fetch(base + (channelId ? `&channelId=${channelId}` : '') + `&key=${apiKey}`);
+            const r = await fetch(`${base}&channelId=${channelId}&key=${apiKey}`);
             const j = await r.json();
             if (j.error?.errors?.[0]?.reason === 'quotaExceeded') return 'QUOTA_EXCEEDED';
             const m = (j.items || []).find((i) => titleFits(i.snippet?.title || ''));
@@ -333,19 +338,18 @@ export default {
           } catch { return null; }
         }
 
+        // Stan Sport or nothing. An open search does find Championship
+        // highlights, but it also finds re-uploads, compilations and other
+        // people's channels — and a button that might send you anywhere is
+        // worse than no button. So the Championship simply has none.
         let videoId = null;
-        let source = 'stan';
+        const source = 'stan';
         for (const apiKey of keys) {
           const chan = await stanChannelId(apiKey);
-          if (chan) {
-            const hit2 = await search(apiKey, chan);
-            if (hit2 === 'QUOTA_EXCEEDED') continue;
-            if (hit2) { videoId = hit2; break; }
-          }
-          // Championship, or a Premier League match Stan have not posted
-          const open = await search(apiKey, null);
-          if (open === 'QUOTA_EXCEEDED') continue;
-          if (open) { videoId = open; source = 'search'; break; }
+          if (!chan) continue;
+          const hit2 = await search(apiKey, chan);
+          if (hit2 === 'QUOTA_EXCEEDED') continue;
+          if (hit2) { videoId = hit2; }
           break;
         }
 
