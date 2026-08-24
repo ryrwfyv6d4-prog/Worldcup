@@ -15,21 +15,37 @@ import { clubLabel } from '../utils/teamMatch.js';
 // person per open. No key is shipped in this bundle — if the worker is
 // unreachable there is simply no button, same failure, same reason.
 const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
-const CACHE_KEY = 'epl_hl_v1';
+// v2 because v1 stored a bare video id with no record of where it came from,
+// so a match resolved before this was Stan-only kept serving whatever the old
+// open search had found and never asked again. Entries now carry their source
+// and only Stan's are served.
+const CACHE_KEY = 'epl_hl_v2';
 
 // One in-flight request per match, however many rows ask for it at once
 const inFlight = new Map();
 
 function readCache() {
-  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch { return {}; }
+  try {
+    localStorage.removeItem('epl_hl_v1');   // dead since the Stan-only change
+    return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+  } catch { return {}; }
 }
 function writeCache(obj) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(obj)); } catch { /* private mode */ }
 }
 
+// Only a hit we know came from Stan Sport counts. Anything else is treated as
+// a miss and re-resolved.
+function cachedId(cache, key) {
+  const hit = cache[key];
+  if (!hit || typeof hit !== 'object') return null;
+  return hit.source === 'stan' && hit.videoId ? hit.videoId : null;
+}
+
 async function resolve(cacheKey, home, away, hs, as_) {
   const cache = readCache();
-  if (cache[cacheKey]) return cache[cacheKey];
+  const hit = cachedId(cache, cacheKey);
+  if (hit) return hit;
   if (inFlight.has(cacheKey)) return inFlight.get(cacheKey);
 
   const params = new URLSearchParams({
@@ -44,9 +60,9 @@ async function resolve(cacheKey, home, away, hs, as_) {
     try {
       const r = await fetch(`${WORKER_URL}/epl/highlight?${params}`);
       const j = await r.json();
-      if (j?.videoId) {
+      if (j?.videoId && j.source === 'stan') {
         const c = readCache();
-        c[cacheKey] = j.videoId;
+        c[cacheKey] = { videoId: j.videoId, source: j.source };
         writeCache(c);
         return j.videoId;
       }
@@ -64,12 +80,12 @@ export function useHighlight(home, away, enabled, homeScore, awayScore) {
   const hasScore = homeScore != null && awayScore != null;
   const cacheKey = hasScore ? `${home}|${away}|${homeScore}-${awayScore}` : `${home}|${away}`;
 
-  const [videoId, setVideoId] = useState(() => (enabled ? readCache()[cacheKey] || null : null));
+  const [videoId, setVideoId] = useState(() => (enabled ? cachedId(readCache(), cacheKey) : null));
 
   useEffect(() => {
     if (!enabled || !WORKER_URL || !home || !away) return undefined;
     let alive = true;
-    setVideoId(readCache()[cacheKey] || null);
+    setVideoId(cachedId(readCache(), cacheKey));
     resolve(cacheKey, home, away, homeScore, awayScore).then((id) => {
       if (alive && id) setVideoId(id);
     });
