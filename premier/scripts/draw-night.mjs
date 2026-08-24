@@ -109,8 +109,33 @@ function existingPicks() {
   return out;
 }
 
-const redraw = args.includes('--redraw') || seed != null || showOnly;
-const kept = redraw ? null : existingPicks();
+// --picks <file> restores a draw from a JSON file of { player: [clubs] }.
+//
+// The page holds the only copy of a draw once it is baked, so without this the
+// only way back to a draw you already published is to redraw and hope. It is
+// also how a correction gets in: a trade agreed on the night is a fact about
+// the draw, not a reason to run the whole thing again.
+function loadPicks() {
+  const i = args.indexOf('--picks');
+  if (i === -1) return null;
+  const path = args[i + 1];
+  if (!path) throw new Error('--picks needs a file');
+  const raw = JSON.parse(readFileSync(path, 'utf8'));
+  const names = Object.keys(raw);
+  if (names.length !== PLAYERS.length || PLAYERS.some((n) => !raw[n])) {
+    throw new Error(`--picks must name all ${PLAYERS.length} players: ${PLAYERS.join(', ')}`);
+  }
+  const flat = Object.values(raw).flat();
+  const known = new Set(TEAMS.map((t) => t.name));
+  const strays = flat.filter((c) => !known.has(c));
+  if (strays.length) throw new Error(`--picks names clubs we do not have: ${strays.join(', ')}`);
+  if (new Set(flat).size !== flat.length) throw new Error('--picks hands the same club to two people');
+  return raw;
+}
+
+const restored = loadPicks();
+const redraw = !restored && (args.includes('--redraw') || seed != null || showOnly);
+const kept = restored || (redraw ? null : existingPicks());
 
 // ── Running order ───────────────────────────────────────────────────────────
 // The order people get called up on the night, which is a separate thing from
@@ -324,9 +349,11 @@ const data = {
 };
 
 // ── Report ──────────────────────────────────────────────────────────────────
-console.log(kept
-  ? `Keeping the draw already in the page (--redraw to pull a new one)\n`
-  : `Draw for ${PLAYERS.length} players${seed == null ? '' : ` (seed ${seed})`}\n`);
+console.log(restored
+  ? `Restored the draw from ${args[args.indexOf('--picks') + 1]}\n`
+  : kept
+    ? `Keeping the draw already in the page (--redraw to pull a new one)\n`
+    : `Draw for ${PLAYERS.length} players${seed == null ? '' : ` (seed ${seed})`}\n`);
 runOrder.forEach((name, i) => {
   const line = picks[name].map((c, j) => `T${j + 1} ${short.get(c)}`).join('  ·  ');
   console.log(`  ${String(i + 1).padStart(2)}. ${name.padEnd(10)} ${line}`);
@@ -353,7 +380,7 @@ console.log(reordered
     ? '  running order: reordered — the draw itself is untouched, everyone keeps the same four clubs'
     : '  running order: not the roster order (--no-order to reset it)')
   : '  running order: as drawn (--reorder to roll a new one)');
-if (!kept) {
+if (!kept && !restored) {
   console.log('\n  THIS IS A NEW DRAW. Everyone\'s clubs have changed.');
   console.log('  Whatever the app is holding is now out of date — press Publish on the night,');
   console.log('  or re-run the draw page and publish, before anyone reads the old one.');
