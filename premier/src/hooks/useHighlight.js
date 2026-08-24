@@ -19,7 +19,7 @@ const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
 // so a match resolved before this was Stan-only kept serving whatever the old
 // open search had found and never asked again. Entries now carry their source
 // and only Stan's are served.
-const CACHE_KEY = 'epl_hl_v2';
+const CACHE_KEY = 'epl_hl_v3';
 
 // One in-flight request per match, however many rows ask for it at once
 const inFlight = new Map();
@@ -27,6 +27,7 @@ const inFlight = new Map();
 function readCache() {
   try {
     localStorage.removeItem('epl_hl_v1');   // dead since the Stan-only change
+    localStorage.removeItem('epl_hl_v2');   // held the wrong match for some fixtures
     return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
   } catch { return {}; }
 }

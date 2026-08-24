@@ -259,10 +259,21 @@ export default {
         const as_ = url.searchParams.get('as');
         if (!home || !away) return json({ videoId: null });
 
+        // Pinned by hand when the search gets it wrong or Stan title a match
+        // in some new way. Keyed on the feed's own club names.
+        const OVERRIDES = {
+          'Fulham FC|Chelsea FC': '5POe49wqO2I',
+        };
+        const pinned = OVERRIDES[`${home}|${away}`];
+        if (pinned) return json({ videoId: pinned, source: 'stan' });
+
+        // v2: v1 cached the wrong match for some fixtures, and cached it as
+        // Stan's, because the wrong video genuinely was on Stan's channel.
+        // Nothing about the entry marks it as bad, so the whole generation goes.
         const hasScore = hs != null && hs !== '' && as_ != null && as_ !== '';
         const cacheKey = hasScore
-          ? `epl-highlights/v1/${home}|${away}|${hs}-${as_}.json`
-          : `epl-highlights/v1/${home}|${away}.json`;
+          ? `epl-highlights/v2/${home}|${away}|${hs}-${as_}.json`
+          : `epl-highlights/v2/${home}|${away}.json`;
 
         const cached = await env.WALL.get(cacheKey);
         if (cached) {
@@ -287,18 +298,41 @@ export default {
           .replace(/[^a-z0-9]+/g, ' ')
           .trim();
 
-        // A club counts as present if the title carries either the name the
-        // feed uses or the short name the app shows. Between them they cover
-        // both "Tottenham Hotspur" and "Spurs" without a hand-kept alias list.
-        const clubInTitle = (full, short, title) => {
-          const t = norm(title);
-          return t.includes(norm(full)) || t.includes(norm(short));
+        // Match Stan's actual title shape rather than hunting for two names.
+        //
+        //   Brentford v Tottenham Hotspur | Highlights | Premier League 2026/27
+        //
+        // The old test only asked whether both clubs appeared somewhere in the
+        // title, in any order, and took the first of ten results that passed.
+        // That accepts the reverse fixture, a matchweek round-up, a season
+        // compilation, or anything else that happens to name both sides — which
+        // is how the wrong game came back. Reading the fixture out of the title
+        // and checking each club against its own side makes the order matter
+        // and leaves nothing to relevance ranking.
+        //
+        // Within a side the comparison stays forgiving, because the slot is
+        // already pinned: "Nott'm Forest" should still match Nottingham Forest.
+        const sameClub = (segment, full, short) => {
+          const s = norm(segment);
+          if (!s) return false;
+          for (const name of [norm(full), norm(short)]) {
+            if (!name) continue;
+            if (s === name) return true;
+            if (name.length >= 4 && s.includes(name)) return true;
+            if (s.length >= 4 && name.includes(s)) return true;
+          }
+          return false;
         };
+
         const titleFits = (title) => {
-          const t = norm(title);
-          if (!t.includes('highlight')) return false;
-          if (!t.includes('2026') && !t.includes('2027')) return false;
-          return clubInTitle(home, homeShort, title) && clubInTitle(away, awayShort, title);
+          const parts = String(title || '').split('|');
+          if (parts.length < 2) return false;                       // not their format
+          const rest = norm(parts.slice(1).join(' '));
+          if (!rest.includes('highlight')) return false;            // preview, reaction, etc
+          const fixture = parts[0].match(/^\s*(.+?)\s+v\.?\s+(.+?)\s*$/i);
+          if (!fixture) return false;
+          return sameClub(fixture[1], home, homeShort)
+              && sameClub(fixture[2], away, awayShort);
         };
 
         // Resolve the handle to a channel id once, then keep it forever
