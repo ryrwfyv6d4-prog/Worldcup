@@ -56,6 +56,13 @@ jobs:
         working-directory: premier
         run: npm ci
 
+      # One-off: TJ and Phil traded Arsenal and Man City. Idempotent, so safe
+      # on every deploy; remove once the logs show it applied.
+      - name: Apply pending state fixes
+        working-directory: premier
+        run: node scripts/apply-state-fix.mjs
+        continue-on-error: true
+
       - name: Check the fixture parser against the live feed
         working-directory: premier
         run: node scripts/check-fixtures.mjs
