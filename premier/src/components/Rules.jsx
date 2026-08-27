@@ -1,3 +1,4 @@
+import { RUNS as PROJECTION_RUNS } from '../utils/projection.js';
 import { MEDALS, ENTRY_FEE, PAYOUTS, SEASON, SCORING, TEAMS, buildPots } from '../data/england2027.js';
 import { matchValue } from '../utils/odds.js';
 
@@ -17,7 +18,8 @@ export default function Rules({ playerCount }) {
         <ul className="rule-list">
           <li>${ENTRY_FEE} a head. {count} players means <b>${pot}</b> in the tin.</li>
           <li>Every player gets <b>{plan.perPlayer} club{plan.perPlayer === 1 ? '' : 's'}</b> — one from each tier — across the Premier League and the Championship, {SEASON}.</li>
-          <li>The draw is blind and final. No trades, no appeals.</li>
+          <li>The draw is blind and final. No appeals. A trade only counts if the
+            shed agrees it and someone records it in Shed → Draw → Swap two clubs.</li>
           <li>No pay, no payout. Same rule as always.</li>
         </ul>
       </div>
@@ -110,7 +112,7 @@ export default function Rules({ playerCount }) {
         ))}
         <p className="muted small" style={{ marginTop: 8, marginBottom: 0 }}>
           League honours land automatically on the final day. The play-off final and the
-          cups aren't in the data feed, so someone ticks those in HQ → Honours.
+          cups aren't in the data feed, so someone ticks those in Shed → Honours.
         </p>
       </div>
 
@@ -145,8 +147,7 @@ export default function Rules({ playerCount }) {
         <h3 className="section-title">How the numbers work</h3>
         <ul className="rule-list">
           <li><b>Live scores</b> come from ESPN during matches; settled results come from the openfootball league feed.</li>
-          <li><b>Projected</b> is the middle outcome of 300 simulated rest-of-seasons, using each club's odds rating and its actual form so far.</li>
-          <li><b>Out of it</b> means even a top-5% run leaves you short of the leader's expected finish. It is a projection, not a mathematical certainty.</li>
+          <li><b>Projected</b> is the middle outcome of {PROJECTION_RUNS} simulated rest-of-seasons, using each club's odds rating and its actual form so far.</li>
           <li><b>Tours</b> (the monthly prize) are a side pot for pride — they don't add to your ladder total.</li>
         </ul>
       </div>

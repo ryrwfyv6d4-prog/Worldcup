@@ -8,12 +8,19 @@ import { resolveClub } from './teamMatch.js';
 
 const MONTHS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
 
-// UK offset: BST (+1) roughly late Mar → late Oct, else GMT. Good enough for
-// kick-off display; last-Sunday edge days may drift an hour.
+// BST runs from the last Sunday in March to the last Sunday in October. The
+// old version used a fixed 25th, which is wrong in any year where the changeover
+// falls either side of it — 2026 ends BST on the 25th itself, and 2027 starts it
+// on the 28th, so every kick-off on those weekends was stored an hour out.
+function lastSundayOf(year, monthIdx) {
+  const d = new Date(Date.UTC(year, monthIdx + 1, 0));      // last day of month
+  return d.getUTCDate() - d.getUTCDay();                    // back up to Sunday
+}
+
 function ukOffsetHours(y, monthIdx, day) {
-  if (monthIdx > 2 && monthIdx < 9) return 1; // Apr–Sep
-  if (monthIdx === 2) return day >= 25 ? 1 : 0; // late March
-  if (monthIdx === 9) return day <= 25 ? 1 : 0; // most of October
+  if (monthIdx > 2 && monthIdx < 9) return 1;                // Apr–Sep
+  if (monthIdx === 2) return day >= lastSundayOf(y, 2) ? 1 : 0;
+  if (monthIdx === 9) return day < lastSundayOf(y, 9) ? 1 : 0;
   return 0;
 }
 

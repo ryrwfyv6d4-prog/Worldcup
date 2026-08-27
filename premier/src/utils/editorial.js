@@ -11,7 +11,11 @@ function clubList(teams, n = 2) {
 export function tableLine(ladder, anyResults) {
   if (!ladder.length) return 'Nobody drawn yet. The season starts without you.';
   if (!anyResults) {
-    return `${ladder.length} in, four clubs each, not a ball kicked. Everyone is joint top and everyone is wrong.`;
+    // The squad size comes from the headcount, so "four" was a guess that goes
+    // wrong the moment twelve turn up and everyone gets three.
+    const each = ladder[0] && ladder[0].teams ? ladder[0].teams.length : 4;
+    return `${ladder.length} in, ${each} club${each === 1 ? '' : 's'} each, not a ball kicked. `
+      + 'Everyone is joint top and everyone is wrong.';
   }
   const top = ladder[0];
   const second = ladder[1];
@@ -38,11 +42,17 @@ export function lastPlaceJibe(row) {
 }
 
 // Fixtures closing line — reacts to what is actually on
-export function fixturesLine(matches, mineCount) {
+export function fixturesLine(matches, mineCount, hasClubs = true) {
   if (!matches.length) return 'Nothing on. Enjoy the weekend off.';
   const live = matches.filter((m) => m.status === 'IN_PLAY').length;
   if (live) return `${live} still running. Nobody is safe until the whistle.`;
-  if (mineCount === 0) return 'None of yours this week. A rare weekend of watching in peace.';
+  // Someone who tapped "just watching" has no clubs at all, and being told
+  // none of theirs are out reads as a bug rather than a joke.
+  if (mineCount === 0) {
+    return hasClubs
+      ? 'None of yours this week. A rare weekend of watching in peace.'
+      : `${matches.length} on. No skin in it, so enjoy them all.`;
+  }
   return `${mineCount} of yours in this lot. Points on the table either way.`;
 }
 

@@ -80,16 +80,17 @@ function ledgerFor(row, fixtures) {
       const pts = my > their ? val.win : my === their ? val.draw : 0;
       events.push({
         ts: f.utcDate || '',
-        label: `${info?.short} ${my}–${their} ${opp?.short}`,
+        label: `${info?.short || clubLabel(b.team)} ${my}–${their} `
+             + `${opp?.short || clubLabel(isHome ? f.awayTeam.name : f.homeTeam.name)}`,
         pts,
       });
     }
     // banked extras
     if (b.oa?.pts > 0) {
-      events.push({ ts: 'zzz', label: `${info?.short} ${ordinalOf(b.oa.pos)}, tipped ${ordinalOf(b.oa.tipped)}`, pts: b.oa.pts });
+      events.push({ ts: 'zzz', label: `${info?.short || clubLabel(b.team)} ${ordinalOf(b.oa.pos)}, tipped ${ordinalOf(b.oa.tipped)}`, pts: b.oa.pts });
     }
     for (const m of b.medals) {
-      events.push({ ts: 'zzz', label: `${info?.short} — ${MEDALS[m].label}`, pts: MEDALS[m].pts });
+      events.push({ ts: 'zzz', label: `${info?.short || clubLabel(b.team)} — ${MEDALS[m].label}`, pts: MEDALS[m].pts });
     }
   }
   // Shed bonuses aren't tied to a club, so they sort to the very top

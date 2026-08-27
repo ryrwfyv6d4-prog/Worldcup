@@ -58,6 +58,34 @@ function buildItems(fixtures, assignments, ladder) {
     const last = ladder[ladder.length - 1];
     items.push({ kind: 'jibe', text: `${last.name} still ${ordinal(ladder.length)}` });
   }
+
+  // Between matchweeks there is nothing in the last day, and the strip was
+  // left running one jibe on a loop under a heading that says LATEST — which
+  // reads as broken rather than quiet. Say where things actually stand and
+  // what is on next.
+  if (!items.some((i) => i.kind === 'score')) {
+    const quiet = [];
+    if (ladder && ladder.length) {
+      const [top, second] = ladder;
+      quiet.push({ kind: 'score', text: `${top.name} leads on ${top.total}` });
+      if (second) {
+        const gap = top.total - second.total;
+        quiet.push({
+          kind: 'gain',
+          text: gap === 0 ? `${second.name} level` : `${second.name} ${gap} behind`,
+        });
+      }
+    }
+    const next = (fixtures || [])
+      .filter((f) => f.status === 'SCHEDULED' && f.utcDate && Date.parse(f.utcDate) > Date.now())
+      .sort((a, b) => a.utcDate.localeCompare(b.utcDate))[0];
+    if (next) {
+      const h = getTeam(next.homeTeam.name), a = getTeam(next.awayTeam.name);
+      if (h && a) quiet.push({ kind: 'score', text: `Next: ${h.tla} v ${a.tla}` });
+    }
+    return quiet.length ? [...quiet, ...items] : items;
+  }
+
   return items;
 }
 
@@ -70,12 +98,15 @@ export default function Ticker({ fixtures, assignments, ladder }) {
 
   const cls = (k) => (k === 'gain' ? 'ticker-gain' : k === 'jibe' ? 'ticker-jibe' : undefined);
   const anyLive = fixtures.some((f) => f.status === 'IN_PLAY');
+  // A quiet strip is standings and what is on next, so calling it LATEST
+  // promises news it has not got
+  const quiet = !items.some((i) => i.kind === 'score' && / · (FT|LIVE|\d+')$/.test(i.text));
 
   return (
     <div className="ticker">
       <div className="ticker-flag">
         <span className="ticker-dot" />
-        <span>{anyLive ? 'LIVE' : 'LATEST'}</span>
+        <span>{anyLive ? 'LIVE' : quiet ? 'STANDING' : 'LATEST'}</span>
       </div>
       <div className="ticker-track">
         <div className="ticker-run">

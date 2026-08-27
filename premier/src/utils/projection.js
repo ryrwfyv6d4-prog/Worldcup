@@ -14,7 +14,7 @@ import { leagueTable, teamPoints, buildTables, buildComplete, medalsForTeam } fr
 // fixed by the pre-season odds and the January re-rating, exactly as in the
 // live scoring; only the PROBABILITIES here carry current form.
 
-const RUNS = 800;
+export const RUNS = 800;
 const FORM_WEIGHT = 8; // games of belief in the odds before the table takes over
 
 // Deterministic, so the same table doesn't shuffle its projections on every

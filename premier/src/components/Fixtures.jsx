@@ -21,7 +21,17 @@ function ownerOf(team, assignments) {
   return null;
 }
 
-const dayKey = (iso) => (iso ? iso.slice(0, 10) : 'tbc');
+// Group by the day it is HERE, not the day it is in London. Slicing the ISO
+// string keys off the UTC date while the heading below prints the local one,
+// so a Sunday-morning kick-off in Australia (Saturday evening in England) got
+// filed under Saturday — and two UTC days that fall on one local day produced
+// two groups with the same heading.
+const dayKey = (iso) => {
+  if (!iso) return 'tbc';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 'tbc';
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+};
 const fmtDay = (iso) => (iso
   ? new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long' })
   : 'Date TBC');
@@ -34,18 +44,21 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
   const [md, setMd] = useState(null);
   const myTeams = (assignments[whoAmI] || []).filter(Boolean);
 
-  // which division the matchweek pager is walking — follows the filter
-  const div = filter === 'ch' ? 2 : 1;
+  // Which division the matchweek pager walks. null means both: "All" used to
+  // resolve to 1, so the default tab quietly showed the Premier League only and
+  // the matchweek haul under it left out every Championship point.
+  const div = filter === 'ch' ? 2 : filter === 'pl' ? 1 : null;
 
   const matchdays = useMemo(() => {
-    const s = [...new Set(fixtures.filter((f) => f.division === div).map((f) => f.matchday))];
-    return s.sort((a, b) => a - b);
+    const inScope = div == null ? fixtures : fixtures.filter((f) => f.division === div);
+    return [...new Set(inScope.map((f) => f.matchday))].sort((a, b) => a - b);
   }, [fixtures, div]);
 
   const nowMd = useMemo(() => {
     const now = Date.now();
     const up = fixtures
-      .filter((f) => f.division === div && f.utcDate && Date.parse(f.utcDate) > now - 36 * 3600 * 1000)
+      .filter((f) => (div == null || f.division === div)
+        && f.utcDate && Date.parse(f.utcDate) > now - 36 * 3600 * 1000)
       .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''));
     return up.length ? up[0].matchday : (matchdays[0] || 1);
   }, [fixtures, div, matchdays]);
@@ -61,11 +74,15 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
       list = fixtures.filter(
         (f) => myTeams.includes(f.homeTeam.name) || myTeams.includes(f.awayTeam.name)
       );
+      // Sort first, then trim. The feed arrives as all of division one followed
+      // by all of division two, so slicing first filled the whole list with
+      // Premier League games and a Championship club never appeared here.
       const now = Date.now();
       list = list
         .filter((f) => f.utcDate && Date.parse(f.utcDate) > now - 7 * 864e5)
+        .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''))
         .slice(0, 20);
-    } else {
+    } else if (div != null) {
       list = list.filter((f) => f.division === div);
     }
     return list.sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''));
@@ -152,14 +169,16 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
 
       {byDay.length === 0 && (
         <p className="editorial">
-          {filter === 'mine'
-            ? 'None of your clubs are out. A rare weekend of watching in peace.'
-            : 'No fixtures in this matchweek.'}
+          {filter !== 'mine'
+            ? 'No fixtures in this matchweek.'
+            : myTeams.length
+              ? 'None of your clubs are out. A rare weekend of watching in peace.'
+              : 'You have no clubs yet. Pick a name from the masthead, or run the draw in the Shed.'}
         </p>
       )}
 
       {byDay.length > 0 && (
-        <p className="fx-close">{fixturesLine(shown, mineCount)}</p>
+        <p className="fx-close">{fixturesLine(shown, mineCount, myTeams.length > 0)}</p>
       )}
     </div>
   );
@@ -187,8 +206,11 @@ function MatchRow({ fixture: f, assignments, onOpen }) {
   const derby = getRivalry(f.homeTeam.name, f.awayTeam.name);
   const done = f.status === 'FINISHED';
   const live = f.status === 'IN_PLAY';
+  // Stan carry the Premier League only, so asking about a Championship match
+  // is a request we already know the answer to — and paging back through
+  // settled Championship weeks fired a dozen of them every time.
   const highlight = useHighlight(
-    f.homeTeam.name, f.awayTeam.name, done, f.score?.home, f.score?.away
+    f.homeTeam.name, f.awayTeam.name, done && f.division === 1, f.score?.home, f.score?.away
   );
 
   // The row is a button, so the highlights link sits beside it rather than

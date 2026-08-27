@@ -38,7 +38,7 @@ function countdownTo(iso) {
   return d > 0 ? `${d}d ${h}h` : `${h}h ${m}m`;
 }
 
-export default function TeamSheet({ team, fixtures, assignments, onClose, onOpenMatch }) {
+export default function TeamSheet({ team, fixtures, assignments, manualMedals, bonusPoints, onClose, onOpenMatch, onSelectTeam }) {
   const info = getTeam(team);
   const [tick, setTick] = useState(0);
   const sheetRef = useRef(null);
@@ -55,12 +55,13 @@ export default function TeamSheet({ team, fixtures, assignments, onClose, onOpen
     [fixtures, info]
   );
   const proj = useMemo(
-    () => getProjection(assignments, fixtures).clubs[team],
-    [assignments, fixtures, team]
+    // Same four arguments the Table uses. Passing fewer built a different memo
+    // key, so every hop between screens re-ran 800 simulated seasons and this
+    // page was projected as if no honours had been awarded.
+    () => getProjection(assignments, fixtures, manualMedals, bonusPoints).clubs[team],
+    [assignments, fixtures, manualMedals, bonusPoints, team]
   );
-  if (!info) return null;
-
-  const [primary] = coloursFor(info.name);
+  const [primary] = coloursFor(info ? info.name : team);
   const heroInk = inkOn(primary);
   const owner = ownerOf(team, assignments);
   const pos = table.findIndex((r) => r.team === team) + 1;
@@ -73,7 +74,7 @@ export default function TeamSheet({ team, fixtures, assignments, onClose, onOpen
   const countdown = next ? countdownTo(next.fixture.utcDate) : null;
 
   // top four plus this club's neighbours
-  const shownRows = useMemo(() => {
+  const shownRowsMemo = useMemo(() => {
     const idx = table.findIndex((r) => r.team === team);
     const keep = new Set([0, 1, 2, 3]);
     for (const d of [-1, 0, 1]) {
@@ -82,6 +83,12 @@ export default function TeamSheet({ team, fixtures, assignments, onClose, onOpen
     }
     return [...keep].sort((a, b) => a - b).map((j) => ({ ...table[j], pos: j + 1 }));
   }, [table, team]);
+
+  // Every hook above runs unconditionally. This guard used to sit halfway up,
+  // so an unknown club rendered six hooks where a known one rendered seven —
+  // and the next render with a known club crashed the app on the hook count.
+  if (!info) return null;
+  const shownRows = shownRowsMemo;
 
   return (
     <div className="club-backdrop" ref={sheetRef}>
@@ -185,7 +192,11 @@ export default function TeamSheet({ team, fixtures, assignments, onClose, onOpen
             key={r.team}
             className={`mini-row ${i === 0 ? 'first' : ''} ${i === shownRows.length - 1 ? 'lastrow' : ''} ${r.team === team ? 'here' : ''}`}
             style={r.team === team ? { background: `${primary}12` } : undefined}
-            onClick={() => { /* already here */ }}
+            /* These were buttons that did nothing, including the rows for other
+               clubs — press feedback and no navigation. Tapping a neighbour now
+               opens that club. */
+            onClick={() => { if (r.team !== team && onSelectTeam) onSelectTeam(r.team); }}
+            disabled={r.team === team || !onSelectTeam}
           >
             <span className="mini-pos">{r.pos}</span>
             <Stripe team={r.team} variant="tbl" />

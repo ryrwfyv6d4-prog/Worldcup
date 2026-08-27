@@ -95,13 +95,16 @@ export default function App() {
   const closeTop = useCallback(() => closeTopRef.current(), []);
   useDismissable(Boolean(showWho || teamSheet || matchSheet), closeTop);
 
-  // Matchweek shown in the strap — the next one still to be played
-  const matchweek = useMemo(() => {
+  // What the strap says: the next matchweek still to be played. Once there is
+  // nothing left it used to fall back to "Pre-season", so a finished season
+  // read as one that had not started.
+  const strapLine = useMemo(() => {
     const now = Date.now();
     const up = fixtures
       .filter((f) => f.utcDate && Date.parse(f.utcDate) > now - 36 * 3600 * 1000)
       .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''));
-    return up.length ? up[0].matchday : null;
+    if (up.length) return `Matchweek ${up[0].matchday}`;
+    return fixtures.some((f) => f.status === 'FINISHED') ? 'Season over' : 'Pre-season';
   }, [fixtures]);
 
   const head = MASTHEAD[tab] || MASTHEAD.table;
@@ -120,7 +123,7 @@ export default function App() {
         </div>
         <div className="strap">
           <span>Season Sweep {SEASON}</span>
-          <span>{matchweek ? `Matchweek ${matchweek}` : 'Pre-season'}</span>
+          <span>{strapLine}</span>
         </div>
       </header>
 
@@ -156,7 +159,13 @@ export default function App() {
           />
         )}
         {tab === 'clubs' && (
-          <Tables fixtures={fixtures} assignments={assignments} onSelectTeam={setTeamSheet} />
+          <Tables
+            fixtures={fixtures}
+            assignments={assignments}
+            manualMedals={manualMedals}
+            bonusPoints={bonusPoints}
+            onSelectTeam={setTeamSheet}
+          />
         )}
         {tab === 'wall' && (
           <Wall state={state} update={update} whoAmI={whoAmI} synced={synced} />
@@ -183,7 +192,12 @@ export default function App() {
 
       {matchSheet && (
         <MatchSheet
-          fixture={matchSheet}
+          /* Resolved fresh out of the current list rather than the object that
+             was captured on tap. Holding the snapshot meant a sheet opened on a
+             live match never saw the goal go in, never reached Full time, and
+             kept re-fetching the ESPN summary every minute for as long as it
+             stayed open. */
+          fixture={fixtures.find((f) => f.id === matchSheet.id) || matchSheet}
           fixtures={fixtures}
           assignments={assignments}
           onClose={() => setMatchSheet(null)}
@@ -196,7 +210,10 @@ export default function App() {
           team={teamSheet}
           fixtures={fixtures}
           assignments={assignments}
+          manualMedals={manualMedals}
+          bonusPoints={bonusPoints}
           onClose={() => setTeamSheet(null)}
+          onSelectTeam={setTeamSheet}
           onOpenMatch={(f) => { setTeamSheet(null); setMatchSheet(f); }}
         />
       )}

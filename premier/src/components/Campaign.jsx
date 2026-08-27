@@ -36,7 +36,7 @@ export default function Campaign({ assignments, fixtures }) {
     <div>
       <p className="editorial">
         A month at a time. Most points in each calendar month takes the side pot —
-        nine chances to matter even when the season has got away from you.
+        {' '}{race.length} chances to matter even when the season has got away from you.
       </p>
 
       {!drawn && <p className="muted small">Run the draw first.</p>}

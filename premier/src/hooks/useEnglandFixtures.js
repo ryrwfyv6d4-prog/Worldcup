@@ -103,11 +103,15 @@ export function useEnglandFixtures() {
   const [error, setError] = useState(null);
   const [lastFetched, setLastFetched] = useState(null);
   const [espnGames, setEspnGames] = useState([]);
+  // monotonic counters so a late reply cannot clobber a newer one
+  const espnStartedRef = useRef(0);
+  const espnSeqRef = useRef(0);
   const [espnState, setEspnState] = useState({ ok: null, unmatched: [], count: 0, ts: null });
   const lastEspnRef = useRef(0);
   const mergedRef = useRef([]);
 
   const fetchEspn = useCallback(async () => {
+    const seq = ++espnStartedRef.current;
     const fmt = (dt) => dt.toISOString().slice(0, 10).replace(/-/g, '');
     // Look back ten days, not one. openfootball backfills results a day or two
     // late, and without the overlap a settled match would drop out of the app
@@ -153,6 +157,12 @@ export function useEnglandFixtures() {
       } catch { /* per-league best effort */ }
     }
 
+    // Two scoreboard fetches can be in flight at once (the interval and a
+    // tab-back). Applying whichever finishes last would let a slower earlier
+    // response overwrite a newer scoreline, so a stale one is dropped.
+    if (seq < espnSeqRef.current) return;
+    espnSeqRef.current = seq;
+
     setEspnGames(games);
     setEspnState({
       ok: anyOk,
@@ -183,7 +193,13 @@ export function useEnglandFixtures() {
         })
       );
       const all = results.flat();
-      writeCache({ fixtures: all });
+      // A format change upstream parses to nothing without throwing, and the
+      // app then showed empty tables with no error and no Retry.
+      if (!all.length) throw new Error('The fixture feed parsed to nothing. Retry, or check the feed.');
+      // Only write what the reader would accept back. Caching an entry the
+      // sanity check rejects means it is binned on every cold start and the
+      // 30-minute TTL never actually saves a fetch.
+      if (cacheLooksSane(all)) writeCache({ fixtures: all });
       setFixtures(all);
       setLastFetched(Date.now());
     } catch (err) {
@@ -216,7 +232,12 @@ export function useEnglandFixtures() {
       if (!nearGame) return;
       if (now - lastEspnRef.current > 55 * 1000) fetchEspn();
     }, 30 * 1000);
-    const onVisible = () => { if (document.visibilityState === 'visible') fetchEspn(); };
+    const onVisible = () => {
+      // Same throttle the interval uses. Without it, tabbing in and out during
+      // a match fired overlapping scoreboard fetches.
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - lastEspnRef.current > 55 * 1000) fetchEspn();
+    };
     document.addEventListener('visibilitychange', onVisible);
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
   }, [fetchEspn]);

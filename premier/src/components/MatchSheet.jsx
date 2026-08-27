@@ -62,7 +62,9 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
   const done = fixture.status === 'FINISHED';
   const live = fixture.status === 'IN_PLAY';
   const highlight = useHighlight(
-    fixture.homeTeam.name, fixture.awayTeam.name, done, fixture.score?.home, fixture.score?.away
+    fixture.homeTeam.name, fixture.awayTeam.name,
+    done && fixture.division === 1,          // Stan do not carry the Championship
+    fixture.score?.home, fixture.score?.away
   );
   const played = done || live;
 

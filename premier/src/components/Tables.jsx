@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { leagueTable, formForTeam, TABLE_MODES } from '../utils/scoring.js';
 import { getProjection, projectedTable } from '../utils/projection.js';
-import { getTeam, SCORING } from '../data/england2027.js';
+import { getTeam, MEDALS, SCORING } from '../data/england2027.js';
 import Crest from './Crest.jsx';
 
 function ownerOf(team, assignments) {
@@ -24,7 +24,7 @@ function zoneFor(div, pos) {
   return '';
 }
 
-export default function Tables({ fixtures, assignments, onSelectTeam }) {
+export default function Tables({ fixtures, assignments, manualMedals, bonusPoints, onSelectTeam }) {
   const [div, setDiv] = useState(1);
   const [mode, setMode] = useState('all');
 
@@ -33,7 +33,7 @@ export default function Tables({ fixtures, assignments, onSelectTeam }) {
   const started = overall.some((r) => r.p > 0);
   const effectiveMode = started || mode === 'projected' ? mode : 'all';
   const projection = useMemo(
-    () => (effectiveMode === 'projected' ? getProjection(assignments, fixtures) : null),
+    () => (effectiveMode === 'projected' ? getProjection(assignments, fixtures, manualMedals, bonusPoints) : null),
     [effectiveMode, assignments, fixtures]
   );
   const shown = useMemo(
@@ -92,12 +92,12 @@ export default function Tables({ fixtures, assignments, onSelectTeam }) {
         <div className="zone-legend">
           {div === 1 ? (
             <>
-              <span className="zl up">Top 4 (+{8})</span>
+              <span className="zl up">Top 4 (+{MEDALS.DSO.pts})</span>
               <span className="zl drop">Bottom 3 — relegated</span>
             </>
           ) : (
             <>
-              <span className="zl up">Top 2 — promoted (+{10})</span>
+              <span className="zl up">Top 2 — promoted (+{MEDALS.PROMOTION.pts})</span>
               <span className="zl play">3–6 — play-offs</span>
               <span className="zl drop">Bottom 3 — demoted</span>
             </>
@@ -189,7 +189,11 @@ function ProjectedTable({ div, projection, started, onSelectTeam }) {
             <tr>
               <th>#</th><th className="tl">Team</th>
               <th>Tip</th><th>Range</th>
-              <th>{div === 1 ? 'Title' : 'Up'}</th>
+              {/* Both columns read the same way in either division: the first
+                  is winning the league, the second is the placing that pays.
+                  These were crossed over for the Championship, so the column
+                  headed Auto was printing the title chance. */}
+              <th>Title</th>
               <th>{div === 1 ? 'Top 4' : 'Auto'}</th>
               <th>Down</th>
             </tr>
@@ -212,8 +216,8 @@ function ProjectedTable({ div, projection, started, onSelectTeam }) {
                     {r.tipped}{drift !== 0 && <small>{drift > 0 ? ` ▲${drift}` : ` ▼${-drift}`}</small>}
                   </td>
                   <td className="proj-range">{r.best}–{r.worst}</td>
-                  <td>{pctText(div === 1 ? r.pTitle : r.pTop)}</td>
-                  <td>{pctText(div === 1 ? r.pTop : r.pTitle)}</td>
+                  <td>{pctText(r.pTitle)}</td>
+                  <td>{pctText(r.pTop)}</td>
                   <td className={r.pDown > 0.4 ? 'oa-bad' : ''}>{pctText(r.pDown)}</td>
                 </tr>
               );

@@ -41,7 +41,7 @@ function Polls({ state, update, who }) {
         <input className="poll-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="The question…" disabled={!who} />
         <textarea className="wall-input" rows="3" value={opts} onChange={(e) => setOpts(e.target.value)}
           placeholder={'One option per line\nAye\nNay'} disabled={!who} />
-        <button className="btn btn-primary" onClick={create} disabled={!who || !q.trim()}>Open the vote</button>
+        <button className="btn btn-primary" onClick={create} disabled={!who || !q.trim() || opts.split('\n').filter((o) => o.trim()).length < 2}>Open the vote</button>
       </div>
       {state.polls.length === 0 && <p className="muted small">Nothing to vote on.</p>}
       {state.polls.map((p) => {
@@ -67,6 +67,7 @@ function Polls({ state, update, who }) {
 
 export default function Shed({
   state, update, synced, whoAmI, onChangeUser, fixtures, lastFetched, refresh, espnState,
+  onSelectTeam,
 }) {
   const [view, setView] = useState('rules');
 
@@ -113,7 +114,7 @@ export default function Shed({
         />
       )}
       {view === 'months' && <Campaign assignments={state.assignments} fixtures={fixtures} />}
-      {view === 'clubs' && <Regiments assignments={state.assignments} />}
+      {view === 'clubs' && <Regiments assignments={state.assignments} onSelectTeam={onSelectTeam} />}
       {view === 'honours' && <Honours state={state} update={update} />}
       {view === 'polls' && <Polls state={state} update={update} who={whoAmI} />}
     </div>

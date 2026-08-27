@@ -5,12 +5,12 @@ import Crest from './Crest.jsx';
 
 function ownerOf(team, assignments) {
   for (const [name, teams] of Object.entries(assignments)) {
-    if (teams.includes(team)) return name;
+    if ((teams || []).includes(team)) return name;
   }
   return null;
 }
 
-export default function Regiments({ assignments }) {  // rendered inside HQ
+export default function Regiments({ assignments, onSelectTeam }) {
   const [filter, setFilter] = useState('ALL');
   const [q, setQ] = useState('');
   const needle = q.trim().toLowerCase();
@@ -45,11 +45,18 @@ export default function Regiments({ assignments }) {  // rendered inside HQ
         const owner = ownerOf(t.name, assignments);
         return (
           <div className={`card regiment pot-border-${t.pot.toLowerCase()}`} key={t.name}>
-            <div className="reg-head">
+            {/* These were the only club references in the app that did not open
+                a club page, because the handler was never forwarded this far. */}
+            <button
+              type="button"
+              className="reg-head reg-head-btn"
+              onClick={() => onSelectTeam && onSelectTeam(t.name)}
+              disabled={!onSelectTeam}
+            >
               <Crest team={t.name} size={34} className="reg-crest" />
               <span className="reg-name">{t.short}</span>
               <span className="reg-codename">{t.codename}</span>
-            </div>
+            </button>
             <div className="reg-meta">
               <span className="reg-pot">
                 {POT_LABELS[t.pot]} · tipped {t.rank} of {t.div === 1 ? 20 : 24} · wins pay {priceRangeFor(t.name).lo}–{priceRangeFor(t.name).hi}

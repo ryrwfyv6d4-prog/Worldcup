@@ -103,7 +103,12 @@ function normaliseEvents(keyEvents, homeId) {
     out.push({
       kind,
       minute: e.clock?.displayValue || '',
-      side: e.team?.id ? (String(e.team.id) === String(homeId) ? 'home' : 'away') : null,
+      // Without a roster there is no home id to compare against, and every
+      // event used to come back tagged 'away' — which stacked both teams'
+      // scorers in the away column.
+      side: (e.team?.id != null && homeId != null)
+        ? (String(e.team.id) === String(homeId) ? 'home' : 'away')
+        : null,
       who: who[0] || null,
       off: kind === 'sub' ? who[1] || null : null,
       text: e.text || '',
