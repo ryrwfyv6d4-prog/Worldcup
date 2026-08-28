@@ -604,7 +604,7 @@ body {
 
 /* What it pays / paid */
 /* Sits inside the report pane, which already carries the gutter */
-.mp-money { padding: 8px 0 12px; border-bottom: 1px solid var(--rule-light); }
+.mp-money { padding: 18px 0 12px; border-bottom: 1px solid var(--rule-light); }
 .mp-money-head {
   font: 800 9.5px var(--font-ui); letter-spacing: .16em; text-transform: uppercase;
   color: var(--ink-faint); margin-bottom: 8px;
@@ -792,7 +792,137 @@ body {
   font-variant-numeric: tabular-nums; color: var(--ink);
 }
 .mp-stat-bar { display: flex; height: 7px; margin-top: 4px; background: var(--rule-light); }
-.mp-stat-bar span { display: block; }
+.mp-stat-bar span { display: block; transition: width .25s ease; }
+/* the side that won the stat says so twice: colour on the bar, weight on the
+   number. The other number drops back so the row can be read without comparing */
+.mp-stat-h, .mp-stat-a { color: var(--ink-faint); font-weight: 600; }
+.mp-stat-h.won, .mp-stat-a.won { color: var(--ink); font-weight: 800; }
+.mp-stat-group { margin-bottom: 20px; }
+.mp-stat-group-head {
+  font: 800 9.5px var(--font-ui); letter-spacing: .16em; text-transform: uppercase;
+  color: var(--ink); padding-bottom: 5px; margin-bottom: 11px;
+  border-bottom: 1.5px solid var(--ink);
+}
+.mp-stat-foot { margin: 4px 0 6px; }
+.mp-more {
+  display: block; width: 100%; margin: 4px 0 2px; padding: 9px 0;
+  background: none; border: 1.5px solid var(--rule-dotted); color: var(--ink-muted);
+  font: 800 9.5px var(--font-ui); letter-spacing: .16em; text-transform: uppercase;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+
+/* Tab strip — scrolls sideways rather than wrapping onto a second line, so
+   the scoreline above it does not jump as tabs appear with the feed */
+.mp-tabs {
+  flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.mp-tabs::-webkit-scrollbar { display: none; }
+.mp-tabs .seg { flex: 0 0 auto; }
+
+/* Match info */
+.mp-info { border-top: 1px solid var(--rule-light); }
+.mp-info-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+  padding: 7px 0; border-bottom: 1px dotted var(--rule-dotted);
+  font: 600 12.5px var(--font-ui); color: var(--ink); text-align: right;
+}
+.mp-info-lab {
+  flex-shrink: 0; font: 700 9.5px var(--font-ui); letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-faint); text-align: left;
+}
+
+/* Commentary */
+.mp-comm-filter { border-bottom: none; margin-bottom: 2px; }
+.mp-comm { border-top: 1px solid var(--rule-light); }
+.mp-comm-row {
+  display: flex; gap: 10px; padding: 8px 0;
+  border-bottom: 1px dotted var(--rule-dotted);
+}
+.mp-comm-min {
+  width: 42px; flex-shrink: 0; font: 800 11px var(--font-ui);
+  color: var(--ink-faint); font-variant-numeric: tabular-nums;
+}
+.mp-comm-text { flex: 1; font-size: 13px; line-height: 1.45; color: var(--ink-soft); }
+.mp-comm-kind {
+  display: block; margin-top: 3px; font: 700 8.5px var(--font-ui);
+  letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint);
+  font-style: normal;
+}
+.mp-comm-row.goal { background: rgba(138, 26, 24, .06); }
+.mp-comm-row.goal .mp-comm-min { color: var(--spot); }
+.mp-comm-row.goal .mp-comm-text { color: var(--ink); font-weight: 600; }
+
+/* Head to head */
+.mp-h2h-head, .mp-h2h-nums { display: flex; justify-content: space-between; gap: 8px; }
+.mp-h2h-head {
+  font: 700 9.5px var(--font-ui); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-muted); margin-bottom: 2px;
+}
+.mp-h2h-nums {
+  font-family: var(--font-display); font-size: 30px; font-weight: 800; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.mp-h2h-mid { text-align: center; }
+.mp-h2h-head span:last-child, .mp-h2h-nums span:last-child { text-align: right; }
+.mp-h2h-bar { display: flex; height: 8px; margin: 7px 0 8px; background: var(--rule-light); }
+.mp-h2h-bar .w { background: var(--ink); }
+.mp-h2h-bar .d { background: var(--rule-dotted); }
+.mp-h2h-bar .l { background: var(--spot); }
+.mp-h2h-list { border-top: 1px solid var(--rule-light); }
+.mp-h2h-row {
+  display: flex; align-items: center; gap: 9px; padding: 8px 0;
+  border-bottom: 1px dotted var(--rule-dotted);
+}
+.mp-h2h-date {
+  width: 62px; flex-shrink: 0; font: 700 10px var(--font-ui); color: var(--ink-faint);
+}
+.mp-h2h-tie { flex: 1; min-width: 0; font-size: 12.5px; color: var(--ink-muted); }
+.mp-h2h-tie b { font-weight: 700; color: var(--ink); }
+.mp-h2h-tie em {
+  display: block; font: 600 9px var(--font-ui); letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-faint); font-style: normal; margin-top: 2px;
+}
+.mp-h2h-score {
+  font-family: var(--font-display); font-size: 16px; font-weight: 800;
+  font-variant-numeric: tabular-nums; flex-shrink: 0;
+}
+.mp-h2h-form { display: grid; grid-template-columns: 1fr 1fr; border: 1.5px solid var(--ink); }
+.mp-h2h-form-col { padding: 10px 11px; min-width: 0; }
+.mp-h2h-form-col + .mp-h2h-form-col { border-left: 1px solid var(--ink); }
+.mp-h2h-form-row {
+  display: flex; align-items: center; gap: 7px; padding: 4px 0;
+  font-size: 11.5px; color: var(--ink-muted);
+}
+.mp-h2h-form-score { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ink); }
+.mp-h2h-form-date { margin-left: auto; font-size: 10px; color: var(--ink-faint); }
+
+/* League table inside the match sheet */
+.mp-tbl { border-top: 1.5px solid var(--ink); }
+.mp-tbl-head, .mp-tbl-row {
+  display: grid; align-items: center; gap: 4px; width: 100%;
+  grid-template-columns: 20px minmax(0, 1fr) repeat(5, 20px) 26px;
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+.mp-tbl-head {
+  padding: 5px 0; border-bottom: 1px solid var(--ink);
+  font: 800 8.5px var(--font-ui); letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-faint);
+}
+.mp-tbl-row {
+  padding: 7px 0; border-bottom: 1px dotted var(--rule-dotted);
+  background: none; border-left: none; border-right: none; border-top: none;
+  font: 600 12px var(--font-ui); color: var(--ink-muted); cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.mp-tbl-row.here { background: rgba(232, 163, 61, .18); color: var(--ink); font-weight: 700; }
+.mp-tbl .c-pos { text-align: left; color: var(--ink-faint); }
+.mp-tbl-row.here .c-pos { color: var(--ink); }
+.mp-tbl .c-club {
+  display: flex; align-items: center; gap: 6px; text-align: left;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.mp-tbl .c-pts { font-weight: 800; color: var(--ink); }
 
 .whoami-overlay {
   position: fixed; inset: 0; z-index: 70; background: rgba(20, 18, 16, .82);

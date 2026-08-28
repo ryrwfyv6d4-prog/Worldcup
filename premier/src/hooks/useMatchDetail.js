@@ -27,10 +27,11 @@ const STAT_GROUPS = [
       { key: 'shotsOnTarget', label: 'Shots on target' },
       { key: 'wonCorners', label: 'Corner kicks' },
       { key: 'saves', label: 'Saves' },
-      { key: 'foulsCommitted', label: 'Fouls' },
-      { key: 'yellowCards', label: 'Yellow cards' },
-      { key: 'redCards', label: 'Red cards' },
-      { key: 'offsides', label: 'Offsides' },
+      // nobody wins a foul count, so these read the other way round
+      { key: 'foulsCommitted', label: 'Fouls', low: true },
+      { key: 'yellowCards', label: 'Yellow cards', low: true },
+      { key: 'redCards', label: 'Red cards', low: true },
+      { key: 'offsides', label: 'Offsides', low: true },
     ],
   },
   {
@@ -70,7 +71,8 @@ const STAT_GROUPS = [
   },
 ];
 
-const STAT_ROWS = STAT_GROUPS.flatMap((g) => g.rows);
+// The handful the summary shows as a teaser above the full list
+const TOP_STATS = ['possessionPct', 'totalShots', 'shotsOnTarget', 'wonCorners', 'foulsCommitted'];
 
 function num(v) {
   const n = Number(v);
@@ -99,14 +101,22 @@ function normaliseRoster(side) {
   };
 }
 
-// One stat row: the two values, and how much of the bar each side owns.
-function statRow(r, h, a) {
+// One stat row: the two values, how much of the bar each side owns, and which
+// side "won" it. Winning is not always the bigger number — nobody wins fouls
+// or yellow cards — so the direction is declared on the row, not inferred.
+export function statRow(r, h, a) {
   let hv = h[r.key];
   let av = a[r.key];
   if (hv == null && av == null) return null;
   hv = hv ?? 0; av = av ?? 0;
+  // A row where neither side did the thing at all says nothing. Sofascore drops
+  // it rather than printing a pair of grey noughts, and the list reads better
+  // for it. Possession is exempt: 0-0 there means the feed is empty, not that
+  // nobody had the ball, and dropping it would hide that.
+  if (hv === 0 && av === 0 && r.key !== 'possessionPct') return null;
   if (r.pct) { hv = asPct(r.key, hv); av = asPct(r.key, av); }
   const total = hv + av;
+  const cmp = hv === av ? 0 : (hv > av ? 1 : -1) * (r.low ? -1 : 1);
   return {
     key: r.key,
     label: r.label,
@@ -114,51 +124,38 @@ function statRow(r, h, a) {
     away: r.pct ? `${Math.round(av)}%` : String(av),
     homeRaw: hv,
     awayRaw: av,
+    better: cmp > 0 ? 'home' : cmp < 0 ? 'away' : null,
     // share of the bar each side takes; an all-zero row splits evenly
     homeShare: total > 0 ? (hv / total) * 100 : 50,
   };
 }
 
-function normaliseStatGroups(box, homeId, awayId) {
+function teamStatMaps(box, homeId, awayId) {
   const byId = {};
   for (const t of box?.teams || []) {
     const map = {};
     for (const st of t.statistics || []) map[st.name] = num(st.displayValue ?? st.value);
     byId[t.team?.id] = map;
   }
-  const h = byId[homeId] || {};
-  const a = byId[awayId] || {};
+  return [byId[homeId] || {}, byId[awayId] || {}];
+}
+
+export function normaliseStatGroups(box, homeId, awayId) {
+  const [h, a] = teamStatMaps(box, homeId, awayId);
   return STAT_GROUPS
     .map((g) => ({ title: g.title, rows: g.rows.map((r) => statRow(r, h, a)).filter(Boolean) }))
     .filter((g) => g.rows.length);
 }
 
-function normaliseStats(box, homeId, awayId) {
-  const byId = {};
-  for (const t of box?.teams || []) {
-    const map = {};
-    for (const s of t.statistics || []) map[s.name] = num(s.displayValue ?? s.value);
-    byId[t.team?.id] = map;
-  }
-  const h = byId[homeId] || {};
-  const a = byId[awayId] || {};
-  const rows = [];
-  for (const r of STAT_ROWS) {
-    let hv = h[r.key];
-    let av = a[r.key];
-    if (hv == null && av == null) continue;
-    hv = hv ?? 0; av = av ?? 0;
-    if (r.pct) { hv = asPct(r.key, hv); av = asPct(r.key, av); }
-    const total = hv + av;
-    rows.push({
-      label: r.label,
-      home: r.pct ? `${Math.round(hv)}%` : String(hv),
-      away: r.pct ? `${Math.round(av)}%` : String(av),
-      // share of the bar each side takes; an all-zero row splits evenly
-      homeShare: total > 0 ? (hv / total) * 100 : 50,
-    });
-  }
-  return rows;
+// The teaser on the summary: the same rows, in the same order, cut to five.
+function normaliseTopStats(box, homeId, awayId) {
+  const [h, a] = teamStatMaps(box, homeId, awayId);
+  const lookup = STAT_GROUPS[0].rows;
+  return TOP_STATS
+    .map((k) => lookup.find((r) => r.key === k))
+    .filter(Boolean)
+    .map((r) => statRow(r, h, a))
+    .filter(Boolean);
 }
 
 // Goals, cards and substitutions, oldest first. ESPN puts the minute in
@@ -194,78 +191,101 @@ function normaliseEvents(keyEvents, homeId) {
   return out;
 }
 
+// Which commentary lines are incidents rather than running description. ESPN
+// does not set scoringPlay on the commentary feed — only play.type.text is
+// there — so the incidents are picked out by type, not by a flag that is
+// always undefined. Left as a flag check, every line came back marked key.
+const KEY_PLAY = /goal|card|substitut|penalt|var|kickoff|end of|half/i;
+
 // Minute-by-minute text. ESPN returns it oldest-first; a running commentary
 // reads newest-first, the way you would scroll back through a match.
-function normaliseCommentary(list) {
+export function normaliseCommentary(list) {
   const out = [];
   for (const c of list || []) {
     const text = (c.text || '').trim();
     if (!text) continue;
+    const kind = c.play?.type?.text || null;
     out.push({
+      seq: num(c.sequence) ?? out.length,
       minute: c.time?.displayValue || c.clock?.displayValue || '',
       text,
-      // ESPN flags the entries that are also key events, which lets the feed
-      // pick them out rather than reading as an undifferentiated wall
-      key: Boolean(c.play?.scoringPlay || c.play?.type?.text),
-      kind: c.play?.type?.text || null,
+      kind,
+      key: Boolean(kind && KEY_PLAY.test(kind)),
+      goal: Boolean(kind && /goal/i.test(kind)),
     });
   }
   return out.reverse();
 }
 
 // Previous meetings between these two clubs, newest first.
-function normaliseH2H(seasonseries, homeId) {
+//
+// seasonseries[0].events carries competitors directly — there is no nested
+// competitions array — and the status lives on statusType, not status.type.
+// The competitors always carry a winner flag; the score is read when present
+// and the result falls back to that flag when it is not.
+export function normaliseH2H(seasonseries, homeId) {
   const series = (seasonseries || [])[0];
   const events = series?.events || [];
   const out = [];
+  let w = 0, d = 0, l = 0;
   for (const e of events) {
-    const comp = (e.competitions || [])[0] || e;
-    const cs = comp.competitors || [];
+    const cs = e.competitors || [];
     const h = cs.find((c) => c.homeAway === 'home');
     const a = cs.find((c) => c.homeAway === 'away');
     if (!h || !a) continue;
-    const hs = num(h.score), as_ = num(a.score);
+    const hs = num(h.score);
+    const as_ = num(a.score);
+    // 'us' is whichever competitor is this match's home club
+    const us = String(h.team?.id) === String(homeId) ? h : a;
+    const them = us === h ? a : h;
+    let result = null;
+    if (hs != null && as_ != null) {
+      const uw = us === h ? hs : as_;
+      const tw = us === h ? as_ : hs;
+      result = uw > tw ? 'W' : uw < tw ? 'L' : 'D';
+    } else if (us.winner === true) result = 'W';
+    else if (them.winner === true) result = 'L';
+    else if (e.statusType?.completed) result = 'D';
+
+    if (result === 'W') w++; else if (result === 'L') l++; else if (result === 'D') d++;
     out.push({
       id: e.id,
-      date: e.date || comp.date || null,
+      date: e.date || null,
       homeName: h.team?.displayName || h.team?.shortDisplayName || '',
       awayName: a.team?.displayName || a.team?.shortDisplayName || '',
+      homeAbbr: h.team?.abbreviation || '',
+      awayAbbr: a.team?.abbreviation || '',
       homeScore: hs,
       awayScore: as_,
-      // result from the perspective of THIS match's home side
-      result: hs == null || as_ == null ? null
-        : String(h.team?.id) === String(homeId)
-          ? (hs > as_ ? 'W' : hs < as_ ? 'L' : 'D')
-          : (as_ > hs ? 'W' : as_ < hs ? 'L' : 'D'),
-      note: comp.status?.type?.shortDetail || null,
+      result,           // from THIS match's home side's point of view
+      comp: e.competitionName || null,
+      note: e.statusType?.shortDetail || null,
     });
   }
-  return out;
+  out.sort((x, y) => (y.date || '').localeCompare(x.date || ''));
+  return { games: out, homeWins: w, draws: d, awayWins: l, summary: series?.summary || null };
 }
 
-// The slice of the league table ESPN ships with the match.
-function normaliseStandings(standings, homeName, awayName) {
-  const group = (standings?.groups || [])[0];
-  const entries = group?.standings?.entries || standings?.entries || [];
-  const rows = [];
-  for (const e of entries) {
-    const stat = (name) => {
-      const st = (e.stats || []).find((x) => x.name === name || x.abbreviation === name);
-      return st ? (st.displayValue ?? st.value) : null;
+// Each side's last five, straight from the feed. gameResult is already given
+// from that team's point of view, so nothing has to be worked out here.
+export function normaliseForm(lastFiveGames) {
+  const out = {};
+  for (const side of lastFiveGames || []) {
+    const name = side.team?.displayName;
+    if (!name) continue;
+    out[String(side.team?.id ?? name)] = {
+      team: name,
+      games: (side.events || []).map((e) => ({
+        id: e.id,
+        date: e.gameDate || null,
+        score: e.score || null,
+        result: e.gameResult || null,
+        comp: e.competitionName || null,
+        atVs: e.atVs || null,
+      })),
     };
-    rows.push({
-      team: e.team?.displayName || e.team?.shortDisplayName || '',
-      pos: num(stat('rank')) ?? null,
-      played: num(stat('gamesPlayed')),
-      wins: num(stat('wins')),
-      draws: num(stat('ties')),
-      losses: num(stat('losses')),
-      gd: num(stat('pointDifferential')) ?? num(stat('pointsDifference')),
-      points: num(stat('points')),
-    });
   }
-  rows.sort((x, y) => (x.pos ?? 99) - (y.pos ?? 99));
-  return { rows, homeName, awayName };
+  return out;
 }
 
 async function loadDetail(fixture, signal) {
@@ -303,14 +323,17 @@ async function loadDetail(fixture, signal) {
     found: true,
     eventId: match.id,
     lineups: home && (home.xi.length || home.bench.length) ? { home, away } : null,
-    stats: normaliseStats(s.boxscore, home?.teamId, away?.teamId),
     statGroups: normaliseStatGroups(s.boxscore, home?.teamId, away?.teamId),
+    topStats: normaliseTopStats(s.boxscore, home?.teamId, away?.teamId),
     events: normaliseEvents(s.keyEvents, home?.teamId),
     commentary: normaliseCommentary(s.commentary),
     h2h: normaliseH2H(s.seasonseries, home?.teamId),
-    standings: normaliseStandings(s.standings, fixture.homeTeam.name, fixture.awayTeam.name),
+    form: normaliseForm(s.lastFiveGames),
+    homeId: home?.teamId ?? null,
+    awayId: away?.teamId ?? null,
     venue: gi.venue?.fullName || null,
     city: gi.venue?.address?.city || null,
+    capacity: gi.venue?.capacity || null,
     attendance: gi.attendance || null,
     referee: (gi.officials || []).find((o) => /referee/i.test(o.position?.displayName || ''))?.displayName || null,
   };

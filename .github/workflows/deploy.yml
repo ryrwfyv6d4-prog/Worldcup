@@ -67,11 +67,7 @@ jobs:
           node scripts/leaguefeed.test.mjs
           node scripts/formation.test.mjs
           node scripts/highlight-title.test.mjs
-
-      - name: Probe ESPN match summary
-        working-directory: premier
-        run: node scripts/probe-summary.mjs
-        continue-on-error: true
+          node scripts/matchdetail.test.mjs
 
       - name: Check live-score feed (diagnostic only, never blocks)
         working-directory: premier

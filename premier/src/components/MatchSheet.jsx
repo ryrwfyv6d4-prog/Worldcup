@@ -10,6 +10,11 @@ import { useMatchDetail } from '../hooks/useMatchDetail.js';
 import { useHighlight } from '../hooks/useHighlight.js';
 import { buildShape, shirtColours } from '../utils/formation.js';
 import { useSwipeToClose } from '../hooks/useSwipeToClose.js';
+import StatsTab from './match/StatsTab.jsx';
+import CommentaryTab from './match/CommentaryTab.jsx';
+import H2HTab from './match/H2HTab.jsx';
+import StandingsTab from './match/StandingsTab.jsx';
+import StatRow, { StatKey } from './match/StatRow.jsx';
 import {
   leagueTable, formForTeam, positionOf, reverseFixture, fixturePoints,
 } from '../utils/scoring.js';
@@ -34,19 +39,33 @@ const fmtTime = (iso) => (iso
   ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   : '');
 
-const TABS = [
-  { key: 'report', label: 'Report' },
-  { key: 'lineups', label: 'Line-ups' },
-  { key: 'stats', label: 'Stats' },
-];
-
 const EVENT_MARK = { goal: '⚽', own: '⚽', yellow: '▮', red: '▮', sub: '⇄' };
 
+// Which tabs this match actually has. A tab that opens onto "not published for
+// this match" is a dead end you only find by tapping it, so the ones with
+// nothing behind them are not offered at all. Summary and Table always are:
+// one is built from the fixture, the other from the league.
+function tabsFor(detail) {
+  const tabs = [{ key: 'summary', label: 'Summary' }];
+  if (detail?.statGroups?.length) tabs.push({ key: 'stats', label: 'Stats' });
+  if (detail?.lineups) tabs.push({ key: 'lineups', label: 'Line-ups' });
+  tabs.push({ key: 'table', label: 'Table' });
+  if (detail?.h2h?.games?.length) tabs.push({ key: 'h2h', label: 'H2H' });
+  if (detail?.commentary?.length) tabs.push({ key: 'commentary', label: 'Commentary' });
+  return tabs;
+}
+
 export default function MatchSheet({ fixture, fixtures, assignments, onClose, onSelectTeam }) {
-  const [tab, setTab] = useState('report');
+  const [tab, setTab] = useState('summary');
   const { detail, state } = useMatchDetail(fixture);
   const sheetRef = useRef(null);
   useSwipeToClose(sheetRef, onClose);
+
+  // Tabs appear as the feed lands. If the one you are on disappears — you
+  // opened Stats on a live match and the summary later came back empty — fall
+  // back to Summary rather than rendering a blank pane.
+  const tabs = useMemo(() => tabsFor(detail), [detail]);
+  const active = tabs.some((t) => t.key === tab) ? tab : 'summary';
 
   const table = useMemo(
     () => leagueTable(fixtures, fixture.division),
@@ -153,11 +172,13 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
         )}
 
         {/* ── Tabs ──────────────────────────────────────────────────────── */}
-        <div className="seg-row mp-tabs">
-          {TABS.map((t) => (
+        <div className="seg-row mp-tabs" role="tablist">
+          {tabs.map((t) => (
             <button
               key={t.key}
-              className={`seg ${tab === t.key ? 'on' : ''}`}
+              role="tab"
+              aria-selected={active === t.key}
+              className={`seg ${active === t.key ? 'on' : ''}`}
               onClick={() => setTab(t.key)}
             >
               {t.label}
@@ -165,15 +186,24 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
           ))}
         </div>
 
-        {tab === 'report' && (
+        {active === 'summary' && (
           <Report
             fixture={fixture} fixtures={fixtures} table={table} sides={sides}
             detail={detail} matchup={matchup} rev={rev} played={played}
             phase={phase} home={home} away={away}
+            onMore={() => setTab('stats')}
           />
         )}
-        {tab === 'lineups' && <Lineups detail={detail} state={state} sides={sides} played={played} />}
-        {tab === 'stats' && <Stats detail={detail} state={state} sides={sides} played={played} />}
+        {active === 'lineups' && <Lineups detail={detail} state={state} sides={sides} played={played} />}
+        {active === 'stats' && <StatsTab detail={detail} sides={sides} />}
+        {active === 'table' && (
+          <StandingsTab
+            fixtures={fixtures} division={fixture.division}
+            sides={sides} onSelectTeam={openTeam}
+          />
+        )}
+        {active === 'h2h' && <H2HTab detail={detail} sides={sides} />}
+        {active === 'commentary' && <CommentaryTab detail={detail} />}
       </div>
     </div>
   );
@@ -181,12 +211,38 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
 
 const s0 = (n) => (n == null ? 0 : n);
 
-// ── Report ────────────────────────────────────────────────────────────────
-function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played, phase, home, away }) {
+// ── Summary ───────────────────────────────────────────────────────────────
+// The landing tab: a stack of cards rather than one dataset. Each is a digest
+// of something with a tab of its own, in the order you want it after a result
+// lands — what happened, what it was worth, how the game went, who these two
+// are, where it was played.
+function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played, phase, home, away, onMore }) {
   const timeline = played ? detail?.events || [] : [];
+  const top = played ? detail?.topStats || [] : [];
+  const [homeColour] = coloursFor(sides[0].name);
+  const [awayColour] = coloursFor(sides[1].name);
 
   return (
     <div className="mp-pane">
+      {timeline.length > 0 && (
+        <>
+          <div className="section-title">How it went</div>
+          <div className="mp-timeline">
+            {timeline.map((e, i) => (
+              <div className={`mp-tl ${e.side === 'away' ? 'away' : ''}`} key={i}>
+                <span className="mp-tl-min">{e.minute}</span>
+                <span className={`mp-tl-mark ${e.kind}`}>{EVENT_MARK[e.kind]}</span>
+                <span className="mp-tl-who">
+                  {e.who || e.text}
+                  {e.kind === 'sub' && e.off && <em> for {e.off}</em>}
+                  {e.kind === 'own' && <em> own goal</em>}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       {/* ── What it paid ──────────────────────────────────────────────── */}
       <div className="mp-money">
         <div className="mp-money-head">{played ? 'What it paid' : 'What it pays'}</div>
@@ -223,22 +279,19 @@ function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played,
         </p>
       </div>
 
-      {timeline.length > 0 && (
+      {top.length > 0 && (
         <>
-          <div className="section-title">How it went</div>
-          <div className="mp-timeline">
-            {timeline.map((e, i) => (
-              <div className={`mp-tl ${e.side === 'away' ? 'away' : ''}`} key={i}>
-                <span className="mp-tl-min">{e.minute}</span>
-                <span className={`mp-tl-mark ${e.kind}`}>{EVENT_MARK[e.kind]}</span>
-                <span className="mp-tl-who">
-                  {e.who || e.text}
-                  {e.kind === 'sub' && e.off && <em> for {e.off}</em>}
-                  {e.kind === 'own' && <em> own goal</em>}
-                </span>
-              </div>
-            ))}
-          </div>
+          <div className="section-title">Top stats</div>
+          <StatKey
+            homeName={sides[0].info?.short || clubLabel(sides[0].name)}
+            awayName={sides[1].info?.short || clubLabel(sides[1].name)}
+            homeColour={homeColour}
+            awayColour={awayColour}
+          />
+          {top.map((r) => (
+            <StatRow key={r.key} row={r} homeColour={homeColour} awayColour={awayColour} />
+          ))}
+          <button className="mp-more" onClick={onMore}>All stats ›</button>
         </>
       )}
 
@@ -270,12 +323,46 @@ function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played,
         })}
       </div>
 
-      {played && (detail?.venue || detail?.attendance || detail?.referee) && (
-        <div className="mp-venue">
-          {detail.venue && <span>{detail.venue}{detail.city ? `, ${detail.city}` : ''}</span>}
-          {detail.attendance && <span>{detail.attendance.toLocaleString()} in</span>}
-          {detail.referee && <span>Ref {detail.referee}</span>}
-        </div>
+      {(detail?.venue || detail?.attendance || detail?.referee || fixture.utcDate) && (
+        <>
+          <div className="section-title">Match info</div>
+          <div className="mp-info">
+            {fixture.utcDate && (
+              <div className="mp-info-row">
+                <span className="mp-info-lab">Kick-off</span>
+                <span>{fmtDate(fixture.utcDate)}, {fmtTime(fixture.utcDate)}</span>
+              </div>
+            )}
+            {detail?.venue && (
+              <div className="mp-info-row">
+                <span className="mp-info-lab">Ground</span>
+                <span>{detail.venue}{detail.city ? `, ${detail.city}` : ''}</span>
+              </div>
+            )}
+            {detail?.attendance > 0 && (
+              <div className="mp-info-row">
+                <span className="mp-info-lab">Attendance</span>
+                <span>
+                  {detail.attendance.toLocaleString()}
+                  {detail.capacity > 0 && ` of ${detail.capacity.toLocaleString()}`}
+                </span>
+              </div>
+            )}
+            {detail?.referee && (
+              <div className="mp-info-row">
+                <span className="mp-info-lab">Referee</span>
+                <span>{detail.referee}</span>
+              </div>
+            )}
+            <div className="mp-info-row">
+              <span className="mp-info-lab">Round</span>
+              <span>
+                {fixture.division === 1 ? 'Premier League' : 'Championship'}
+                , matchweek {fixture.matchday}
+              </span>
+            </div>
+          </div>
+        </>
       )}
 
       {matchup && (
@@ -398,35 +485,6 @@ function Lineups({ detail, state, sides, played }) {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-// ── Stats ─────────────────────────────────────────────────────────────────
-function Stats({ detail, state, sides, played }) {
-  if (!detail?.stats?.length) return <Empty state={state} played={played} what="Match stats" />;
-  const [hc] = coloursFor(sides[0].name);
-  const [ac] = coloursFor(sides[1].name);
-
-  return (
-    <div className="mp-pane">
-      <div className="mp-stat-key">
-        <span><i style={{ background: hc }} />{sides[0].info?.short || clubLabel(sides[0].name)}</span>
-        <span><i style={{ background: ac }} />{sides[1].info?.short || clubLabel(sides[1].name)}</span>
-      </div>
-      {detail.stats.map((r) => (
-        <div className="mp-stat" key={r.label}>
-          <div className="mp-stat-top">
-            <span className="mp-stat-h">{r.home}</span>
-            <span className="mp-stat-lab">{r.label}</span>
-            <span className="mp-stat-a">{r.away}</span>
-          </div>
-          <div className="mp-stat-bar">
-            <span style={{ width: `${r.homeShare}%`, background: hc }} />
-            <span style={{ width: `${100 - r.homeShare}%`, background: ac }} />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
