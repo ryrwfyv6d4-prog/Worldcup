@@ -100,3 +100,53 @@ for (const k of ['headToHeadGames', 'standings', 'gameInfo', 'article', 'videos'
 const gi = s.gameInfo || {};
 if (gi.venue) console.log('  venue:', gi.venue.fullName, gi.venue.address?.city, 'capacity', gi.venue.capacity);
 if (gi.attendance) console.log('  attendance:', gi.attendance);
+
+// ── Nested shapes the match centre depends on ───────────────────────────────
+// Guessing these is how the fixture parser broke, so dump them properly.
+console.log('\n=== commentary[0..2] ===');
+for (const c of (s.commentary || []).slice(0, 3)) {
+  console.log('  keys:', Object.keys(c).join(','));
+  console.log('  ', JSON.stringify({
+    time: c.time?.displayValue, clock: c.clock?.displayValue,
+    text: (c.text || '').slice(0, 90),
+    playType: c.play?.type?.text, scoring: c.play?.scoringPlay,
+  }));
+}
+
+console.log('\n=== seasonseries ===');
+const ss = s.seasonseries || [];
+console.log('  isArray:', Array.isArray(ss), 'len:', ss.length);
+if (ss[0]) {
+  console.log('  [0] keys:', Object.keys(ss[0]).join(','));
+  console.log('  [0] type/title/summary:', ss[0].type, '|', ss[0].title, '|', ss[0].summary);
+  const evs = ss[0].events || [];
+  console.log('  [0].events len:', evs.length);
+  if (evs[0]) {
+    console.log('    event keys:', Object.keys(evs[0]).join(','));
+    console.log('    event:', JSON.stringify(evs[0]).slice(0, 700));
+  }
+}
+
+console.log('\n=== standings ===');
+const st = s.standings || {};
+console.log('  keys:', Object.keys(st).join(','));
+const grp = (st.groups || [])[0];
+if (grp) {
+  console.log('  groups[0] keys:', Object.keys(grp).join(','));
+  const entries = grp.standings?.entries || grp.entries || [];
+  console.log('  entries len:', entries.length);
+  if (entries[0]) {
+    console.log('    entry keys:', Object.keys(entries[0]).join(','));
+    console.log('    team:', entries[0].team?.displayName);
+    console.log('    stats:', (entries[0].stats || []).map((x) => `${x.name}/${x.abbreviation}=${x.displayValue}`).join(' | '));
+  }
+}
+
+console.log('\n=== lastFiveGames ===');
+const lf = s.lastFiveGames || [];
+console.log('  isArray:', Array.isArray(lf), 'len:', lf.length);
+if (lf[0]) {
+  console.log('  [0] keys:', Object.keys(lf[0]).join(','));
+  console.log('  [0] team:', lf[0].team?.displayName, 'events:', (lf[0].events || []).length);
+  if ((lf[0].events || [])[0]) console.log('    ev:', JSON.stringify(lf[0].events[0]).slice(0, 400));
+}
