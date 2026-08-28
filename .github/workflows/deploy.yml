@@ -68,6 +68,13 @@ jobs:
           node scripts/formation.test.mjs
           node scripts/highlight-title.test.mjs
 
+      # TEMPORARY: dump the real ESPN summary shape so the match page can be
+      # built against actual field names. Remove once captured.
+      - name: Probe ESPN match summary
+        working-directory: premier
+        run: node scripts/probe-summary.mjs
+        continue-on-error: true
+
       - name: Check live-score feed (diagnostic only, never blocks)
         working-directory: premier
         run: node scripts/check-feeds.mjs
