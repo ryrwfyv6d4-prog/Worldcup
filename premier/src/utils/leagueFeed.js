@@ -29,6 +29,7 @@ export function parseLeagueTxt(txt, div) {
   const fixtures = [];
   let matchday = null;
   let date = null; // { y, m, d }
+  let slotTime = null; // { hh, mm } — see below
   let startYear = null;
 
   const header = txt.match(/=\s*.*?(\d{4})\/\d{2}/);
@@ -48,6 +49,7 @@ export function parseLeagueTxt(txt, div) {
       let y = dl[4] ? parseInt(dl[4], 10) : null;
       if (y == null && startYear != null) y = m >= 6 ? startYear : startYear + 1;
       date = { y, m, d: parseInt(dl[3], 10) };
+      slotTime = null;   // times never carry across a date
       continue;
     }
 
@@ -94,10 +96,30 @@ export function parseLeagueTxt(txt, div) {
     home = resolveClub(home) || home;
     away = resolveClub(away) || away;
 
+    // The kick-off time belongs to the SLOT, not the line. openfootball writes
+    // it once and every match under it kicks off at the same time until a new
+    // one appears:
+    //
+    //     Sat Aug 22
+    //       12:30  Birmingham    v Bristol City
+    //              Lincoln       v Portsmouth      <- also 12:30
+    //       15:00  Swansea       v Sheffield Utd
+    //              West Ham      v Charlton        <- also 15:00
+    //
+    // Reading only the line's own time and defaulting the rest to 15:00 put
+    // eight of every ten fixtures at the wrong time: the 12:30 group ran late,
+    // and a midweek round listed once at 19:45 had everything after the first
+    // match nearly five hours early. In Melbourne that is enough to move a
+    // match onto the wrong day.
+    if (ml[1]) slotTime = { hh: parseInt(ml[1], 10), mm: parseInt(ml[2], 10) };
+
     let utcDate = null;
+    let timeTBC = false;
     if (date.y != null) {
-      const hh = ml[1] ? parseInt(ml[1], 10) : 15;
-      const mm = ml[2] ? parseInt(ml[2], 10) : 0;
+      // Nothing has set a time for this date at all — a placeholder, flagged so
+      // the UI can say so rather than inventing a confident kick-off.
+      if (!slotTime) timeTBC = true;
+      const { hh, mm } = slotTime || { hh: 15, mm: 0 };
       const off = ukOffsetHours(date.y, date.m, date.d);
       utcDate = new Date(Date.UTC(date.y, date.m, date.d, hh - off, mm)).toISOString();
     }
@@ -111,6 +133,7 @@ export function parseLeagueTxt(txt, div) {
       division: div,
       matchday,
       utcDate,
+      timeTBC,
       status: finished ? 'FINISHED' : 'SCHEDULED',
       homeTeam: { name: home },
       awayTeam: { name: away },

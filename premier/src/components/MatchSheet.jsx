@@ -35,9 +35,13 @@ function ordinal(n) {
 const fmtDate = (iso) => (iso
   ? new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long' })
   : 'Date TBC');
-const fmtTime = (iso) => (iso
-  ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  : '');
+// The phone's own timezone. A fixture the feed carries no time for says TBC
+// rather than showing the placeholder the parser needed in order to sort it.
+const fmtTime = (f) => {
+  if (!f?.utcDate) return '';
+  if (f.timeTBC) return 'TBC';
+  return new Date(f.utcDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+};
 
 const EVENT_MARK = { goal: '⚽', own: '⚽', yellow: '▮', red: '▮', sub: '⇄' };
 
@@ -144,7 +148,7 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
               </>
             ) : (
               <>
-                <span className="mp-kick">{fmtTime(fixture.utcDate)}</span>
+                <span className="mp-kick">{fmtTime(fixture)}</span>
                 <span className="mp-state">{fmtDate(fixture.utcDate)}</span>
               </>
             )}
@@ -330,7 +334,7 @@ function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played,
             {fixture.utcDate && (
               <div className="mp-info-row">
                 <span className="mp-info-lab">Kick-off</span>
-                <span>{fmtDate(fixture.utcDate)}, {fmtTime(fixture.utcDate)}</span>
+                <span>{fmtDate(fixture.utcDate)}, {fmtTime(fixture)}</span>
               </div>
             )}
             {detail?.venue && (

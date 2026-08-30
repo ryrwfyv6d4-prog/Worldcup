@@ -22,7 +22,11 @@ const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
 // PARSED, so a parser fix does nothing for anyone still holding a good-looking
 // cache entry written by the old one — which is exactly what happened when the
 // away team was coming through with the score stuck to it.
-const CACHE_KEY = 'epl_fixtures_cache_v3';
+// v4: the parser now carries a slot's kick-off time down to the matches under
+// it. A cache written by v3 holds the old wrong times, and it would be served
+// happily because the club names in it are still valid — which is how stale
+// fixture data survived a parser fix once already.
+const CACHE_KEY = 'epl_fixtures_cache_v4';
 const CACHE_TTL = 30 * 60 * 1000;
 
 // Merge ESPN live/final data over the base schedule. ESPN only ever upgrades a
@@ -38,8 +42,19 @@ function mergeEspn(base, espnGames) {
       g.away === f.awayTeam.name &&
       Math.abs(new Date(g.date).getTime() - fTime) < 3 * 24 * 3600 * 1000
     );
-    if (!g || g.state === 'pre') return f;
-    if (g.homeScore == null || g.awayScore == null) return f;
+    if (!g) return f;
+
+    // ESPN knows the confirmed kick-off; the league feed only knows the slot it
+    // was pencilled into, and for a match still to be played that is the number
+    // people are planning their evening around. Taken even for a fixture that
+    // has not started, which is exactly when it matters — the scores below are
+    // still only taken once there are scores to take.
+    const withTime = g.date && g.date !== f.utcDate
+      ? { ...f, utcDate: g.date, timeTBC: false }
+      : f;
+
+    if (g.state === 'pre') return withTime;
+    if (g.homeScore == null || g.awayScore == null) return withTime;
 
     const finished = g.state === 'post';
     let winner = null;
@@ -49,7 +64,7 @@ function mergeEspn(base, espnGames) {
       else winner = 'DRAW';
     }
     return {
-      ...f,
+      ...withTime,
       status: finished ? 'FINISHED' : 'IN_PLAY',
       liveClock: !finished ? g.clock : null,
       score: { home: g.homeScore, away: g.awayScore, winner },

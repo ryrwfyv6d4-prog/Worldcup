@@ -17,8 +17,9 @@ function countdown(toIso) {
   return `${mins}m`;
 }
 
-function fmtKo(iso) {
-  if (!iso) return 'TBC';
+function fmtKo(f) {
+  const iso = f?.utcDate;
+  if (!iso || f.timeTBC) return 'TBC';
   const d = new Date(iso);
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) +
     ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -113,7 +114,7 @@ export default function MyWeekend({ player, assignments, fixtures, onOpenMatch }
               )}
               {!done && !live && (
                 <>
-                  <span className="mw-ko">{fmtKo(f.utcDate)}</span>
+                  <span className="mw-ko">{fmtKo(f)}</span>
                   {rate && <span className="mw-worth">+{rate.win}</span>}
                 </>
               )}

@@ -35,9 +35,14 @@ const dayKey = (iso) => {
 const fmtDay = (iso) => (iso
   ? new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long' })
   : 'Date TBC');
-const fmtTime = (iso) => (iso
-  ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  : '');
+// Shown in the phone's own timezone, so an English evening kick-off reads as
+// the small hours here. A fixture the feed has no time for says so instead of
+// showing the placeholder the parser had to pick to sort it.
+const fmtTime = (f) => {
+  if (!f.utcDate) return '';
+  if (f.timeTBC) return 'TBC';
+  return new Date(f.utcDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+};
 
 export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI }) {
   const [filter, setFilter] = useState('all');
@@ -218,7 +223,7 @@ function MatchRow({ fixture: f, assignments, onOpen }) {
   return (
     <div className={`fx-row-wrap ${highlight ? 'has-hl' : ''}`}>
     <button className="fx-row" onClick={onOpen}>
-      <span className="fx-time">{fmtTime(f.utcDate)}</span>
+      <span className="fx-time">{fmtTime(f)}</span>
       <span className="fx-clubs">
         <span className="fx-club">
           <Stripe team={f.homeTeam.name} />

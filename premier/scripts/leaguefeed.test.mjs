@@ -99,5 +99,77 @@ check('rescues without half-time', clubLabel('Coventry City FC 3-0') === 'Covent
 // a club that genuinely is not ours still reads tidily rather than raw
 check('unknown club tidied', clubLabel('Barnsley FC') === 'Barnsley', clubLabel('Barnsley FC'));
 
+// ── Kick-off times belong to the slot, not the line ─────────────────────────
+//
+// openfootball writes the time once and every match under it kicks off then,
+// until a new time appears. Reading only each line's own time and defaulting
+// the rest to 15:00 put 8 of every 10 fixtures at the wrong time — and in
+// Melbourne that is enough to move a match onto the wrong day.
+console.log('— kick-off times carry down a slot —');
+
+const SLOTS = `= English Premier League 2026/27
+
+\u25aa Matchday 2
+  Sat Aug 22 2026
+    12:30  Birmingham City FC      v Bristol City FC          2-2 (1-1)
+           Lincoln City FC         v Portsmouth FC            1-3 (1-2)
+    15:00  Swansea City AFC        v Sheffield United FC      0-0
+           West Ham United FC      v Charlton Athletic FC     1-2 (0-1)
+  Sun Aug 23 2026
+    12:00  West Bromwich Albion FC v Burnley FC               3-1 (1-1)
+`;
+
+const slotted = parseLeagueTxt(SLOTS, 2);
+const at = (home) => slotted.find((f) => f.homeTeam.name === resolveClub(home));
+const ukTime = (f) => new Date(f.utcDate).toLocaleTimeString('en-GB',
+  { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });
+
+check('the match carrying the time keeps it', ukTime(at('Birmingham City FC')) === '12:30',
+  ukTime(at('Birmingham City FC')));
+check('the one under it inherits 12:30, not 15:00', ukTime(at('Lincoln City FC')) === '12:30',
+  ukTime(at('Lincoln City FC')));
+check('a new time starts a new slot', ukTime(at('Swansea City AFC')) === '15:00',
+  ukTime(at('Swansea City AFC')));
+check('and carries on down', ukTime(at('West Ham United FC')) === '15:00',
+  ukTime(at('West Ham United FC')));
+check('a new date resets the slot', ukTime(at('West Bromwich Albion FC')) === '12:00',
+  ukTime(at('West Bromwich Albion FC')));
+check('none of these are flagged TBC', slotted.every((f) => !f.timeTBC));
+
+// The midweek case, where getting it wrong is worst: one 19:45 at the top and
+// everything under it was landing on 15:00, nearly five hours early.
+const MIDWEEK = `= English Championship 2026/27
+
+\u25aa Matchday 5
+  Tue Sep 1 2026
+    19:45  Preston North End FC    v Bristol City FC
+           West Ham United FC      v Wolverhampton Wanderers FC
+           Lincoln City FC         v Blackburn Rovers FC
+`;
+const midweek = parseLeagueTxt(MIDWEEK, 2);
+check('every midweek match kicks off at 19:45',
+  midweek.every((f) => new Date(f.utcDate).toLocaleTimeString('en-GB',
+    { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' }) === '19:45'),
+  midweek.map((f) => new Date(f.utcDate).toISOString()).join(' '));
+// the whole point: in Melbourne this is Wednesday morning, not Tuesday midnight
+check('which is Wed 04:45 in Melbourne',
+  new Date(midweek[0].utcDate).toLocaleString('en-GB',
+    { timeZone: 'Australia/Melbourne', weekday: 'short', hour: '2-digit', minute: '2-digit' })
+    .includes('04:45'),
+  new Date(midweek[0].utcDate).toLocaleString('en-GB', { timeZone: 'Australia/Melbourne' }));
+
+// A date nobody has given a time for at all still needs to sort, but must not
+// pretend to know when it kicks off.
+const NOTIME = `= English Premier League 2026/27
+
+\u25aa Matchday 9
+  Sat Oct 24 2026
+           Arsenal FC              v Coventry City FC
+`;
+const notime = parseLeagueTxt(NOTIME, 1);
+check('an untimed fixture is flagged', notime[0].timeTBC === true);
+check('but still has a date to sort by', Boolean(notime[0].utcDate));
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
+
