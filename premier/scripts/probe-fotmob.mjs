@@ -1,15 +1,19 @@
-// Diagnostic: exactly what FotMob gives us, for an UNPLAYED match, in both
-// divisions.
+// Diagnostic, round two: the exact shape of FotMob's team news, and whether
+// the Championship comes back.
 //
-// The team-news probe established that FotMob answers without a key or token:
-//   www.fotmob.com/api/data/matches?date=YYYYMMDD
-//   www.fotmob.com/api/data/matchDetails?matchId=N
-// and that matchDetails.content carries matchFacts, lineup, stats, playerStats,
-// shotmap, momentum, table and h2h.
+// Established so far, on an unplayed Premier League fixture:
+//   lineup.homeTeam = {id,name,formation,starters,coach,unavailable,
+//                      averageStarterAge,totalStarterMarketValue}
+//   formation "4-2-3-1" on a match two days out, so these are probable XIs
+//   "injur" 17x, "unavailab" 10x, "doubtful" 1x in the payload
 //
-// This one goes a level deeper: are the pre-match line-ups real, is there a
-// team-news or injury block, and does the Championship come back too. Half our
-// clubs are in the second tier, so a Premier-League-only source is no use.
+// Two things still unknown, and both decide whether this is worth building on:
+//   1. what a row of `unavailable` actually contains — a name is no use
+//      without a reason
+//   2. whether the Championship is covered. Only the Premier League came back
+//      on the day probed, which was probably an international break rather
+//      than a gap in coverage, but half our clubs are second tier so this
+//      has to be checked, not assumed.
 //
 // Read-only. Nothing depends on it at runtime.
 
@@ -19,71 +23,68 @@ const H = {
   Referer: 'https://www.fotmob.com/',
   'Accept-Language': 'en-GB,en;q=0.9',
 };
-
 const get = async (url) => {
   const res = await fetch(url, { headers: H, signal: AbortSignal.timeout(20000) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 };
-const shape = (v) => (v == null ? 'absent'
-  : Array.isArray(v) ? `array(${v.length})`
-  : typeof v === 'object' ? `object{${Object.keys(v).join(',').slice(0, 150)}}`
-  : `${typeof v} ${JSON.stringify(v).slice(0, 70)}`);
 
-// Look a few days out so the matches are genuinely unplayed
-for (const offset of [2, 3, 4]) {
-  const d = new Date(Date.now() + offset * 864e5);
-  const compact = d.toISOString().slice(0, 10).replace(/-/g, '');
+// FotMob league ids: 47 Premier League, 48 Championship
+const WANT = { 47: 'Premier League', 48: 'Championship' };
+const found = {};
+
+console.log('Scanning the next 12 days for both English tiers\n');
+for (let i = 0; i <= 12 && Object.keys(found).length < 2; i++) {
+  const compact = new Date(Date.now() + i * 864e5).toISOString().slice(0, 10).replace(/-/g, '');
   let day;
   try { day = await get(`https://www.fotmob.com/api/data/matches?date=${compact}`); }
-  catch (err) { console.log(`${compact}: ${err.message}`); continue; }
+  catch (err) { console.log(`  ${compact}  ${err.message}`); continue; }
 
-  const names = (day.leagues || []).map((l) => `${l.name}${l.ccode ? ` (${l.ccode})` : ''}`);
-  const eng = (day.leagues || []).filter((l) => /premier league|championship/i.test(l.name || '')
-    && /eng/i.test(l.ccode || l.name || ''));
-  console.log(`\n=== ${compact}: ${names.length} leagues ===`);
-  console.log('  English tiers found:', eng.map((l) => `${l.name} [id ${l.id}] ${l.matches?.length} matches`).join(' | ') || 'none');
-
-  for (const lg of eng) {
-    const m = (lg.matches || []).find((x) => x.status?.started === false) || lg.matches?.[0];
-    if (!m) continue;
-    console.log(`\n  --- ${lg.name}: ${m.home?.name} v ${m.away?.name} (id ${m.id}) started=${m.status?.started} ---`);
-    let md;
-    try { md = await get(`https://www.fotmob.com/api/data/matchDetails?matchId=${m.id}`); }
-    catch (err) { console.log('    matchDetails', err.message); continue; }
-
-    const c = md.content || {};
-    console.log('    content:', Object.keys(c).join(', '));
-
-    // Line-ups before kick-off — the thing ESPN does not have
-    const lu = c.lineup;
-    console.log('    lineup:', shape(lu));
-    if (lu) {
-      for (const k of ['lineup', 'homeTeam', 'awayTeam', 'teamRatings', 'usingOptaLineup', 'usingEnetpulseLineup', 'bench', 'coachesOnly']) {
-        if (lu[k] !== undefined) console.log(`      lineup.${k}:`, shape(lu[k]));
-      }
-      const side = (lu.lineup || [])[0] || lu.homeTeam;
-      if (side) {
-        console.log('      side keys:', Object.keys(side).join(',').slice(0, 160));
-        console.log('      formation:', side.formation);
-        const first = (side.players || [])?.flat?.()?.[0] || (side.players || [])[0];
-        if (first) console.log('      player keys:', Object.keys(first).join(',').slice(0, 200));
-      }
-    }
-
-    // Team news / injuries, wherever they hide
-    const mf = c.matchFacts || {};
-    console.log('    matchFacts:', Object.keys(mf).join(', ').slice(0, 200));
-    for (const k of ['infoBox', 'teamForm', 'topPlayers', 'poll', 'injuries', 'momentum', 'highlights']) {
-      if (mf[k] !== undefined) console.log(`      matchFacts.${k}:`, shape(mf[k]));
-    }
-    // the injury/suspension list is the whole point — hunt it anywhere in content
-    const hunt = JSON.stringify(md);
-    for (const word of ['injur', 'suspend', 'unavailab', 'doubtful', 'missingPlayers', 'sidelined']) {
-      const n = (hunt.match(new RegExp(word, 'gi')) || []).length;
-      if (n) console.log(`      "${word}" appears ${n}x in the payload`);
-    }
-    if (c.lineup?.unavailable) console.log('      unavailable:', JSON.stringify(c.lineup.unavailable).slice(0, 500));
+  const hits = (day.leagues || []).filter((l) => WANT[l.id]);
+  console.log(`  ${compact}  ${(day.leagues || []).length} leagues; `
+    + (hits.map((l) => `${WANT[l.id]}:${l.matches?.length}`).join(' ') || 'neither tier'));
+  for (const lg of hits) {
+    if (found[lg.id]) continue;
+    const m = (lg.matches || []).find((x) => x.status?.started === false);
+    if (m) found[lg.id] = { league: lg, match: m };
   }
-  break; // one day's worth is enough
+}
+
+for (const [id, { match }] of Object.entries(found)) {
+  console.log(`\n=== ${WANT[id]} — ${match.home?.name} v ${match.away?.name} (${match.id}) ===`);
+  let md;
+  try { md = await get(`https://www.fotmob.com/api/data/matchDetails?matchId=${match.id}`); }
+  catch (err) { console.log('  matchDetails', err.message); continue; }
+
+  const lu = md.content?.lineup;
+  if (!lu) { console.log('  no lineup block'); continue; }
+  console.log(`  lineupType=${lu.lineupType}  source=${lu.source}`);
+
+  for (const side of ['homeTeam', 'awayTeam']) {
+    const t = lu[side];
+    if (!t) continue;
+    const starters = t.starters || [];
+    console.log(`  ${side}: ${t.name}  formation=${t.formation}  starters=${starters.length}`
+      + `  unavailable=${(t.unavailable || []).length}`
+      + `  avgAge=${t.averageStarterAge}  value=${t.totalStarterMarketValue}`);
+    if (starters[0]) {
+      console.log('    starter keys:', Object.keys(starters[0]).join(',').slice(0, 220));
+      console.log('    sample:', JSON.stringify({
+        name: starters[0].name, shirt: starters[0].shirtNumber,
+        pos: starters[0].positionStringShort ?? starters[0].role,
+usualPlayingPosition: starters[0].usualPlayingPositionId,
+      }));
+    }
+    // the one that matters
+    for (const u of (t.unavailable || []).slice(0, 6)) {
+      console.log('    OUT:', JSON.stringify(u).slice(0, 320));
+    }
+    if ((t.unavailable || [])[0]) {
+      console.log('    unavailable keys:', Object.keys(t.unavailable[0]).join(','));
+    }
+  }
+}
+
+if (!found[48]) {
+  console.log('\nNo unplayed Championship fixture found in the window — coverage unconfirmed.');
 }
