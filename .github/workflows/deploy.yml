@@ -69,9 +69,9 @@ jobs:
           node scripts/highlight-title.test.mjs
           node scripts/matchdetail.test.mjs
 
-      - name: Probe team-news sources (temporary)
+      - name: Probe FotMob payload (temporary)
         working-directory: premier
-        run: node scripts/probe-teamnews.mjs
+        run: node scripts/probe-fotmob.mjs
         continue-on-error: true
 
       - name: Check live-score feed (diagnostic only, never blocks)
