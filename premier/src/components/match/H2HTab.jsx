@@ -51,9 +51,6 @@ export default function H2HTab({ detail, sides }) {
             <span className="d" style={{ width: `${pct(h2h.draws)}%` }} />
             <span className="l" style={{ width: `${pct(h2h.awayWins)}%` }} />
           </div>
-          <p className="muted small">
-            {total} previous meeting{total === 1 ? '' : 's'} on record.
-          </p>
         </>
       )}
 
@@ -77,9 +74,6 @@ export default function H2HTab({ detail, sides }) {
               </div>
             ))}
           </div>
-          <p className="muted small">
-            W, D and L read from {homeName}'s side.
-          </p>
         </>
       )}
 

@@ -803,7 +803,6 @@ body {
   color: var(--ink); padding-bottom: 5px; margin-bottom: 11px;
   border-bottom: 1.5px solid var(--ink);
 }
-.mp-stat-foot { margin: 4px 0 6px; }
 .mp-more {
   display: block; width: 100%; margin: 4px 0 2px; padding: 9px 0;
   background: none; border: 1.5px solid var(--rule-dotted); color: var(--ink-muted);

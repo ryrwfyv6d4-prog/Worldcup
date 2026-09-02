@@ -47,7 +47,6 @@ export default function Tables({ fixtures, assignments, manualMedals, bonusPoint
     <div className="page">
       <div className="page-header">
         <h2>The Map Room</h2>
-        <span className="subtitle">The real tables. Tap a club for its page.</span>
       </div>
 
       <div className="seg-row">
@@ -154,14 +153,6 @@ export default function Tables({ fixtures, assignments, manualMedals, bonusPoint
         </>
       )}
 
-      {effectiveMode !== 'projected' && (
-      <p className="muted small">
-        Swipe the table sideways for the full stats. The name under each club is its
-        owner. <b>Tip</b> is where the bookies tipped them, turning green with
-        places gained once six games are played, worth +{SCORING.OVERACHIEVE} each.
-        {effectiveMode !== 'all' && ' Zones and Tip always reflect the real overall table.'}
-      </p>
-      )}
     </div>
   );
 }
@@ -226,11 +217,6 @@ function ProjectedTable({ div, projection, started, onSelectTeam }) {
         </table>
       </div>
 
-      <p className="muted small">
-        <b>Range</b> is where the club lands in 90 of every 100 seasons — a wide one means
-        nobody knows. <b>Tip</b> shows the bookies' pre-season order, with an arrow when the
-        projection disagrees. Chances are of the club, not its owner.
-      </p>
     </>
   );
 }

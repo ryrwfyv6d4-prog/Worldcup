@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { getTeam } from '../data/england2027.js';
 import { clubLabel } from '../utils/teamMatch.js';
-import { phaseFor, midseasonRankFor } from '../utils/odds.js';
 import { getMatchup, FIRMS_FOOTNOTE } from '../data/rivalries.js';
 import { coloursFor } from '../data/colours.js';
 import Crest from './Crest.jsx';
@@ -80,7 +79,6 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
   const away = getTeam(fixture.awayTeam.name);
   const matchup = getMatchup(fixture.homeTeam.name, fixture.awayTeam.name, home, away);
   const rev = reverseFixture(fixture, fixtures);
-  const phase = phaseFor(fixture.utcDate);
 
   const done = fixture.status === 'FINISHED';
   const live = fixture.status === 'IN_PLAY';
@@ -194,7 +192,7 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
           <Report
             fixture={fixture} fixtures={fixtures} table={table} sides={sides}
             detail={detail} matchup={matchup} rev={rev} played={played}
-            phase={phase} home={home} away={away}
+            home={home} away={away}
             onMore={() => setTab('stats')}
           />
         )}
@@ -220,7 +218,7 @@ const s0 = (n) => (n == null ? 0 : n);
 // of something with a tab of its own, in the order you want it after a result
 // lands — what happened, what it was worth, how the game went, who these two
 // are, where it was played.
-function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played, phase, home, away, onMore }) {
+function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played, home, away, onMore }) {
   const timeline = played ? detail?.events || [] : [];
   const top = played ? detail?.topStats || [] : [];
   const [homeColour] = coloursFor(sides[0].name);
@@ -271,16 +269,6 @@ function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played,
             </div>
           );
         })}
-        <p className="mp-money-note">
-          {phase === 'mid' && home && midseasonRankFor(home.name) ? (
-            <>Priced off the January re-rating: {home.short} {ordinal(midseasonRankFor(home.name))},
-            {' '}{away?.short} {ordinal(midseasonRankFor(away?.name))} at New Year.</>
-          ) : home && away ? (
-            <>Priced off the pre-season odds: {home.short} tipped {ordinal(home.rank)},
-            {' '}{away.short} tipped {ordinal(away.rank)}.</>
-          ) : null}
-          {' '}A win away from home, or over a club rated above you, pays more.
-        </p>
       </div>
 
       {top.length > 0 && (

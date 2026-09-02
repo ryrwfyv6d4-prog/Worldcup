@@ -30,10 +30,6 @@ export default function StatsTab({ detail, sides }) {
           ))}
         </div>
       ))}
-      <p className="muted small mp-stat-foot">
-        Team totals as published for the full match. No expected goals, shot maps
-        or player ratings — the feed behind this app does not carry them.
-      </p>
     </div>
   );
 }

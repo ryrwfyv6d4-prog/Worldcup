@@ -82,11 +82,6 @@ export default function StandingsTab({ fixtures, division, sides, onSelectTeam }
           );
         })}
       </div>
-      <p className="muted small">
-        {mode === 'all'
-          ? 'Full table, every match played so far.'
-          : `Points won at ${mode} only.`}
-      </p>
     </div>
   );
 }
