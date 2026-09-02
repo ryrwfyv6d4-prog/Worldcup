@@ -69,7 +69,7 @@ jobs:
           node scripts/highlight-title.test.mjs
           node scripts/matchdetail.test.mjs
 
-      - name: Probe FotMob payload (temporary)
+      - name: Probe team-news route end to end (temporary)
         working-directory: premier
         run: node scripts/probe-fotmob.mjs
         continue-on-error: true

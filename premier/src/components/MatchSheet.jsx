@@ -6,6 +6,7 @@ import { coloursFor } from '../data/colours.js';
 import Crest from './Crest.jsx';
 import Stripe from './Stripe.jsx';
 import { useMatchDetail } from '../hooks/useMatchDetail.js';
+import { useTeamNews } from '../hooks/useTeamNews.js';
 import { useHighlight } from '../hooks/useHighlight.js';
 import { buildShape, shirtColours } from '../utils/formation.js';
 import { useSwipeToClose } from '../hooks/useSwipeToClose.js';
@@ -14,6 +15,7 @@ import CommentaryTab from './match/CommentaryTab.jsx';
 import H2HTab from './match/H2HTab.jsx';
 import StandingsTab from './match/StandingsTab.jsx';
 import StatRow, { StatKey } from './match/StatRow.jsx';
+import TeamNews, { ProbableXI } from './match/TeamNews.jsx';
 import {
   leagueTable, formForTeam, positionOf, reverseFixture, fixturePoints,
 } from '../utils/scoring.js';
@@ -88,6 +90,8 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
     fixture.score?.home, fixture.score?.away
   );
   const played = done || live;
+  // Only before kick-off. Afterwards the result is the news.
+  const { news } = useTeamNews(fixture, !played);
 
   const sides = [
     {
@@ -192,7 +196,7 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
           <Report
             fixture={fixture} fixtures={fixtures} table={table} sides={sides}
             detail={detail} matchup={matchup} rev={rev} played={played}
-            home={home} away={away}
+            home={home} away={away} news={news}
             onMore={() => setTab('stats')}
           />
         )}
@@ -218,7 +222,7 @@ const s0 = (n) => (n == null ? 0 : n);
 // of something with a tab of its own, in the order you want it after a result
 // lands — what happened, what it was worth, how the game went, who these two
 // are, where it was played.
-function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played, home, away, onMore }) {
+function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played, home, away, news, onMore }) {
   const timeline = played ? detail?.events || [] : [];
   const top = played ? detail?.topStats || [] : [];
   const odds = !played ? detail?.odds : null;
@@ -245,6 +249,8 @@ function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played,
           </div>
         </>
       )}
+
+      <TeamNews news={news} sides={sides} />
 
       {/* ── What it paid ──────────────────────────────────────────────── */}
       <div className="mp-money">
@@ -333,6 +339,8 @@ function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played,
           );
         })}
       </div>
+
+      <ProbableXI news={news} sides={sides} />
 
       {(detail?.venue || detail?.attendance || detail?.referee || fixture.utcDate) && (
         <>

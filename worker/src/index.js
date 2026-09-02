@@ -237,6 +237,127 @@ export default {
         return json({ videoId, source: videoId ? source : null });
       }
 
+      // GET /epl/teamnews — who is out, and the probable XI, before kick-off.
+      // Query: ?date=20260904&home=Ipswich Town FC&homeShort=Ipswich
+      //        &away=Liverpool FC&awayShort=Liverpool
+      //
+      // ESPN, which everything else here runs on, has no injuries for English
+      // football at all: no injuries key on the summary, a 404 on the league
+      // endpoint, zero rows on the per-team one, and pre-match rosters that
+      // come back empty. FotMob has all of it, unauthenticated, and carries an
+      // expected return date that even the paid providers do not.
+      //
+      // Fixtures are matched by CLUB NAME across every league in the day's
+      // payload rather than by a FotMob league id. Their ids are not ours to
+      // rely on — a first pass keyed on 47/48 found the Premier League and
+      // missed the Championship entirely — and half the shed's clubs are second
+      // tier. Matching on names finds both and survives them renumbering.
+      //
+      // The client sends the full name and the short one, exactly as the
+      // highlights route does, so the club list still lives in one place.
+      if (request.method === 'GET' && path === '/epl/teamnews') {
+        const date = url.searchParams.get('date') || '';
+        const home = url.searchParams.get('home') || '';
+        const away = url.searchParams.get('away') || '';
+        const homeShort = url.searchParams.get('homeShort') || home;
+        const awayShort = url.searchParams.get('awayShort') || away;
+        if (!/^\d{8}$/.test(date) || !home || !away) return json({ found: false });
+
+        const cacheKey = `epl-teamnews/v1/${date}|${home}|${away}.json`;
+        const cached = await env.WALL.get(cacheKey);
+        if (cached) {
+          const c = JSON.parse(await cached.text());
+          // Team news moves as the week goes on, so a hit is only good for a
+          // while. A miss is cached too, and for longer — a fixture FotMob has
+          // no line-up for yet will not grow one in the next ten minutes.
+          const age = Date.now() - (c.ts || 0);
+          const ttl = c.found ? 30 * 60 * 1000 : 3 * 60 * 60 * 1000;
+          if (age < ttl) return json(c.data);
+        }
+
+        const FM = {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+            + 'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          Referer: 'https://www.fotmob.com/',
+          'Accept-Language': 'en-GB,en;q=0.9',
+        };
+        // Loose enough to bridge "Ipswich Town FC" and "Ipswich Town", strict
+        // enough not to marry Manchester City to Manchester United.
+        const norm = (s) => String(s || '')
+          .toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/\b(a\.?f\.?c|f\.?c)\b/g, '')
+          .replace(/[^a-z0-9]/g, '');
+        const sameClub = (feed, full, short) => {
+          const f = norm(feed);
+          if (!f) return false;
+          return f === norm(full) || f === norm(short);
+        };
+
+        const miss = async () => {
+          const body = { found: false };
+          await env.WALL.put(cacheKey, JSON.stringify({ ts: Date.now(), found: false, data: body }),
+            { httpMetadata: { contentType: 'application/json' } });
+          return json(body);
+        };
+
+        let day;
+        try {
+          const r = await fetch(`https://www.fotmob.com/api/data/matches?date=${date}`, { headers: FM });
+          if (!r.ok) return await miss();
+          day = await r.json();
+        } catch { return await miss(); }
+
+        let matchId = null;
+        for (const lg of day.leagues || []) {
+          for (const m of lg.matches || []) {
+            if (sameClub(m.home?.name, home, homeShort)
+              && sameClub(m.away?.name, away, awayShort)) { matchId = m.id; break; }
+          }
+          if (matchId) break;
+        }
+        if (!matchId) return await miss();
+
+        let md;
+        try {
+          const r = await fetch(`https://www.fotmob.com/api/data/matchDetails?matchId=${matchId}`, { headers: FM });
+          if (!r.ok) return await miss();
+          md = await r.json();
+        } catch { return await miss(); }
+
+        const lu = md?.content?.lineup;
+        if (!lu || (!lu.homeTeam && !lu.awayTeam)) return await miss();
+
+        // Trimmed hard: the raw payload is megabytes and only these fields are
+        // ever drawn.
+        const side = (t) => (!t ? null : {
+          name: t.name || null,
+          formation: t.formation || null,
+          xi: (t.starters || []).map((p) => ({
+            name: p.name || null,
+            shirt: p.shirtNumber ?? null,
+            pos: p.positionId ?? null,
+          })),
+          out: (t.unavailable || []).map((p) => ({
+            name: p.name || null,
+            type: p.unavailability?.type || null,          // injury | suspension
+            back: p.unavailability?.expectedReturn || null, // "Early September 2026" | "Doubtful"
+          })),
+        });
+
+        const body = {
+          found: true,
+          matchId,
+          // "predicted" until the real sheet lands, then "confirmed"
+          kind: lu.lineupType || null,
+          home: side(lu.homeTeam),
+          away: side(lu.awayTeam),
+        };
+        await env.WALL.put(cacheKey, JSON.stringify({ ts: Date.now(), found: true, data: body }),
+          { httpMetadata: { contentType: 'application/json' } });
+        return json(body);
+      }
+
       // GET /epl/highlight — same idea as /highlight, for the England sweep.
       // Query: ?home=Brentford FC&homeShort=Brentford
       //        &away=Tottenham Hotspur FC&awayShort=Spurs&hs=1&as=2
