@@ -4,6 +4,7 @@ import { fixturePoints, pointsHaul } from '../utils/scoring.js';
 import { getRivalry } from '../data/rivalries.js';
 import { clubLabel } from '../utils/teamMatch.js';
 import Stripe from './Stripe.jsx';
+import Tier from './Tier.jsx';
 import { fixturesLine } from '../utils/editorial.js';
 import { useHighlight } from '../hooks/useHighlight.js';
 
@@ -106,6 +107,14 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
 
   const haul = useMemo(() => pointsHaul(shown, assignments), [shown, assignments]);
 
+  // The division chip earns its place only when both are on screen together.
+  // Under the Premier or Championship filter every row is the same tier, and a
+  // column of identical chips is decoration.
+  const showTier = useMemo(
+    () => new Set(shown.map((f) => f.division)).size > 1,
+    [shown]
+  );
+
   const mineCount = shown.filter(
     (f) => myTeams.includes(f.homeTeam.name) || myTeams.includes(f.awayTeam.name)
   ).length;
@@ -166,6 +175,7 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
               key={f.id}
               fixture={f}
               assignments={assignments}
+              showTier={showTier}
               onOpen={() => onOpenMatch(f)}
             />
           ))}
@@ -203,7 +213,7 @@ function Worth({ fixture, team }) {
   );
 }
 
-function MatchRow({ fixture: f, assignments, onOpen }) {
+function MatchRow({ fixture: f, assignments, showTier, onOpen }) {
   const h = getTeam(f.homeTeam.name);
   const a = getTeam(f.awayTeam.name);
   const ho = ownerOf(f.homeTeam.name, assignments);
@@ -223,7 +233,10 @@ function MatchRow({ fixture: f, assignments, onOpen }) {
   return (
     <div className={`fx-row-wrap ${highlight ? 'has-hl' : ''}`}>
     <button className="fx-row" onClick={onOpen}>
-      <span className="fx-time">{fmtTime(f)}</span>
+      <span className="fx-time">
+        {fmtTime(f)}
+        {showTier && <Tier div={f.division} />}
+      </span>
       <span className="fx-clubs">
         <span className="fx-club">
           <Stripe team={f.homeTeam.name} />

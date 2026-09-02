@@ -4,6 +4,7 @@ import { clubLabel } from '../utils/teamMatch.js';
 import { fixturePoints } from '../utils/scoring.js';
 import { getRivalry } from '../data/rivalries.js';
 import Stripe from './Stripe.jsx';
+import Tier from './Tier.jsx';
 
 // What is about to move the table.
 //
@@ -66,6 +67,10 @@ export default function UpNext({ fixtures, assignments, whoAmI, onOpenMatch, lim
 
   if (!rows.length) return null;
 
+  // Same rule as the fixture list: the chip is only worth the space when both
+  // divisions are actually in view.
+  const showTier = new Set(rows.map((f) => f.division)).size > 1;
+
   return (
     <div className="upnext">
       <div className="upnext-head">
@@ -81,7 +86,8 @@ export default function UpNext({ fixtures, assignments, whoAmI, onOpenMatch, lim
           <button className={`upnext-row ${live ? 'live' : ''}`} key={f.id} onClick={() => onOpenMatch(f)}>
             <span className="upnext-ko">
               <b>{live ? 'Live' : dayLabel(f.utcDate)}</b>
-              <span>{live ? `${f.liveClock || ''}'` : timeLabel(f)}</span>
+              <span className="upnext-time">{live ? `${f.liveClock || ''}'` : timeLabel(f)}</span>
+              {showTier && <Tier div={f.division} />}
             </span>
 
             <span className="upnext-clubs">

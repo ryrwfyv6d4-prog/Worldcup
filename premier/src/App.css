@@ -1206,7 +1206,7 @@ body {
   font: 800 9.5px var(--font-ui); letter-spacing: .1em; text-transform: uppercase;
   color: var(--ink-faint);
 }
-.upnext-ko span {
+.upnext-time {
   font-family: var(--font-display); font-size: 17px; font-weight: 700;
   font-variant-numeric: tabular-nums; color: var(--ink); line-height: 1;
 }
@@ -1236,3 +1236,15 @@ body {
   font-family: var(--font-display); font-size: 20px; font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
+
+/* Division chip — only rendered where the two are mixed together.
+   Filled for the Premier League, hollow for the Championship, so the tiers
+   separate before you read the letters. */
+.tier {
+  display: inline-block; margin-top: 3px; padding: 1px 4px;
+  font: 800 8px var(--font-ui); letter-spacing: .12em; text-transform: uppercase;
+  line-height: 1.35;
+}
+.tier-pl { background: var(--ink); color: var(--paper); }
+.tier-ch { border: 1px solid var(--rule-dotted); color: var(--ink-faint); }
+.fx-time .tier, .upnext-ko .tier { display: block; width: fit-content; }
