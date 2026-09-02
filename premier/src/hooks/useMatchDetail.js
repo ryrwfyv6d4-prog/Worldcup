@@ -158,6 +158,59 @@ function normaliseTopStats(box, homeId, awayId) {
     .filter(Boolean);
 }
 
+// ── The market's view, for a match still to be played ───────────────────────
+//
+// ESPN ships live bookmaker prices as American moneylines. Turned into implied
+// probability and normalised so the three sum to 100, which strips the
+// bookmaker's margin and leaves something you can read as "who they fancy".
+//
+// This is only ever shown. The sweep's own prices come from the pre-season
+// odds and the January re-rating, and nothing here touches them.
+export function impliedFromMoneyline(ml) {
+  const n = typeof ml === 'string' ? Number(ml.replace(/[^\d+-]/g, '')) : Number(ml);
+  if (!Number.isFinite(n) || n === 0) return null;
+  return n < 0 ? -n / (-n + 100) : 100 / (n + 100);
+}
+
+// The field name for a price is not consistent across ESPN's odds blocks, and
+// this reaches three levels into a feed the dev container cannot call. So it
+// tries the names it might be under and gives up rather than guessing wrong —
+// a missing market shows nothing, which is better than showing a wrong one.
+function priceOf(side) {
+  if (!side || typeof side !== 'object') return null;
+  for (const k of ['moneyLine', 'moneyline', 'odds', 'value', 'summary']) {
+    const p = impliedFromMoneyline(side[k]);
+    if (p != null) return p;
+  }
+  return null;
+}
+
+export function normaliseOdds(odds) {
+  for (const o of odds || []) {
+    const h = priceOf(o.homeTeamOdds);
+    const a = priceOf(o.awayTeamOdds);
+    const d = priceOf(o.drawOdds);
+    if (h == null || a == null || d == null) continue;
+    const sum = h + d + a;
+    if (!(sum > 0)) continue;
+
+    // round, then put any rounding slack on the biggest slice so the three
+    // always add to 100 and the bar never leaves a gap
+    const pct = [h, d, a].map((v) => Math.round((v / sum) * 100));
+    const slack = 100 - pct.reduce((x, y) => x + y, 0);
+    pct[pct.indexOf(Math.max(...pct))] += slack;
+
+    return {
+      provider: o.provider?.name || null,
+      home: pct[0],
+      draw: pct[1],
+      away: pct[2],
+      goals: Number.isFinite(o.overUnder) ? o.overUnder : null,
+    };
+  }
+  return null;
+}
+
 // Goals, cards and substitutions, oldest first. ESPN puts the minute in
 // clock.displayValue and flags goals with scoringPlay.
 function normaliseEvents(keyEvents, homeId) {
@@ -325,6 +378,7 @@ async function loadDetail(fixture, signal) {
     lineups: home && (home.xi.length || home.bench.length) ? { home, away } : null,
     statGroups: normaliseStatGroups(s.boxscore, home?.teamId, away?.teamId),
     topStats: normaliseTopStats(s.boxscore, home?.teamId, away?.teamId),
+    odds: normaliseOdds(s.odds),
     events: normaliseEvents(s.keyEvents, home?.teamId),
     commentary: normaliseCommentary(s.commentary),
     h2h: normaliseH2H(s.seasonseries, home?.teamId),

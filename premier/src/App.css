@@ -1247,3 +1247,23 @@ body {
 .tier-pl { background: var(--ink); color: var(--paper); }
 .tier-ch { border: 1px solid var(--rule-dotted); color: var(--ink-faint); }
 .fx-time .tier, .upnext-ko .tier { display: block; width: fit-content; }
+
+/* The market — bookmakers' three-way price on a match still to be played.
+   Shown, never scored off. */
+.mp-odds { margin-top: 2px; }
+.mp-odds-bar { display: flex; height: 10px; background: var(--rule-light); }
+.mp-odds-bar span:nth-child(2) { background: var(--rule-dotted); }
+.mp-odds-row {
+  display: flex; justify-content: space-between; gap: 8px; margin-top: 6px;
+  font: 600 11px var(--font-ui); color: var(--ink-muted);
+}
+.mp-odds-row .mid { text-align: center; }
+.mp-odds-row span:last-child { text-align: right; }
+.mp-odds-row b {
+  font-family: var(--font-display); font-size: 17px; font-weight: 800;
+  color: var(--ink); font-variant-numeric: tabular-nums; margin-right: 3px;
+}
+.mp-odds-foot {
+  margin-top: 5px; font: 700 8.5px var(--font-ui); letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ink-faint);
+}

@@ -221,6 +221,7 @@ const s0 = (n) => (n == null ? 0 : n);
 function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played, home, away, onMore }) {
   const timeline = played ? detail?.events || [] : [];
   const top = played ? detail?.topStats || [] : [];
+  const odds = !played ? detail?.odds : null;
   const [homeColour] = coloursFor(sides[0].name);
   const [awayColour] = coloursFor(sides[1].name);
 
@@ -284,6 +285,28 @@ function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played,
             <StatRow key={r.key} row={r} homeColour={homeColour} awayColour={awayColour} />
           ))}
           <button className="mp-more" onClick={onMore}>All stats ›</button>
+        </>
+      )}
+
+      {odds && (
+        <>
+          <div className="section-title">The market</div>
+          <div className="mp-odds">
+            <div className="mp-odds-bar">
+              <span style={{ width: `${odds.home}%`, background: homeColour }} />
+              <span style={{ width: `${odds.draw}%` }} />
+              <span style={{ width: `${odds.away}%`, background: awayColour }} />
+            </div>
+            <div className="mp-odds-row">
+              <span><b>{odds.home}%</b> {sides[0].info?.short || clubLabel(sides[0].name)}</span>
+              <span className="mid"><b>{odds.draw}%</b> draw</span>
+              <span><b>{odds.away}%</b> {sides[1].info?.short || clubLabel(sides[1].name)}</span>
+            </div>
+            <div className="mp-odds-foot">
+              {odds.provider}
+              {odds.goals != null && ` · ${odds.goals} goals`}
+            </div>
+          </div>
         </>
       )}
 

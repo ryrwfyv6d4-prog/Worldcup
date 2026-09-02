@@ -69,11 +69,6 @@ jobs:
           node scripts/highlight-title.test.mjs
           node scripts/matchdetail.test.mjs
 
-      - name: Probe pre-match data (temporary)
-        working-directory: premier
-        run: node scripts/probe-preview.mjs
-        continue-on-error: true
-
       - name: Check live-score feed (diagnostic only, never blocks)
         working-directory: premier
         run: node scripts/check-feeds.mjs

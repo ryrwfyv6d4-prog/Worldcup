@@ -10,6 +10,7 @@
 
 import {
   statRow, normaliseStatGroups, normaliseCommentary, normaliseH2H, normaliseForm,
+  normaliseOdds, impliedFromMoneyline,
 } from '../src/hooks/useMatchDetail.js';
 
 let pass = 0, fail = 0;
@@ -189,6 +190,49 @@ check('the result is taken as given', form['383'].games[0].result === 'W');
 check('the score string is kept whole', form['383'].games[0].score === '3-0');
 check('a side with no games is still listed', form['379'].games.length === 0);
 check('an empty feed is not a crash', Object.keys(normaliseForm(undefined)).length === 0);
+
+// ── The market ──────────────────────────────────────────────────────────────
+console.log('— bookmaker odds —');
+
+// verbatim from the probe: Liverpool at Ipswich, two days out. Liverpool were
+// -175 favourites away from home.
+const ODDS = [{
+  provider: { id: '100', name: 'DraftKings', priority: 1 },
+  details: 'LIV -175', overUnder: 3.5, spread: 1.5,
+  awayTeamOdds: { favorite: true, underdog: false, moneyLine: -175, spreadOdds: 135 },
+  homeTeamOdds: { favorite: false, underdog: true, moneyLine: 425, spreadOdds: -105 },
+  drawOdds: { moneyLine: 320 },
+}];
+
+check('a negative line is the favourite',
+  Math.abs(impliedFromMoneyline(-175) - 0.6364) < 0.001, impliedFromMoneyline(-175));
+check('a positive line is the underdog',
+  Math.abs(impliedFromMoneyline(425) - 0.1905) < 0.001, impliedFromMoneyline(425));
+check('zero and rubbish give nothing',
+  impliedFromMoneyline(0) === null && impliedFromMoneyline('x') === null
+  && impliedFromMoneyline(undefined) === null);
+
+const mkt = normaliseOdds(ODDS);
+check('the market comes back', Boolean(mkt));
+check('provider kept', mkt.provider === 'DraftKings', mkt.provider);
+// the away side was the favourite, so it must carry the biggest share
+check('the favourite has the biggest share', mkt.away > mkt.home && mkt.away > mkt.draw,
+  `${mkt.home}/${mkt.draw}/${mkt.away}`);
+// the bookmaker's margin is stripped, so the three add up exactly
+check('the three sum to 100', mkt.home + mkt.draw + mkt.away === 100,
+  `${mkt.home}+${mkt.draw}+${mkt.away}`);
+check('over/under carried', mkt.goals === 3.5, String(mkt.goals));
+
+// Guessing a nested field name is how this feed has bitten before, so a block
+// missing any of the three must yield nothing rather than a partial market.
+check('a missing draw price yields nothing',
+  normaliseOdds([{ ...ODDS[0], drawOdds: undefined }]) === null);
+check('an empty block yields nothing', normaliseOdds([{}]) === null);
+check('no odds at all is not a crash',
+  normaliseOdds(undefined) === null && normaliseOdds([]) === null);
+// it should skip a useless block and take a later usable one
+check('skips a broken block for a good one',
+  normaliseOdds([{ provider: { name: 'Bad' } }, ODDS[0]])?.provider === 'DraftKings');
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
