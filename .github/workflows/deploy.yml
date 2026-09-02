@@ -69,6 +69,11 @@ jobs:
           node scripts/highlight-title.test.mjs
           node scripts/matchdetail.test.mjs
 
+      - name: Probe team-news sources (temporary)
+        working-directory: premier
+        run: node scripts/probe-teamnews.mjs
+        continue-on-error: true
+
       - name: Check live-score feed (diagnostic only, never blocks)
         working-directory: premier
         run: node scripts/check-feeds.mjs

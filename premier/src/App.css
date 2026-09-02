@@ -1263,7 +1263,3 @@ body {
   font-family: var(--font-display); font-size: 17px; font-weight: 800;
   color: var(--ink); font-variant-numeric: tabular-nums; margin-right: 3px;
 }
-.mp-odds-foot {
-  margin-top: 5px; font: 700 8.5px var(--font-ui); letter-spacing: .14em;
-  text-transform: uppercase; color: var(--ink-faint);
-}

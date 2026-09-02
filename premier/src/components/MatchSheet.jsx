@@ -302,10 +302,6 @@ function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played,
               <span className="mid"><b>{odds.draw}%</b> draw</span>
               <span><b>{odds.away}%</b> {sides[1].info?.short || clubLabel(sides[1].name)}</span>
             </div>
-            <div className="mp-odds-foot">
-              {odds.provider}
-              {odds.goals != null && ` · ${odds.goals} goals`}
-            </div>
           </div>
         </>
       )}
