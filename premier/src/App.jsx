@@ -148,6 +148,7 @@ export default function App() {
             bonusPoints={bonusPoints}
             whoAmI={whoAmI}
             onSelectTeam={setTeamSheet}
+            onOpenMatch={setMatchSheet}
           />
         )}
         {tab === 'fixtures' && (

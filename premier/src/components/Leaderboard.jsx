@@ -6,6 +6,7 @@ import { matchValue, priceRangeFor, SEASON_ROUNDS } from '../utils/odds.js';
 import { clubLabel } from '../utils/teamMatch.js';
 import { RowStripes } from './Stripe.jsx';
 import { tableLine, lastPlaceJibe } from '../utils/editorial.js';
+import UpNext from './UpNext.jsx';
 
 // Chances of the three things that pay, straight off the simulation. Shown as
 // bars because the exact percentage matters far less than who is in the hunt.
@@ -101,7 +102,7 @@ function ledgerFor(row, fixtures) {
 }
 
 export default function Leaderboard({
-  assignments, fixtures, manualMedals, bonusPoints, whoAmI, onSelectTeam,
+  assignments, fixtures, manualMedals, bonusPoints, whoAmI, onSelectTeam, onOpenMatch,
 }) {
   const ladder = useMemo(
     () => buildLadder(assignments, fixtures, manualMedals, bonusPoints),
@@ -135,7 +136,12 @@ export default function Leaderboard({
         <span className="subtitle">{ladder.length} in · ${pot} pot</span>
       </div>
 
-      <p className="editorial">{tableLine(ladder, anyResults)}</p>
+      <UpNext
+        fixtures={fixtures}
+        assignments={assignments}
+        whoAmI={whoAmI}
+        onOpenMatch={onOpenMatch}
+      />
 
       <div className="leaderboard">
         {ladder.map((row, i) => {

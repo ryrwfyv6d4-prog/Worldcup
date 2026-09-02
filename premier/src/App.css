@@ -1182,3 +1182,57 @@ body {
 }
 .reg-head-btn:disabled { cursor: default; }
 .reg-head-btn:active:not(:disabled) { opacity: .65; }
+
+/* Up next — replaces the standings blurb on the Table screen. Same reading
+   order as a fixture row so the two screens feel like one app. */
+.upnext { border-top: 2px solid var(--ink); margin: 4px 0 18px; }
+.upnext-head {
+  display: flex; align-items: baseline; gap: 8px; padding: 7px 0 6px;
+  font: 800 9.5px var(--font-ui); letter-spacing: .16em; text-transform: uppercase;
+}
+.upnext-title { color: var(--ink); }
+.upnext-tag { color: var(--spot); font-weight: 700; letter-spacing: .12em; }
+.upnext-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 8px 0; background: none; border: none;
+  border-top: 1px dotted var(--rule-dotted); cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.upnext-row:active { background: rgba(20, 18, 16, .04); }
+.upnext-ko {
+  width: 66px; flex-shrink: 0; display: flex; flex-direction: column; gap: 1px;
+}
+.upnext-ko b {
+  font: 800 9.5px var(--font-ui); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.upnext-ko span {
+  font-family: var(--font-display); font-size: 17px; font-weight: 700;
+  font-variant-numeric: tabular-nums; color: var(--ink); line-height: 1;
+}
+.upnext-clubs { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.upnext-club { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.upnext-name {
+  font: 700 13.5px var(--font-ui); color: var(--ink);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.upnext-owner {
+  font: 500 9px var(--font-ui); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-faint); flex-shrink: 0;
+}
+.upnext-owner.you { color: var(--spot); font-weight: 800; }
+.upnext-worth {
+  margin-left: auto; flex-shrink: 0;
+  font: 800 10px var(--font-ui); color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.upnext-right { flex-shrink: 0; display: flex; align-items: center; }
+.upnext-derby {
+  font: 800 8px var(--font-ui); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--paper); background: var(--spot); padding: 2px 5px;
+}
+.upnext-row.live .upnext-ko b { color: var(--spot); }
+.upnext-score {
+  font-family: var(--font-display); font-size: 20px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
