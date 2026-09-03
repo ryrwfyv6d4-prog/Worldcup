@@ -46,19 +46,32 @@ export default function TeamNews({ news, sides }) {
   );
 }
 
-// The probable XI, shown only while it is still a prediction. Once the real
-// sheet lands the existing Line-ups tab has the confirmed one off ESPN, and two
-// versions of the same eleven on one screen is worse than either alone.
+// How the eleven was arrived at. Upstream distinguishes a real prediction from
+// "this is who they started last time", and the two are not the same claim —
+// calling a last-time-out side a prediction would be putting confidence on it
+// that nobody has. Anything unrecognised is described as unconfirmed rather
+// than guessed at.
+const XI_LABEL = {
+  predicted: 'predicted',
+  lastStarting11: 'last time out',
+  confirmed: null,
+};
+
+// Shown only while the eleven is still provisional. Once the real sheet lands
+// the Line-ups tab has the confirmed one off ESPN, and two versions of the same
+// eleven on one screen is worse than either alone.
 export function ProbableXI({ news, sides }) {
   if (!news || news.kind === 'confirmed') return null;
+  const tag = XI_LABEL[news.kind] ?? 'unconfirmed';
+  if (!tag) return null;
   const hasXI = (news.home?.xi || []).length && (news.away?.xi || []).length;
   if (!hasXI) return null;
 
   return (
     <>
       <div className="section-title">
-        Probable line-ups
-        <span className="tn-tag">predicted</span>
+        {news.kind === 'lastStarting11' ? 'Last line-ups' : 'Probable line-ups'}
+        <span className="tn-tag">{tag}</span>
       </div>
       <div className="tn">
         {[[news.home, sides[0]], [news.away, sides[1]]].map(([side, s]) => (
