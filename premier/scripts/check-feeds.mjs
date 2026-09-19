@@ -15,6 +15,7 @@ const BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
 
 let unresolved = 0;
 let leaguesOk = 0;
+let scoreboardFail = 0;
 
 for (const lg of LEAGUES) {
   console.log(`\n=== ${lg.label} (${lg.code}) ===`);
@@ -57,6 +58,7 @@ for (const lg of LEAGUES) {
     const to = fmt(new Date(Date.now() + 21 * 864e5));
     const res = await fetch(`${BASE}/${lg.code}/scoreboard?dates=${from}-${to}`, { signal: AbortSignal.timeout(20000) });
     console.log(`  scoreboard endpoint: HTTP ${res.status}`);
+    if (!res.ok) scoreboardFail += 1;
     if (res.ok) {
       const json = await res.json();
       const events = json.events || [];
@@ -81,13 +83,18 @@ for (const lg of LEAGUES) {
       }
     }
   } catch (err) {
+    scoreboardFail += 1;
     console.log(`  ✗ scoreboard failed: ${err.message}`);
   }
 }
 
 console.log(`\n──────────────────────────────────────────`);
-console.log(`RESULT: ${leaguesOk}/2 leagues reachable, ${unresolved} unresolved club names`);
-console.log(leaguesOk === 2 && unresolved === 0
+// The club list answering is not the same as the scores answering. This said
+// "wired up correctly" while both divisions were returning 400 on the
+// scoreboard and the app had no live results at all.
+console.log(`RESULT: ${leaguesOk}/2 club lists, ${2 - scoreboardFail}/2 scoreboards, `
+  + `${unresolved} unresolved club names`);
+console.log(leaguesOk === 2 && unresolved === 0 && scoreboardFail === 0
   ? 'Live scores are wired up correctly.'
-  : 'Needs attention — see above.');
+  : `NEEDS ATTENTION — ${scoreboardFail ? `${scoreboardFail} scoreboard endpoint(s) failing; ` : ''}see above.`);
 process.exit(0);
