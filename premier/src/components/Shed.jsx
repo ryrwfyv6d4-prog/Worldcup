@@ -98,6 +98,11 @@ export default function Shed({
           {espnState?.ok === true && `Live scores connected · ${espnState.count} match${espnState.count === 1 ? '' : 'es'} in window`}
           {espnState?.ok === false && 'Live scores unreachable — results still land from the league feed'}
           {espnState?.ok == null && 'Live scores: checking…'}
+          {/* A division that failed used to vanish without a word. It now keeps
+              its last scores, and says which one is stale. */}
+          {espnState?.missing?.length > 0 && (
+            <span className="signals-warn"> · no answer from {espnState.missing.join(', ')}</span>
+          )}
           {espnState?.unmatched?.length > 0 && (
             <span className="signals-warn"> · unrecognised: {espnState.unmatched.join(', ')}</span>
           )}

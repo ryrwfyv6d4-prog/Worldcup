@@ -123,6 +123,7 @@ export function useEnglandFixtures() {
   const espnSeqRef = useRef(0);
   const [espnState, setEspnState] = useState({ ok: null, unmatched: [], count: 0, ts: null });
   const lastEspnRef = useRef(0);
+  const lastFetchRef = useRef(0);
   const mergedRef = useRef([]);
 
   const fetchEspn = useCallback(async () => {
@@ -135,41 +136,52 @@ export function useEnglandFixtures() {
     const to = fmt(new Date(Date.now() + 36 * 3600 * 1000));
     const unmatched = [];
     const games = [];
-    let anyOk = false;
+    const answered = new Set();
 
     for (const lg of ESPN_LEAGUES) {
-      try {
-        const res = await fetch(`${ESPN_BASE}/${lg.code}/scoreboard?dates=${from}-${to}`);
-        if (!res.ok) continue;
-        anyOk = true;
-        const json = await res.json();
-        for (const e of json.events || []) {
-          const comp = e.competitions && e.competitions[0];
-          if (!comp) continue;
-          const hc = (comp.competitors || []).find((c) => c.homeAway === 'home');
-          const ac = (comp.competitors || []).find((c) => c.homeAway === 'away');
-          if (!hc || !ac) continue;
-          const rawHome = hc.team && hc.team.displayName;
-          const rawAway = ac.team && ac.team.displayName;
-          const home = resolveClub(rawHome);
-          const away = resolveClub(rawAway);
-          if (!home || !away) {
-            if (!home && rawHome) unmatched.push(rawHome);
-            if (!away && rawAway) unmatched.push(rawAway);
-            continue;
+      // One retry, because a single blip used to cost a division its scores
+      // until somebody happened to reopen the app.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        // Collected per attempt and only committed once the whole response has
+        // parsed. Pushing straight into `games` meant a parse that threw part
+        // way through left half a division behind, and the retry then added it
+        // all over again.
+        const mine = [];
+        try {
+          const res = await fetch(`${ESPN_BASE}/${lg.code}/scoreboard?dates=${from}-${to}`);
+          if (!res.ok) continue;
+          const json = await res.json();
+          for (const e of json.events || []) {
+            const comp = e.competitions && e.competitions[0];
+            if (!comp) continue;
+            const hc = (comp.competitors || []).find((c) => c.homeAway === 'home');
+            const ac = (comp.competitors || []).find((c) => c.homeAway === 'away');
+            if (!hc || !ac) continue;
+            const rawHome = hc.team && hc.team.displayName;
+            const rawAway = ac.team && ac.team.displayName;
+            const home = resolveClub(rawHome);
+            const away = resolveClub(rawAway);
+            if (!home || !away) {
+              if (!home && rawHome) unmatched.push(rawHome);
+              if (!away && rawAway) unmatched.push(rawAway);
+              continue;
+            }
+            mine.push({
+              div: lg.div,
+              home,
+              away,
+              date: e.date,
+              state: e.status && e.status.type ? e.status.type.state : 'pre', // pre | in | post
+              homeScore: hc.score != null && hc.score !== '' ? Number(hc.score) : null,
+              awayScore: ac.score != null && ac.score !== '' ? Number(ac.score) : null,
+              clock: e.status?.displayClock ? String(e.status.displayClock).replace(/'+$/, '') : null,
+            });
           }
-          games.push({
-            div: lg.div,
-            home,
-            away,
-            date: e.date,
-            state: e.status && e.status.type ? e.status.type.state : 'pre', // pre | in | post
-            homeScore: hc.score != null && hc.score !== '' ? Number(hc.score) : null,
-            awayScore: ac.score != null && ac.score !== '' ? Number(ac.score) : null,
-            clock: e.status?.displayClock ? String(e.status.displayClock).replace(/'+$/, '') : null,
-          });
-        }
-      } catch { /* per-league best effort */ }
+          games.push(...mine);
+          answered.add(lg.div);
+          break;
+        } catch { /* try once more, then leave this division alone */ }
+      }
     }
 
     // Two scoreboard fetches can be in flight at once (the interval and a
@@ -178,9 +190,20 @@ export function useEnglandFixtures() {
     if (seq < espnSeqRef.current) return;
     espnSeqRef.current = seq;
 
-    setEspnGames(games);
+    // A division that did not answer keeps whatever it last had. Replacing the
+    // whole overlay meant one failed request on eng.2 silently deleted every
+    // Championship score in the app — and since openfootball backfills a day or
+    // two late, there was nothing else holding them. The Premier League looked
+    // fine throughout, which is exactly how it went unnoticed.
+    setEspnGames((prev) => (
+      answered.size === ESPN_LEAGUES.length
+        ? games
+        : [...games, ...prev.filter((g) => !answered.has(g.div))]
+    ));
     setEspnState({
-      ok: anyOk,
+      ok: answered.size > 0,
+      divisions: [...answered],
+      missing: ESPN_LEAGUES.filter((l) => !answered.has(l.div)).map((l) => l.code),
       unmatched: [...new Set(unmatched)],
       count: games.length,
       ts: Date.now(),
@@ -194,6 +217,7 @@ export function useEnglandFixtures() {
       if (cached) {
         setFixtures(cached.fixtures || []);
         setLastFetched(cached.ts);
+        lastFetchRef.current = cached.ts;
         return;
       }
     }
@@ -217,6 +241,7 @@ export function useEnglandFixtures() {
       if (cacheLooksSane(all)) writeCache({ fixtures: all });
       setFixtures(all);
       setLastFetched(Date.now());
+      lastFetchRef.current = Date.now();
     } catch (err) {
       // Sandboxed/offline builds carry a baked-in fixture snapshot
       if (Array.isArray(window.__EPL_SNAPSHOT__)) {
@@ -242,20 +267,40 @@ export function useEnglandFixtures() {
       const nearGame = mergedRef.current.some((f) => {
         if (!f.utcDate || f.status === 'FINISHED') return false;
         const t = new Date(f.utcDate).getTime();
-        return now > t - 15 * 60 * 1000 && now < t + 3 * 3600 * 1000;
+        // The window used to close three hours after kick-off, which is about
+        // twenty minutes after a normal match ends — and a fixture still not
+        // marked finished by then is precisely the one worth asking about. It
+        // now runs until the result has had a full day to land.
+        return now > t - 15 * 60 * 1000 && now < t + 24 * 3600 * 1000;
       });
       if (!nearGame) return;
       if (now - lastEspnRef.current > 55 * 1000) fetchEspn();
     }, 30 * 1000);
-    const onVisible = () => {
-      // Same throttle the interval uses. Without it, tabbing in and out during
-      // a match fired overlapping scoreboard fetches.
-      if (document.visibilityState !== 'visible') return;
-      if (Date.now() - lastEspnRef.current > 55 * 1000) fetchEspn();
+    // Coming back to the app is the moment to catch up, and there is no single
+    // event that always means it. An installed PWA resumed from the background
+    // on iOS can fire pageshow without visibilitychange; a desktop tab fires
+    // focus; a phone unlock fires visibilitychange. All three are listened for
+    // and the throttle stops them tripling up.
+    //
+    // The base feed is refreshed too, not just the live overlay: after a night
+    // of football the league file has usually caught up, and without this you
+    // sat on a cache entry until it aged out.
+    const resume = () => {
+      if (document.visibilityState === 'hidden') return;
+      if (Date.now() - lastEspnRef.current <= 55 * 1000) return;
+      fetchEspn();
+      if (Date.now() - (lastFetchRef.current || 0) > CACHE_TTL) fetchData(true);
     };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
-  }, [fetchEspn]);
+    document.addEventListener('visibilitychange', resume);
+    window.addEventListener('pageshow', resume);
+    window.addEventListener('focus', resume);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', resume);
+      window.removeEventListener('pageshow', resume);
+      window.removeEventListener('focus', resume);
+    };
+  }, [fetchEspn, fetchData]);
 
   const merged = useMemo(() => mergeEspn(fixtures, espnGames), [fixtures, espnGames]);
   mergedRef.current = merged;

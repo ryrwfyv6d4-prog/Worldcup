@@ -61,11 +61,23 @@ for (const lg of LEAGUES) {
       const json = await res.json();
       const events = json.events || [];
       console.log(`  ${events.length} fixtures in the ${from}-${to} window`);
-      for (const e of events.slice(0, 3)) {
+      // The MOST RECENT results, not the oldest. "Last night's scores have not
+      // come in" is only answerable by looking at last night, and printing the
+      // front of the list showed a fortnight-old fixture every time.
+      const recent = events
+        .filter((e) => e.status?.type?.state === 'post')
+        .sort((x, y) => (y.date || '').localeCompare(x.date || ''))
+        .slice(0, 4);
+      console.log(`  ${recent.length ? 'most recent results ESPN is serving:' : 'no finished fixtures in the window'}`);
+      for (const e of recent) {
         const c = e.competitions?.[0];
-        const h = c?.competitors?.find((x) => x.homeAway === 'home')?.team?.displayName;
-        const a = c?.competitors?.find((x) => x.homeAway === 'away')?.team?.displayName;
-        console.log(`    ${e.date?.slice(0, 10)}  ${h} v ${a}  [${resolveClub(h) ? 'ok' : 'UNRESOLVED'}/${resolveClub(a) ? 'ok' : 'UNRESOLVED'}]  state=${e.status?.type?.state}`);
+        const hc = c?.competitors?.find((x) => x.homeAway === 'home');
+        const ac = c?.competitors?.find((x) => x.homeAway === 'away');
+        const h = hc?.team?.displayName, a = ac?.team?.displayName;
+        const score = hc?.score != null && ac?.score != null ? `${hc.score}-${ac.score}` : 'NO SCORE';
+        const age = ((Date.now() - Date.parse(e.date)) / 3600e3).toFixed(0);
+        console.log(`    ${e.date?.slice(0, 10)}  ${h} ${score} ${a}`
+          + `  [${resolveClub(h) ? 'ok' : 'UNRESOLVED'}/${resolveClub(a) ? 'ok' : 'UNRESOLVED'}]  ${age}h ago`);
       }
     }
   } catch (err) {
