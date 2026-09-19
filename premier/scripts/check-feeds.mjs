@@ -53,16 +53,16 @@ for (const lg of LEAGUES) {
 
   // 2. Scoreboard — the endpoint the app actually polls
   try {
-    const fmt = (d) => d.toISOString().slice(0, 10).replace(/-/g, '');
-    const from = fmt(new Date(Date.now() - 7 * 864e5));
-    const to = fmt(new Date(Date.now() + 21 * 864e5));
-    const res = await fetch(`${BASE}/${lg.code}/scoreboard?dates=${from}-${to}`, { signal: AbortSignal.timeout(20000) });
+    // The month form, matching the app. Ranges answer 400 since September.
+    const d = new Date();
+    const month = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+    const res = await fetch(`${BASE}/${lg.code}/scoreboard?dates=${month}`, { signal: AbortSignal.timeout(20000) });
     console.log(`  scoreboard endpoint: HTTP ${res.status}`);
     if (!res.ok) scoreboardFail += 1;
     if (res.ok) {
       const json = await res.json();
       const events = json.events || [];
-      console.log(`  ${events.length} fixtures in the ${from}-${to} window`);
+      console.log(`  ${events.length} fixtures in ${month}`);
       // The MOST RECENT results, not the oldest. "Last night's scores have not
       // come in" is only answerable by looking at last night, and printing the
       // front of the list showed a fortnight-old fixture every time.

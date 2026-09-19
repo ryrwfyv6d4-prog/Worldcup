@@ -128,17 +128,31 @@ export function useEnglandFixtures() {
 
   const fetchEspn = useCallback(async () => {
     const seq = ++espnStartedRef.current;
-    const fmt = (dt) => dt.toISOString().slice(0, 10).replace(/-/g, '');
-    // Look back ten days, not one. openfootball backfills results a day or two
-    // late, and without the overlap a settled match would drop out of the app
-    // between ESPN's window closing and the league feed catching up.
-    const from = fmt(new Date(Date.now() - 10 * 864e5));
-    const to = fmt(new Date(Date.now() + 36 * 3600 * 1000));
+    // ESPN stopped accepting date ranges. dates=YYYYMMDD-YYYYMMDD now answers
+    //   400 {"code":400,"message":"Failed to get events endpoint."}
+    // for every span from three days to a month, on both the site and site.web
+    // hosts. It went from 200 to 400 between 2 and 19 September with no change
+    // at our end, and it took the live overlay down silently with it: results
+    // only appeared once openfootball backfilled, a day or two late.
+    //
+    // dates=YYYYMM still works and actually returns more than the range did —
+    // a whole month of fixtures rather than a sliding window.
+    //
+    // Still looking back about ten days, because openfootball backfills late
+    // and a settled match must not drop out of the app in the gap. Near the
+    // start of a month that means fetching the previous one too, which is why
+    // this is a set of months rather than a single string.
+    const months = [...new Set([-10, 0, 2].map((offset) => {
+      const d = new Date(Date.now() + offset * 864e5);
+      return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+    }))];
     const unmatched = [];
     const games = [];
     const answered = new Set();
 
     for (const lg of ESPN_LEAGUES) {
+      let monthsOk = 0;
+      for (const month of months) {
       // One retry, because a single blip used to cost a division its scores
       // until somebody happened to reopen the app.
       for (let attempt = 0; attempt < 2; attempt++) {
@@ -148,7 +162,7 @@ export function useEnglandFixtures() {
         // all over again.
         const mine = [];
         try {
-          const res = await fetch(`${ESPN_BASE}/${lg.code}/scoreboard?dates=${from}-${to}`);
+          const res = await fetch(`${ESPN_BASE}/${lg.code}/scoreboard?dates=${month}`);
           if (!res.ok) continue;
           const json = await res.json();
           for (const e of json.events || []) {
@@ -178,10 +192,14 @@ export function useEnglandFixtures() {
             });
           }
           games.push(...mine);
-          answered.add(lg.div);
+          monthsOk += 1;
           break;
-        } catch { /* try once more, then leave this division alone */ }
+        } catch { /* try once more, then leave this month alone */ }
       }
+      }
+      // Only counts as answered if every month it needed came back. A division
+      // that got half its window keeps its old rows as a backstop below.
+      if (monthsOk === months.length) answered.add(lg.div);
     }
 
     // Two scoreboard fetches can be in flight at once (the interval and a
@@ -195,6 +213,8 @@ export function useEnglandFixtures() {
     // Championship score in the app — and since openfootball backfills a day or
     // two late, there was nothing else holding them. The Premier League looked
     // fine throughout, which is exactly how it went unnoticed.
+    // Fresh rows go first: the merge takes the first match it finds, so a new
+    // scoreline always beats the kept-back copy of the same fixture.
     setEspnGames((prev) => (
       answered.size === ESPN_LEAGUES.length
         ? games
