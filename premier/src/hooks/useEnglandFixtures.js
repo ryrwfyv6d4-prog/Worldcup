@@ -16,7 +16,34 @@ const ESPN_LEAGUES = [
   { div: 1, code: 'eng.1' },
   { div: 2, code: 'eng.2' },
 ];
-const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
+export const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
+export { ESPN_LEAGUES };
+
+// Which months to ask ESPN for.
+//
+// ESPN stopped accepting date ranges. dates=YYYYMMDD-YYYYMMDD now answers
+//   400 {"code":400,"message":"Failed to get events endpoint."}
+// for every span from three days to a month, on both the site and site.web
+// hosts. It went from 200 to 400 between 2 and 19 September with no change at
+// our end, and it took the live overlay down silently with it: results only
+// appeared once openfootball backfilled, a day or two late.
+//
+// dates=YYYYMM still works and returns more than the range did — a whole month
+// rather than a sliding window.
+//
+// Still reaching back about ten days, because openfootball backfills late and
+// a settled match must not drop out of the app in the gap. Near the start of a
+// month that means asking for the previous one too, hence a set.
+//
+// Exported so scripts/check-scores.mjs runs this exact function rather than a
+// copy of it. A copy would drift, and the copy passing while the app starves
+// is the failure this whole episode was.
+export function espnMonths(now = Date.now()) {
+  return [...new Set([-10, 0, 2].map((offset) => {
+    const d = new Date(now + offset * 864e5);
+    return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+  }))];
+}
 
 // Bumped whenever the parser changes shape. Fixtures are cached ALREADY
 // PARSED, so a parser fix does nothing for anyone still holding a good-looking
@@ -31,7 +58,7 @@ const CACHE_TTL = 30 * 60 * 1000;
 
 // Merge ESPN live/final data over the base schedule. ESPN only ever upgrades a
 // fixture that isn't already settled; if ESPN is empty, base wins.
-function mergeEspn(base, espnGames) {
+export function mergeEspn(base, espnGames) {
   if (!espnGames.length) return base;
   return base.map((f) => {
     if (f.status === 'FINISHED') return f;
@@ -128,24 +155,7 @@ export function useEnglandFixtures() {
 
   const fetchEspn = useCallback(async () => {
     const seq = ++espnStartedRef.current;
-    // ESPN stopped accepting date ranges. dates=YYYYMMDD-YYYYMMDD now answers
-    //   400 {"code":400,"message":"Failed to get events endpoint."}
-    // for every span from three days to a month, on both the site and site.web
-    // hosts. It went from 200 to 400 between 2 and 19 September with no change
-    // at our end, and it took the live overlay down silently with it: results
-    // only appeared once openfootball backfilled, a day or two late.
-    //
-    // dates=YYYYMM still works and actually returns more than the range did —
-    // a whole month of fixtures rather than a sliding window.
-    //
-    // Still looking back about ten days, because openfootball backfills late
-    // and a settled match must not drop out of the app in the gap. Near the
-    // start of a month that means fetching the previous one too, which is why
-    // this is a set of months rather than a single string.
-    const months = [...new Set([-10, 0, 2].map((offset) => {
-      const d = new Date(Date.now() + offset * 864e5);
-      return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-    }))];
+    const months = espnMonths();
     const unmatched = [];
     const games = [];
     const answered = new Set();

@@ -74,6 +74,11 @@ jobs:
         run: node scripts/check-feeds.mjs
         continue-on-error: true
 
+      - name: Does the app show last night's results? (diagnostic only)
+        working-directory: premier
+        run: node scripts/check-scores.mjs
+        continue-on-error: true
+
       - name: Fetch club crests (falls back to generated insignia if unavailable)
         working-directory: premier
         run: npm run crests
