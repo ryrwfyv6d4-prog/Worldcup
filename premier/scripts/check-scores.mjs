@@ -14,6 +14,7 @@ import { parseLeagueTxt } from '../src/utils/leagueFeed.js';
 import { resolveClub } from '../src/utils/teamMatch.js';
 import { getTeam } from '../src/data/england2027.js';
 import { espnMonths, mergeEspn, ESPN_BASE, ESPN_LEAGUES } from '../src/hooks/useEnglandFixtures.js';
+import { leagueTable } from '../src/utils/scoring.js';
 
 const SOURCES = [
   { div: 1, name: 'Premier League', url: 'https://raw.githubusercontent.com/openfootball/england/master/2026-27/1-premierleague.txt' },
@@ -106,10 +107,38 @@ for (const s of SOURCES) {
   console.log('');
 }
 
+// ── The tables every other screen is built from ────────────────────────────
+//
+// The Clubs tab, the match sheet's Table tab and the whole sweep ladder are
+// all derived from these. If the fixtures are right the tables are right, so
+// printing the top of each is the cheapest way to see the chain end to end —
+// and a table stuck a week behind is obvious at a glance in a way that a
+// fixture list is not.
+let tableProblems = 0;
+for (const s2 of SOURCES) {
+  const table = leagueTable(merged, s2.div, 'all');
+  const played = table.reduce((n, r) => n + r.p, 0) / 2;
+  const maxP = Math.max(...table.map((r) => r.p));
+  console.log(`=== ${s2.name} table — ${played} matches played, leaders ===`);
+  for (const r of table.slice(0, 4)) {
+    console.log(`  ${String(table.indexOf(r) + 1).padStart(2)}  ${(getTeam(r.team)?.short || r.team).padEnd(13)}`
+      + ` P${String(r.p).padStart(2)}  W${r.w} D${r.d} L${r.l}  GD ${r.gd > 0 ? '+' : ''}${r.gd}  ${String(r.pts).padStart(2)}pts`);
+  }
+  // Every club having played nothing means the chain is broken upstream, not
+  // that the season has not started — the fixture list above would be empty too.
+  if (maxP === 0 && merged.some((f) => f.division === s2.div && Date.parse(f.utcDate) < now)) {
+    tableProblems += 1;
+    console.log('  ✗ nobody has played a game, yet fixtures have kicked off');
+  }
+  console.log('');
+}
+
 console.log('──────────────────────────────────────────');
 if (scoreboardFail) {
   console.log(`NEEDS ATTENTION — ${scoreboardFail} scoreboard request(s) failed. `
     + 'The live overlay is degraded; results will lag until the league feed backfills.');
+} else if (tableProblems) {
+  console.log(`NEEDS ATTENTION — ${tableProblems} league table(s) empty despite played fixtures.`);
 } else if (problems) {
   console.log(`NEEDS ATTENTION — ${problems} fixture(s) finished hours ago and still show no score. `
     + 'ESPN answered, so either the club names stopped matching or the merge is wrong.');
