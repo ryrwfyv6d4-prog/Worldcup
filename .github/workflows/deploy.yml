@@ -70,6 +70,11 @@ jobs:
           node scripts/matchdetail.test.mjs
           node scripts/stateops.test.mjs
 
+      - name: Probe FotMob finished-match payload (temporary)
+        working-directory: premier
+        run: node scripts/probe-matchstats.mjs
+        continue-on-error: true
+
       - name: Check live-score feed (diagnostic only, never blocks)
         working-directory: premier
         run: node scripts/check-feeds.mjs
