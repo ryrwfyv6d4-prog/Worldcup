@@ -15,6 +15,7 @@ import { resolveClub } from '../src/utils/teamMatch.js';
 import { getTeam } from '../src/data/england2027.js';
 import { espnMonths, mergeEspn, ESPN_BASE, ESPN_LEAGUES } from '../src/hooks/useEnglandFixtures.js';
 import { leagueTable } from '../src/utils/scoring.js';
+import { loadDetail } from '../src/hooks/useMatchDetail.js';
 
 const SOURCES = [
   { div: 1, name: 'Premier League', url: 'https://raw.githubusercontent.com/openfootball/england/master/2026-27/1-premierleague.txt' },
@@ -133,7 +134,35 @@ for (const s2 of SOURCES) {
   console.log('');
 }
 
+// ── The match centre ───────────────────────────────────────────────────────
+//
+// The match sheet does its own ESPN lookup (scoreboard to find the event,
+// then the summary). When ESPN dropped date ranges the fixtures recovered
+// and the match centre stayed blank, because nothing here looked at it.
+// Open the newest finished match in each division exactly as the app does.
+let detailProblems = 0;
+for (const s3 of SOURCES) {
+  const f = merged
+    .filter((x) => x.division === s3.div && x.status === 'FINISHED' && x.utcDate)
+    .sort((a, b) => b.utcDate.localeCompare(a.utcDate))[0];
+  if (!f) continue;
+  const label = `${getTeam(f.homeTeam.name)?.short || f.homeTeam.name} v ${getTeam(f.awayTeam.name)?.short || f.awayTeam.name}`;
+  try {
+    const d = await loadDetail(f, AbortSignal.timeout(30000));
+    if (!d?.found) { detailProblems += 1; console.log(`  ✗ ${s3.name} match centre: ${label} not found on ESPN`); continue; }
+    const stats = (d.statGroups || []).reduce((n, g) => n + (g.rows || []).length, 0);
+    console.log(`  ✓ ${s3.name} match centre: ${label}, ${stats} stat rows, ${(d.events || []).length} events, line-ups ${d.lineups ? 'yes' : 'no'}`);
+  } catch (err) {
+    detailProblems += 1;
+    console.log(`  ✗ ${s3.name} match centre: ${label} failed: ${err.message}`);
+  }
+}
+console.log('');
+
 console.log('──────────────────────────────────────────');
+if (detailProblems) {
+  console.log(`NEEDS ATTENTION — the match centre could not load ${detailProblems} finished match(es).`);
+}
 if (scoreboardFail) {
   console.log(`NEEDS ATTENTION — ${scoreboardFail} scoreboard request(s) failed. `
     + 'The live overlay is degraded; results will lag until the league feed backfills.');

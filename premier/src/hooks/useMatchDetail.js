@@ -341,19 +341,26 @@ export function normaliseForm(lastFiveGames) {
   return out;
 }
 
-async function loadDetail(fixture, signal) {
+export async function loadDetail(fixture, signal) {
   const code = CODE[fixture.division];
   if (!code || !fixture.utcDate) return null;
 
+  // ESPN stopped accepting date ranges (400) in September 2026; the month
+  // form still works. A match either side of midnight on the 1st can sit in
+  // ESPN's previous month, so ask for both months when the day before or
+  // after kick-off crosses the boundary.
   const kick = new Date(fixture.utcDate);
-  const from = ymd(new Date(kick.getTime() - 864e5));
-  const to = ymd(new Date(kick.getTime() + 864e5));
+  const months = [...new Set([-1, 0, 1].map((d) => ymd(new Date(kick.getTime() + d * 864e5)).slice(0, 6)))];
 
-  const sb = await fetch(`${BASE}/${code}/scoreboard?dates=${from}-${to}`, { signal });
-  if (!sb.ok) throw new Error(`scoreboard ${sb.status}`);
-  const board = await sb.json();
+  const events = [];
+  for (const m of months) {
+    const sb = await fetch(`${BASE}/${code}/scoreboard?dates=${m}`, { signal });
+    if (!sb.ok) throw new Error(`scoreboard ${sb.status}`);
+    const board = await sb.json();
+    events.push(...(board.events || []));
+  }
 
-  const match = (board.events || []).find((e) => {
+  const match = events.find((e) => {
     const comp = (e.competitions || [])[0];
     if (!comp) return false;
     const hc = (comp.competitors || []).find((c) => c.homeAway === 'home');
