@@ -10,7 +10,9 @@ import { useTeamNews } from '../hooks/useTeamNews.js';
 import { useHighlight } from '../hooks/useHighlight.js';
 import { buildShape, shirtColours } from '../utils/formation.js';
 import { useSwipeToClose } from '../hooks/useSwipeToClose.js';
-import StatsTab from './match/StatsTab.jsx';
+import StatsTab, { toRow } from './match/StatsTab.jsx';
+import LineupsTab from './match/LineupsTab.jsx';
+import { useMatchStats } from '../hooks/useMatchStats.js';
 import CommentaryTab from './match/CommentaryTab.jsx';
 import H2HTab from './match/H2HTab.jsx';
 import StandingsTab from './match/StandingsTab.jsx';
@@ -38,26 +40,31 @@ const EVENT_MARK = { goal: '⚽', own: '⚽', yellow: '▮', red: '▮', sub: '�
 // this match" is a dead end you only find by tapping it, so the ones with
 // nothing behind them are not offered at all. Summary and Table always are:
 // one is built from the fixture, the other from the league.
-function tabsFor(detail) {
+function tabsFor(detail, fm) {
   const tabs = [{ key: 'summary', label: 'Summary' }];
-  if (detail?.statGroups?.length) tabs.push({ key: 'stats', label: 'Stats' });
-  if (detail?.lineups) tabs.push({ key: 'lineups', label: 'Line-ups' });
+  if (fm?.periods?.length || detail?.statGroups?.length) tabs.push({ key: 'stats', label: 'Stats' });
+  if (hasPitch(fm) || detail?.lineups) tabs.push({ key: 'lineups', label: 'Line-ups' });
   tabs.push({ key: 'table', label: 'Table' });
   if (detail?.h2h?.games?.length) tabs.push({ key: 'h2h', label: 'H2H' });
   if (detail?.commentary?.length) tabs.push({ key: 'commentary', label: 'Commentary' });
   return tabs;
 }
 
+// FotMob placed every starter: draw its pitch rather than ESPN's names
+const hasPitch = (fm) => [fm?.home, fm?.away].every((s) => (s?.xi || []).length >= 11
+  && s.xi.every((p) => p.x != null && p.y != null));
+
 export default function MatchSheet({ fixture, fixtures, assignments, onClose, onSelectTeam }) {
   const [tab, setTab] = useState('summary');
   const { detail, state } = useMatchDetail(fixture);
+  const fm = useMatchStats(fixture);
   const sheetRef = useRef(null);
   useSwipeToClose(sheetRef, onClose);
 
   // Tabs appear as the feed lands. If the one you are on disappears — you
   // opened Stats on a live match and the summary later came back empty — fall
   // back to Summary rather than rendering a blank pane.
-  const tabs = useMemo(() => tabsFor(detail), [detail]);
+  const tabs = useMemo(() => tabsFor(detail, fm), [detail, fm]);
   const active = tabs.some((t) => t.key === tab) ? tab : 'summary';
 
   const table = useMemo(
@@ -184,12 +191,14 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
           <Report
             fixture={fixture} fixtures={fixtures} table={table} sides={sides}
             detail={detail} matchup={matchup} rev={rev} played={played}
-            home={home} away={away} news={news}
+            home={home} away={away} news={news} fm={fm}
             onMore={() => setTab('stats')}
           />
         )}
-        {active === 'lineups' && <Lineups detail={detail} state={state} sides={sides} played={played} />}
-        {active === 'stats' && <StatsTab detail={detail} sides={sides} />}
+        {active === 'lineups' && (hasPitch(fm)
+          ? <LineupsTab fm={fm} sides={sides} />
+          : <Lineups detail={detail} state={state} sides={sides} played={played} />)}
+        {active === 'stats' && <StatsTab detail={detail} fm={fm} sides={sides} />}
         {active === 'table' && (
           <StandingsTab
             fixtures={fixtures} division={fixture.division}
@@ -210,9 +219,11 @@ const s0 = (n) => (n == null ? 0 : n);
 // of something with a tab of its own, in the order you want it after a result
 // lands — what happened, what it was worth, how the game went, who these two
 // are, where it was played.
-function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played, home, away, news, onMore }) {
+function Report({ fixture, fixtures, table, sides, detail, matchup, rev, played, home, away, news, fm, onMore }) {
   const timeline = played ? detail?.events || [] : [];
-  const top = played ? detail?.topStats || [] : [];
+  // FotMob's headline stats carry xG and big chances; ESPN's are the fallback
+  const fmTop = fm?.periods?.find((p) => p.key === 'All')?.groups?.find((g) => g.key === 'top_stats');
+  const top = !played ? [] : fmTop ? fmTop.rows.map(toRow) : detail?.topStats || [];
   const odds = !played ? detail?.odds : null;
   const [homeColour] = coloursFor(sides[0].name);
   const [awayColour] = coloursFor(sides[1].name);

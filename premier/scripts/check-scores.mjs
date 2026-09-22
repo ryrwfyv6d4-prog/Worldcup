@@ -159,7 +159,47 @@ for (const s3 of SOURCES) {
 }
 console.log('');
 
+// ── FotMob via the worker: line-ups with ratings, stats by half ───────────
+// The worker deploys earlier in the same run, so this is the live route.
+const WORKER = 'https://worldcup.phil-remington.workers.dev';
+const ymdUTC = (iso) => iso.slice(0, 10).replace(/-/g, '');
+let fmProblems = 0;
+for (const s4 of SOURCES) {
+  const f = merged
+    .filter((x) => x.division === s4.div && x.status === 'FINISHED' && x.utcDate)
+    .sort((a, b) => b.utcDate.localeCompare(a.utcDate))[0];
+  if (!f) continue;
+  const q = new URLSearchParams({
+    date: ymdUTC(f.utcDate),
+    home: f.homeTeam.name, homeShort: getTeam(f.homeTeam.name)?.short || f.homeTeam.name,
+    away: f.awayTeam.name, awayShort: getTeam(f.awayTeam.name)?.short || f.awayTeam.name,
+  });
+  const label = `${getTeam(f.homeTeam.name)?.short} v ${getTeam(f.awayTeam.name)?.short}`;
+  try {
+    const d = await (await fetch(`${WORKER}/epl/matchstats?${q}`, { signal: AbortSignal.timeout(30000) })).json();
+    if (!d.found) { fmProblems += 1; console.log(`  ✗ ${s4.name} FotMob: ${label} not found`); continue; }
+    const placed = (t) => (t?.xi || []).filter((p) => p.x != null && p.y != null).length;
+    const rated = (t) => (t?.xi || []).filter((p) => p.rating != null).length;
+    const xg = d.periods?.[0]?.groups?.[0]?.rows?.find((r) => r.key === 'expected_goals');
+    const mom = (d.momentum || []).reduce((n, m) => n + m.v, 0);
+    console.log(`  ✓ ${s4.name} FotMob: ${label} ${d.home?.formation} v ${d.away?.formation}, `
+      + `placed ${placed(d.home)}/${placed(d.away)}, rated ${rated(d.home)}/${rated(d.away)}, `
+      + `${d.periods?.length} periods, ${Object.keys(d.players || {}).length} players, ${d.shots?.length} shots`);
+    // Which way the momentum graph runs: positive should be the home side
+    console.log(`      xG ${xg?.home}-${xg?.away}, possession ${d.periods?.[0]?.groups?.[0]?.rows?.[0]?.home}-${d.periods?.[0]?.groups?.[0]?.rows?.[0]?.away}, `
+      + `momentum sum ${mom > 0 ? '+' : ''}${mom} (${mom > 0 ? 'home' : 'away'} on top)`);
+    if (placed(d.home) < 11 || placed(d.away) < 11) fmProblems += 1;
+  } catch (err) {
+    fmProblems += 1;
+    console.log(`  ✗ ${s4.name} FotMob: ${label} failed: ${err.message}`);
+  }
+}
+console.log('');
+
 console.log('──────────────────────────────────────────');
+if (fmProblems) {
+  console.log(`NEEDS ATTENTION — FotMob line-ups/stats missing for ${fmProblems} match(es); the match sheet falls back to ESPN.`);
+}
 if (detailProblems) {
   console.log(`NEEDS ATTENTION — the match centre could not load ${detailProblems} finished match(es).`);
 }

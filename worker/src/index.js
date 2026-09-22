@@ -1,4 +1,39 @@
 import { applyOps, mergeLegacy } from '../../premier/src/utils/stateOps.js';
+import { trimMatchDetails } from '../../premier/src/utils/fotmobMatch.js';
+
+const FM_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+    + 'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  Referer: 'https://www.fotmob.com/',
+  'Accept-Language': 'en-GB,en;q=0.9',
+};
+
+// Loose enough to bridge "Ipswich Town FC" and "Ipswich Town", strict enough
+// not to marry Manchester City to Manchester United.
+const fmNorm = (s) => String(s || '')
+  .toLowerCase()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/\b(a\.?f\.?c|f\.?c)\b/g, '')
+  .replace(/[^a-z0-9]/g, '');
+const fmSameClub = (feed, full, short) => {
+  const f = fmNorm(feed);
+  return Boolean(f) && (f === fmNorm(full) || f === fmNorm(short));
+};
+
+// FotMob's id for one of our fixtures, found by club NAME across every league
+// that day (see /epl/teamnews for why not by league id). null if not there.
+async function fotmobMatchId(date, home, homeShort, away, awayShort) {
+  const r = await fetch(`https://www.fotmob.com/api/data/matches?date=${date}`, { headers: FM_HEADERS });
+  if (!r.ok) return null;
+  const day = await r.json();
+  for (const lg of day.leagues || []) {
+    for (const m of lg.matches || []) {
+      if (fmSameClub(m.home?.name, home, homeShort) && fmSameClub(m.away?.name, away, awayShort)) return m.id;
+    }
+  }
+  return null;
+}
+
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -304,25 +339,6 @@ export default {
           if (age < ttl) return json(c.data);
         }
 
-        const FM = {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
-            + 'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          Referer: 'https://www.fotmob.com/',
-          'Accept-Language': 'en-GB,en;q=0.9',
-        };
-        // Loose enough to bridge "Ipswich Town FC" and "Ipswich Town", strict
-        // enough not to marry Manchester City to Manchester United.
-        const norm = (s) => String(s || '')
-          .toLowerCase()
-          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-          .replace(/\b(a\.?f\.?c|f\.?c)\b/g, '')
-          .replace(/[^a-z0-9]/g, '');
-        const sameClub = (feed, full, short) => {
-          const f = norm(feed);
-          if (!f) return false;
-          return f === norm(full) || f === norm(short);
-        };
-
         const miss = async () => {
           const body = { found: false };
           await env.WALL.put(cacheKey, JSON.stringify({ ts: Date.now(), found: false, data: body }),
@@ -330,26 +346,13 @@ export default {
           return json(body);
         };
 
-        let day;
-        try {
-          const r = await fetch(`https://www.fotmob.com/api/data/matches?date=${date}`, { headers: FM });
-          if (!r.ok) return await miss();
-          day = await r.json();
-        } catch { return await miss(); }
-
         let matchId = null;
-        for (const lg of day.leagues || []) {
-          for (const m of lg.matches || []) {
-            if (sameClub(m.home?.name, home, homeShort)
-              && sameClub(m.away?.name, away, awayShort)) { matchId = m.id; break; }
-          }
-          if (matchId) break;
-        }
+        try { matchId = await fotmobMatchId(date, home, homeShort, away, awayShort); } catch { /* treated as a miss */ }
         if (!matchId) return await miss();
 
         let md;
         try {
-          const r = await fetch(`https://www.fotmob.com/api/data/matchDetails?matchId=${matchId}`, { headers: FM });
+          const r = await fetch(`https://www.fotmob.com/api/data/matchDetails?matchId=${matchId}`, { headers: FM_HEADERS });
           if (!r.ok) return await miss();
           md = await r.json();
         } catch { return await miss(); }
@@ -385,6 +388,53 @@ export default {
         await env.WALL.put(cacheKey, JSON.stringify({ ts: Date.now(), found: true, data: body }),
           { httpMetadata: { contentType: 'application/json' } });
         return json(body);
+      }
+
+      // GET /epl/matchstats — line-ups with positions and ratings, team stats
+      // by half with xG, every player's numbers, the shot map and momentum.
+      // Same query as /epl/teamnews. ESPN has team totals and a names-only
+      // line-up; this is what makes the match sheet worth opening.
+      //
+      // Cached by how much it can still change: a finished match never does,
+      // one in play changes by the minute.
+      if (request.method === 'GET' && path === '/epl/matchstats') {
+        const date = url.searchParams.get('date') || '';
+        const home = url.searchParams.get('home') || '';
+        const away = url.searchParams.get('away') || '';
+        const homeShort = url.searchParams.get('homeShort') || home;
+        const awayShort = url.searchParams.get('awayShort') || away;
+        if (!/^\d{8}$/.test(date) || !home || !away) return json({ found: false });
+
+        const cacheKey = `epl-matchstats/v1/${date}|${home}|${away}.json`;
+        const cached = await env.WALL.get(cacheKey);
+        if (cached) {
+          const c = JSON.parse(await cached.text());
+          const age = Date.now() - (c.ts || 0);
+          const d = c.data || {};
+          const ttl = !d.found ? 20 * 60 * 1000
+            : d.finished ? 7 * 24 * 3600 * 1000
+            : d.started ? 60 * 1000
+            : 15 * 60 * 1000;
+          if (age < ttl) return json(d);
+        }
+        const store = async (data) => {
+          await env.WALL.put(cacheKey, JSON.stringify({ ts: Date.now(), data }),
+            { httpMetadata: { contentType: 'application/json' } });
+          return json(data);
+        };
+
+        let matchId = null;
+        try { matchId = await fotmobMatchId(date, home, homeShort, away, awayShort); } catch { /* miss */ }
+        if (!matchId) return store({ found: false });
+
+        let md;
+        try {
+          const r = await fetch(`https://www.fotmob.com/api/data/matchDetails?matchId=${matchId}`, { headers: FM_HEADERS });
+          if (!r.ok) return store({ found: false });
+          md = await r.json();
+        } catch { return store({ found: false }); }
+
+        return store({ ...trimMatchDetails(md), matchId });
       }
 
       // GET /epl/highlight — same idea as /highlight, for the England sweep.
