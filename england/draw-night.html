@@ -1410,11 +1410,22 @@ async function publish() {
   var local = null;
   try {
     local = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
+    if (local && local.drawLocked) throw new Error('locked');
     localStorage.setItem(LOCAL_KEY, JSON.stringify(
       Object.assign({ wallPosts: [], polls: [], manualMedals: {}, bonusPoints: {} }, local,
         { assignments: a, drawLocked: true, bonusPoints: bonus })
     ));
-  } catch (e) { /* private mode — the worker still carries it */ }
+  } catch (e) {
+    if (e.message === 'locked') {
+      // A locked draw is the real one. Swaps made since live only there, and
+      // this page still carries the draw it was built with.
+      msg.className = 'pub-msg bad';
+      msg.textContent = 'The draw is already locked. Nothing was changed.';
+      btn.disabled = false;
+      return;
+    }
+    /* private mode — the worker still carries it */
+  }
 
   if (!WORKER) {
     msg.textContent = 'Saved on this device. No worker configured in this build, so the others will need it sent another way.';
@@ -1430,6 +1441,13 @@ async function publish() {
       var r = await fetch(WORKER + '/epl/state');
       if (r.ok) current = await r.json();
     } catch (e) { /* first publish, or offline — carry on with what we have */ }
+
+    if (current && current.drawLocked) {
+      msg.className = 'pub-msg bad';
+      msg.textContent = 'The draw is already locked. Nothing was changed.';
+      btn.disabled = false;
+      return;
+    }
 
     var next = Object.assign({ wallPosts: [], polls: [], manualMedals: {}, bonusPoints: {} }, current, {
       assignments: a, drawLocked: true, bonusPoints: bonus,
