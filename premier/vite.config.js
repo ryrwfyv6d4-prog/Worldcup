@@ -8,6 +8,8 @@ const BASE = '/Worldcup/england/';
 
 export default defineConfig({
   base: BASE,
+  // Shown at the foot of the Shed, so "am I on the new version?" has an answer
+  define: { __BUILT__: JSON.stringify(new Date().toISOString()) },
   plugins: [
     react(),
     VitePWA({
@@ -29,6 +31,11 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // A new version takes over at once instead of waiting for every tab
+        // to close, which on a phone is never.
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
         navigateFallback: `${BASE}index.html`,
         // Draw night is its own page. Without this the navigation fallback can

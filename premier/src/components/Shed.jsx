@@ -132,6 +132,8 @@ export default function Shed({
         {espnState?.unmatched?.length > 0 && (
           <span className="signals-warn"> · unrecognised: {espnState.unmatched.join(', ')}</span>
         )}
+        <br />
+        Version {new Date(__BUILT__).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
       </p>
     </div>
   );
