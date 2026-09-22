@@ -1,3 +1,5 @@
+import { applyOps, mergeLegacy } from '../../premier/src/utils/stateOps.js';
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -9,6 +11,23 @@ function json(data, status = 200) {
     status,
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   });
+}
+
+// Read, change, write, with R2's conditional put so two phones saving in the
+// same instant can't both win. If the object moved between our read and our
+// write, the put is refused and we go round again on the newer copy.
+async function updateEplState(env, change) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const item = await env.WALL.get('epl-state.json');
+    const stored = item ? JSON.parse(await item.text()) : null;
+    const next = change(stored);
+    const put = await env.WALL.put('epl-state.json', JSON.stringify(next), {
+      httpMetadata: { contentType: 'application/json' },
+      ...(item ? { onlyIf: { etagMatches: item.etag } } : {}),
+    });
+    if (put) return next;
+  }
+  throw new Error('state is busy, try again');
 }
 
 export default {
@@ -44,13 +63,23 @@ export default {
         return json(JSON.parse(await item.text()));
       }
 
-      // PUT /epl/state
+      // PUT /epl/state — the whole state, from draw night or a phone on the
+      // old build. Merged, never stored as-is: it can add posts, polls and
+      // votes but cannot delete them, and it cannot replace a locked draw.
       if (request.method === 'PUT' && path === '/epl/state') {
         const body = await request.json();
-        await env.WALL.put('epl-state.json', JSON.stringify(body), {
-          httpMetadata: { contentType: 'application/json' },
-        });
-        return json({ ok: true });
+        const next = await updateEplState(env, (stored) => mergeLegacy(stored, body));
+        return json({ ok: true, state: next });
+      }
+
+      // POST /epl/ops — { ops: [...] }. How the app saves: each phone sends
+      // only what it did, applied here to the latest copy, so a phone that has
+      // been asleep all day can't undo everyone else's changes.
+      if (request.method === 'POST' && path === '/epl/ops') {
+        const body = await request.json();
+        const ops = Array.isArray(body?.ops) ? body.ops.slice(0, 100) : [];
+        const next = await updateEplState(env, (stored) => applyOps(stored, ops));
+        return json({ ok: true, state: next });
       }
 
       // GET /photos — list all photos, newest first

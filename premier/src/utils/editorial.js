@@ -57,4 +57,4 @@ export function fixturesLine(matches, mineCount, hasClubs = true) {
 }
 
 // Wall strapline
-export const WALL_LINE = 'Photographic evidence. Kept for the tribunal in May.';
+export const WALL_LINE = 'Receipts. Kept till May.';

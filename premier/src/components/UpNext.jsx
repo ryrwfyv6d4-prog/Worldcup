@@ -5,6 +5,7 @@ import { fixturePoints } from '../utils/scoring.js';
 import { getRivalry } from '../data/rivalries.js';
 import Stripe from './Stripe.jsx';
 import Tier from './Tier.jsx';
+import { ownerOf } from '../utils/format.js';
 
 // What is about to move the table.
 //
@@ -38,13 +39,6 @@ function dayLabel(iso) {
 const timeLabel = (f) => (f.timeTBC
   ? 'TBC'
   : new Date(f.utcDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
-
-function ownerOf(team, assignments) {
-  for (const [name, teams] of Object.entries(assignments)) {
-    if ((teams || []).includes(team)) return name;
-  }
-  return null;
-}
 
 export default function UpNext({ fixtures, assignments, whoAmI, onOpenMatch, limit = 3 }) {
   const { rows, mineOnly } = useMemo(() => {

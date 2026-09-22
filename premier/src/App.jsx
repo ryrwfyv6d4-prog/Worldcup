@@ -8,10 +8,10 @@ import Leaderboard from './components/Leaderboard.jsx';
 import Fixtures from './components/Fixtures.jsx';
 import Tables from './components/Tables.jsx';
 import Wall from './components/Wall.jsx';
-import Shed from './components/Shed.jsx';
+import Shed, { unanswered } from './components/Shed.jsx';
 import TeamSheet from './components/TeamSheet.jsx';
 import MatchSheet from './components/MatchSheet.jsx';
-import { SEASON } from './data/england2027.js';
+import MySquad from './components/MySquad.jsx';
 import { useDismissable } from './hooks/useDismissable.js';
 
 function WhoAmIModal({ participants, onPick, onSkip }) {
@@ -40,18 +40,18 @@ function WhoAmIModal({ participants, onPick, onSkip }) {
   );
 }
 
-// Masthead wordmark + issue line per screen
+// Masthead wordmark per screen
 const MASTHEAD = {
-  table: { word: "Dan's Shed", strapRight: null },
-  fixtures: { word: 'Fixtures', strapRight: null },
-  clubs: { word: 'Clubs', strapRight: null },
-  wall: { word: 'The Wall', strapRight: null },
-  shed: { word: 'The Shed', strapRight: null },
+  table: "Dan's Shed",
+  fixtures: 'Fixtures',
+  clubs: 'Clubs',
+  wall: 'The Wall',
+  shed: 'The Shed',
 };
 
 export default function App() {
   const [tab, setTab] = useState('table');
-  const { state, update, synced } = useSharedState();
+  const { state, act, synced, unsaved } = useSharedState();
   const { fixtures, loading, error, refresh, lastFetched, espnState } = useEnglandFixtures();
   const { assignments, manualMedals, bonusPoints } = state;
   const participants = Object.keys(assignments);
@@ -65,6 +65,7 @@ export default function App() {
     try { return localStorage.getItem('epl_whoami') || ''; } catch { return ''; }
   });
   const [showWho, setShowWho] = useState(false);
+  const [showSquad, setShowSquad] = useState(false);
   const promptedRef = useRef(false);
 
   useEffect(() => {
@@ -89,41 +90,27 @@ export default function App() {
   const closeTopRef = useRef(() => {});
   closeTopRef.current = () => {
     if (showWho) setShowWho(false);
+    else if (showSquad) setShowSquad(false);
     else if (teamSheet) setTeamSheet(null);
     else if (matchSheet) setMatchSheet(null);
   };
   const closeTop = useCallback(() => closeTopRef.current(), []);
-  useDismissable(Boolean(showWho || teamSheet || matchSheet), closeTop);
+  useDismissable(Boolean(showWho || showSquad || teamSheet || matchSheet), closeTop);
 
-  // What the strap says: the next matchweek still to be played. Once there is
-  // nothing left it used to fall back to "Pre-season", so a finished season
-  // read as one that had not started.
-  const strapLine = useMemo(() => {
-    const now = Date.now();
-    const up = fixtures
-      .filter((f) => f.utcDate && Date.parse(f.utcDate) > now - 36 * 3600 * 1000)
-      .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''));
-    if (up.length) return `Matchweek ${up[0].matchday}`;
-    return fixtures.some((f) => f.status === 'FINISHED') ? 'Season over' : 'Pre-season';
-  }, [fixtures]);
-
-  const head = MASTHEAD[tab] || MASTHEAD.table;
-  const wallCount = (state.wallPosts || []).length;
+  const word = MASTHEAD[tab] || MASTHEAD.table;
+  const owed = unanswered(state.polls, whoAmI).length;
 
   return (
     <div className="app">
       <header className="masthead">
         <div className="masthead-top">
-          <div className="masthead-word">{head.word}</div>
-          <button className="masthead-issue" onClick={() => setShowWho(true)}>
-            {tab === 'wall'
-              ? `${wallCount} bit${wallCount === 1 ? '' : 's'}`
-              : whoAmI || 'Who are you?'}
+          <div className="masthead-word">{word}</div>
+          <button
+            className="masthead-issue"
+            onClick={() => (whoAmI && assignments[whoAmI] ? setShowSquad(true) : setShowWho(true))}
+          >
+            {whoAmI || 'Who are you?'}
           </button>
-        </div>
-        <div className="strap">
-          <span>Season Sweep {SEASON}</span>
-          <span>{strapLine}</span>
         </div>
       </header>
 
@@ -169,13 +156,14 @@ export default function App() {
           />
         )}
         {tab === 'wall' && (
-          <Wall state={state} update={update} whoAmI={whoAmI} synced={synced} />
+          <Wall state={state} act={act} whoAmI={whoAmI} synced={synced} />
         )}
         {tab === 'shed' && (
           <Shed
             state={state}
-            update={update}
+            act={act}
             synced={synced}
+            unsaved={unsaved}
             whoAmI={whoAmI}
             onChangeUser={() => setShowWho(true)}
             fixtures={fixtures}
@@ -189,6 +177,17 @@ export default function App() {
 
       {showWho && (
         <WhoAmIModal participants={participants} onPick={pickWho} onSkip={skipWho} />
+      )}
+
+      {showSquad && (
+        <MySquad
+          who={whoAmI}
+          ladder={ladder}
+          fixtures={fixtures}
+          onSelectTeam={setTeamSheet}
+          onChangeUser={() => { setShowSquad(false); setShowWho(true); }}
+          onClose={() => setShowSquad(false)}
+        />
       )}
 
       {matchSheet && (
@@ -219,7 +218,7 @@ export default function App() {
         />
       )}
 
-      <Navigation tab={tab} setTab={setTab} />
+      <Navigation tab={tab} setTab={setTab} dots={{ shed: owed > 0 }} />
     </div>
   );
 }

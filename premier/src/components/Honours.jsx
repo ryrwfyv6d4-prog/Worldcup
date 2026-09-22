@@ -1,17 +1,11 @@
 import { useState } from 'react';
 import { TEAMS, MEDALS, getTeam } from '../data/england2027.js';
+import { ownerOf } from '../utils/format.js';
 
 // Medals the league feed can't decide for us. Someone in the shed ticks them.
 const MANUAL = ['BIG_PUSH', 'CUP'];
 
-function ownerOf(team, assignments) {
-  for (const [name, teams] of Object.entries(assignments)) {
-    if ((teams || []).includes(team)) return name;
-  }
-  return null;
-}
-
-export default function Honours({ state, update }) {
+export default function Honours({ state, act, who }) {
   const { assignments, manualMedals = {} } = state;
   const [medal, setMedal] = useState('BIG_PUSH');
 
@@ -20,13 +14,19 @@ export default function Honours({ state, update }) {
   const eligible = medal === 'BIG_PUSH' ? owned.filter((t) => t.div === 2) : owned;
 
   const has = (team) => (manualMedals[team] || []).includes(medal);
+  // Every award or removal leaves a line on the Wall, so nobody's points move
+  // without the group seeing who moved them.
   const toggle = (team) => {
-    update((s) => {
-      const mm = { ...(s.manualMedals || {}) };
-      const cur = mm[team] || [];
-      mm[team] = cur.includes(medal) ? cur.filter((k) => k !== medal) : [...cur, medal];
-      if (!mm[team].length) delete mm[team];
-      return { manualMedals: mm };
+    const on = !has(team);
+    const short = getTeam(team)?.short || team;
+    const verb = on ? 'gave' : 'took back';
+    if (!window.confirm(`${on ? 'Award' : 'Remove'} ${MEDALS[medal].label} for ${short}?`)) return;
+    act({
+      type: 'medal.set', team, key: medal, on,
+      note: {
+        id: Date.now(), person: who || 'Someone', ts: Date.now(),
+        text: `${who || 'Someone'} ${verb} ${MEDALS[medal].label} ${on ? 'to' : 'from'} ${short} (${ownerOf(team, assignments) || 'unclaimed'}).`,
+      },
     });
   };
 

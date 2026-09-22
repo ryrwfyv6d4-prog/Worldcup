@@ -14,8 +14,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'],
       manifest: {
-        name: "The Eagle's Nest · England Campaign 26/27",
-        short_name: "Eagle's Nest",
+        name: "Dan's Shed · Sweep 26/27",
+        short_name: "Dan's Shed",
         description: 'Premier League + Championship sweep — conscription, orders, standings',
         theme_color: '#EFEAE0',
         background_color: '#EFEAE0',

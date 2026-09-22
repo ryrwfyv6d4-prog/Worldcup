@@ -11,7 +11,7 @@ function shuffle(arr) {
   return a;
 }
 
-export default function Draw({ assignments, setAssignments, drawLocked, setDrawLocked }) {
+export default function Draw({ assignments, drawLocked, act, who }) {
   const [players, setPlayers] = useState(() =>
     Object.keys(assignments).length ? Object.keys(assignments) : DEFAULT_PLAYERS
   );
@@ -63,10 +63,15 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
       // guard against ever storing an empty slot
       players.forEach((p, i) => { if (order[i]) result[p].push(order[i]); });
     }
-    setAssignments(result);
+    act({ type: 'draw.set', assignments: result });
   };
 
-  const reset = () => { setAssignments({}); setDrawLocked(false); };
+  const reset = () => {
+    if (window.confirm('Scrap this draw and start again?')) act({ type: 'draw.set', assignments: {} });
+  };
+  const lock = () => {
+    if (window.confirm('Lock the draw? After this only swaps can change it.')) act({ type: 'draw.lock' });
+  };
 
   const taken = new Set(Object.values(assignments).flat());
   const exempt = drawn ? TEAMS.map((t) => t.name).filter((n) => !taken.has(n)) : [];
@@ -79,16 +84,20 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
         club came from.
       </p>
 
-      {/* The ceremony lives in its own page so it can go full screen on a telly
-          and run off a bare file with no network. It publishes straight to the
-          shared state, so a draw done there lands here. */}
-      <a className="btn btn-primary btn-big draw-night-link" href="./draw-night.html">
-        Draw night →
-      </a>
-      <p className="muted small">
-        Cards, one player at a time, big club last. Use the buttons below only if
-        you want a quick draw with no ceremony.
-      </p>
+      {/* The ceremony lives in its own page so it can go full screen on a telly.
+          It publishes straight to the shared state, so once the draw is locked
+          the link goes: a second ceremony must never replace the real draw. */}
+      {!drawLocked && (
+        <>
+          <a className="btn btn-primary btn-big draw-night-link" href="./draw-night.html">
+            Draw night →
+          </a>
+          <p className="muted small">
+            Cards, one player at a time, big club last. Use the buttons below only if
+            you want a quick draw with no ceremony.
+          </p>
+        </>
+      )}
 
       {!drawn && (
         <>
@@ -174,7 +183,6 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
                   return (
                     <span key={t} className="chip chip-team">
                       {info?.short || clubLabel(t)}
-                      {info?.codename && <em>{info.codename}</em>}
                     </span>
                   );
                 })}
@@ -189,10 +197,10 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
               </div>
             </div>
           )}
-          <Swap assignments={assignments} setAssignments={setAssignments} />
+          <Swap assignments={assignments} act={act} who={who} />
 
           <div className="btn-row">
-            {!drawLocked && <button className="btn btn-primary" onClick={() => setDrawLocked(true)}>Lock it in</button>}
+            {!drawLocked && <button className="btn btn-primary" onClick={lock}>Lock it in</button>}
             {!drawLocked && <button className="btn btn-danger" onClick={reset}>Scrap & redraw</button>}
             {drawLocked && <p className="muted">The draw is locked. Swaps above still work.</p>}
           </div>
@@ -208,7 +216,7 @@ export default function Draw({ assignments, setAssignments, drawLocked, setDrawL
 // night, and a locked draw with no way to correct it means the app stops
 // matching reality and every number after it is quietly wrong. Points follow
 // the club, so a swap moves everything already banked with it.
-function Swap({ assignments, setAssignments }) {
+function Swap({ assignments, act, who }) {
   const owned = Object.entries(assignments)
     .flatMap(([person, teams]) => (teams || []).filter(Boolean).map((team) => ({ person, team })));
 
@@ -222,17 +230,19 @@ function Swap({ assignments, setAssignments }) {
 
   const doSwap = () => {
     if (!ready) return;
-    const next = {};
-    for (const [person, teams] of Object.entries(assignments)) {
-      next[person] = (teams || []).map((t) => {
-        if (person === one.person && t === one.team) return two.team;
-        if (person === two.person && t === two.team) return one.team;
-        return t;
-      });
-    }
-    setAssignments(next);
-    setDone(`${getTeam(one.team)?.short || one.team} to ${two.person}, `
-      + `${getTeam(two.team)?.short || two.team} to ${one.person}.`);
+    const s1 = getTeam(one.team)?.short || one.team;
+    const s2 = getTeam(two.team)?.short || two.team;
+    const summary = `${s1} to ${two.person}, ${s2} to ${one.person}.`;
+    if (!window.confirm(`Swap them? ${summary} Points already banked move with the clubs.`)) return;
+    // Sent as a swap, not as a new draw, so it only lands if both clubs are
+    // still where this phone thinks they are. It leaves a line on the Wall.
+    act({
+      type: 'draw.swap',
+      a: { person: one.person, team: one.team },
+      b: { person: two.person, team: two.team },
+      note: { id: Date.now(), person: who || 'Someone', ts: Date.now(), text: `${who || 'Someone'} swapped ${summary}` },
+    });
+    setDone(summary);
     setA(''); setB('');
   };
 

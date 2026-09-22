@@ -1,30 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getTeam, SCORING } from '../data/england2027.js';
+import { getTeam, SCORING, MEDALS } from '../data/england2027.js';
 import { coloursFor, inkOn } from '../data/colours.js';
 import { priceRangeFor } from '../utils/odds.js';
 import {
   leagueTable, teamPoints, recentResults, nextFixtures,
-  buildTables, buildComplete, overachieveForTeam,
+  buildTables, buildComplete, overachieveForTeam, medalsForTeam,
 } from '../utils/scoring.js';
 import { clubLabel } from '../utils/teamMatch.js';
 import Stripe from './Stripe.jsx';
 import { useSwipeToClose } from '../hooks/useSwipeToClose.js';
 import { getProjection } from '../utils/projection.js';
+import { ownerOf, ordinal } from '../utils/format.js';
 
 const pctOf = (v) => (v >= 0.995 ? '100%' : v < 0.005 ? '<1%' : `${Math.round(v * 100)}%`);
-
-const ordinal = (n) => {
-  if (n == null) return '—';
-  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-};
-
-function ownerOf(team, assignments) {
-  for (const [name, teams] of Object.entries(assignments)) {
-    if ((teams || []).includes(team)) return name;
-  }
-  return null;
-}
 
 // 2d 4h 18m, dropping to 4h 18m inside a day
 function countdownTo(iso) {
@@ -41,6 +29,7 @@ function countdownTo(iso) {
 export default function TeamSheet({ team, fixtures, assignments, manualMedals, bonusPoints, onClose, onOpenMatch, onSelectTeam }) {
   const info = getTeam(team);
   const [tick, setTick] = useState(0);
+  const [allResults, setAllResults] = useState(false);
   const sheetRef = useRef(null);
   useSwipeToClose(sheetRef, onClose);
 
@@ -67,9 +56,16 @@ export default function TeamSheet({ team, fixtures, assignments, manualMedals, b
   const pos = table.findIndex((r) => r.team === team) + 1;
   const row = table.find((r) => r.team === team);
   const pts = teamPoints(team, fixtures);
-  const oa = overachieveForTeam(team, buildTables(fixtures), buildComplete(fixtures));
+  const tables = buildTables(fixtures);
+  const complete = buildComplete(fixtures);
+  const oa = overachieveForTeam(team, tables, complete);
+  const medals = medalsForTeam(team, tables, complete, manualMedals);
+  const medalPts = medals.reduce((n, k) => n + MEDALS[k].pts, 0);
+  // Everything this club has put on its owner's ladder total, so the two add up
+  const sweepTotal = pts.total + oa.pts + medalPts;
   const range = priceRangeFor(team);
-  const results = recentResults(team, fixtures, 6);
+  const results = recentResults(team, fixtures, allResults ? 99 : 6);
+  const moreResults = !allResults && recentResults(team, fixtures, 7).length > 6;
   const next = nextFixtures(team, fixtures, 1)[0];
   const countdown = next ? countdownTo(next.fixture.utcDate) : null;
 
@@ -93,8 +89,8 @@ export default function TeamSheet({ team, fixtures, assignments, manualMedals, b
   return (
     <div className="club-backdrop" ref={sheetRef}>
       <div className="club-hero" style={{ background: primary, color: heroInk }}>
-        <button className="club-back" onClick={onClose} aria-label="Back to the table">
-          <span className="mp-back-chev" aria-hidden="true">‹</span> Table
+        <button className="club-back" onClick={onClose} aria-label="Back">
+          <span className="mp-back-chev" aria-hidden="true">‹</span> Back
         </button>
         <div className="club-name">{info.short}</div>
         <div className="club-meta">
@@ -107,11 +103,9 @@ export default function TeamSheet({ team, fixtures, assignments, manualMedals, b
       </div>
 
       <div className="club-body">
-        <p className="club-desc">{info.roots}</p>
-
         <div className="stat-strip">
           <div className="stat-cell">
-            <div className="stat-val">{pts.total}</div>
+            <div className="stat-val">{sweepTotal}</div>
             <div className="stat-lab">Sweep pts</div>
           </div>
           <div className="stat-cell">
@@ -125,6 +119,14 @@ export default function TeamSheet({ team, fixtures, assignments, manualMedals, b
             <div className="stat-lab">Goal diff</div>
           </div>
         </div>
+
+        {(oa.pts > 0 || medalPts > 0) && (
+          <p className="muted small sweep-split">
+            {pts.total} from results
+            {oa.pts > 0 && ` · +${oa.pts} for ${oa.places} place${oa.places === 1 ? '' : 's'} above its tip`}
+            {medals.map((k) => ` · +${MEDALS[k].pts} ${MEDALS[k].label}`).join('')}
+          </p>
+        )}
 
         {proj && (
           <div className="proj-box">
@@ -161,13 +163,6 @@ export default function TeamSheet({ team, fixtures, assignments, manualMedals, b
                   : 'The projection has it finishing exactly where it was tipped.'}
             </p>
           </div>
-        )}
-
-        {oa.live && oa.places > 0 && (
-          <p className="editorial" style={{ marginTop: 14 }}>
-            {oa.places} place{oa.places === 1 ? '' : 's'} above its tip — worth{' '}
-            {oa.pts} to {owner || 'nobody'} at {SCORING.OVERACHIEVE} a place.
-          </p>
         )}
 
         {next && (
@@ -224,6 +219,11 @@ export default function TeamSheet({ team, fixtures, assignments, manualMedals, b
                 <span className={`res-sq fsq fsq-${r.result.toLowerCase()}`}>{r.result}</span>
               </button>
             ))}
+            {moreResults && (
+              <button className="ledger-more ledger-more-btn" onClick={() => setAllResults(true)}>
+                All results
+              </button>
+            )}
           </>
         )}
 

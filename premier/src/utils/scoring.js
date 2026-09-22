@@ -1,5 +1,5 @@
 import { MEDALS, SCORING, TEAMS, DIV_SIZE, getTeam } from '../data/england2027.js';
-import { valueForFixture, matchValue, winProbability } from './odds.js';
+import { valueForFixture } from './odds.js';
 
 // Pre-season odds rank, used as the final table tiebreak so an all-zero table
 // isn't alphabetical.
@@ -257,159 +257,7 @@ export function reverseFixture(fixture, fixtures) {
   ) || null;
 }
 
-// ── Projections (Monte Carlo) ───────────────────────────────────────────────
-function mulberry32(seed) {
-  return function rand() {
-    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const FORM_WEIGHT = 8; // games of belief in the odds before form takes over
-
-// Blend the pre-season odds probability with how the club is actually going
-function shrunkWinProb(team, opp, isHome, form) {
-  const base = winProbability(team, opp, isHome);
-  if (base == null) return 0;
-  const played = form.w + form.d + form.l;
-  if (!played) return base;
-  const actual = form.w / played;
-  return (base * FORM_WEIGHT + actual * played) / (FORM_WEIGHT + played);
-}
-
-// Places a club could still climb, bounded by 3 league points per game remaining
-function reachableClimb(team, tables) {
-  const t = getTeam(team);
-  if (!t) return 0;
-  const table = t.div === 1 ? tables.d1 : tables.d2;
-  const row = table.find((r) => r.team === team);
-  if (!row) return 0;
-  const pos = table.findIndex((r) => r.team === team) + 1;
-  const maxGain = 3 * Math.max(0, ROUNDS[t.div] - row.p);
-  const blockers = table.slice(0, pos - 1).filter((r) => r.pts > row.pts + maxGain).length;
-  const bestPos = blockers + 1;
-  return Math.max(0, t.rank - bestPos);
-}
-
-function reachableMedalPoints(team, tables, manualMedals = {}) {
-  const t = getTeam(team);
-  if (!t) return 0;
-  const table = t.div === 1 ? tables.d1 : tables.d2;
-  const row = table.find((r) => r.team === team);
-  if (!row) return 0;
-  const pos = table.findIndex((r) => r.team === team) + 1;
-  const maxGain = 3 * Math.max(0, ROUNDS[t.div] - row.p);
-  const canReach = (targetPos) => {
-    const target = table[targetPos - 1];
-    if (!target) return false;
-    if (pos <= targetPos) return true;
-    return row.pts + maxGain >= target.pts;
-  };
-  let pts = 0;
-  if (t.div === 1) {
-    if (canReach(1)) pts += MEDALS.VC.pts;
-    if (canReach(4)) pts += MEDALS.DSO.pts;
-    if (t.rank > DIV_SIZE[1] / 2) {
-      const safety = table[16];
-      if (!safety || row.pts + maxGain >= safety.pts) pts += MEDALS.SURVIVAL.pts;
-    }
-  } else {
-    if (canReach(1)) pts += MEDALS.CHAMP_TITLE.pts;
-    if (canReach(2)) pts += MEDALS.PROMOTION.pts;
-    if (canReach(6)) pts += MEDALS.BIG_PUSH.pts;
-  }
-  if ((manualMedals[team] || []).includes('BIG_PUSH')) pts = Math.max(0, pts - MEDALS.BIG_PUSH.pts);
-  return pts;
-}
-
-const SIMS = 300;
-const pct = (sorted, p) => (sorted.length
-  ? sorted[Math.min(sorted.length - 1, Math.max(0, Math.round((p / 100) * (sorted.length - 1))))]
-  : 0);
-
-export function computeOutlook(assignments, fixtures, manualMedals = {}) {
-  const players = Object.keys(assignments);
-  if (!players.length) return {};
-
-  const tables = buildTables(fixtures);
-  const complete = buildComplete(fixtures);
-  const seasonOver = complete.d1 && complete.d2;
-  const owned = [...new Set(players.flatMap((p) => (assignments[p] || []).filter(Boolean)))];
-
-  const banked = {}, upside = {}, sims = {};
-  const rand = mulberry32(20262027);
-
-  for (const team of owned) {
-    const form = teamPoints(team, fixtures);
-    const medalKeys = medalsForTeam(team, tables, complete, manualMedals);
-    const oa = overachieveForTeam(team, tables, complete);
-    banked[team] = form.total + medalKeys.reduce((s, k) => s + MEDALS[k].pts, 0) + oa.pts;
-    upside[team] = seasonOver
-      ? 0
-      : reachableMedalPoints(team, tables, manualMedals) + reachableClimb(team, tables) * SCORING.OVERACHIEVE;
-
-    const remaining = fixtures.filter(
-      (f) => f.status !== 'FINISHED' && (f.homeTeam.name === team || f.awayTeam.name === team)
-    );
-    const priced = remaining.map((f) => {
-      const isHome = f.homeTeam.name === team;
-      const opp = isHome ? f.awayTeam.name : f.homeTeam.name;
-      return { win: matchValue(team, opp, isHome).win, p: shrunkWinProb(team, opp, isHome, form) };
-    });
-
-    const arr = new Array(SIMS);
-    for (let s = 0; s < SIMS; s++) {
-      let pts = 0;
-      for (const m of priced) {
-        const r = rand();
-        if (r < m.p) pts += m.win;
-        else if (r < m.p + 0.25) pts += SCORING.DRAW;
-      }
-      arr[s] = pts;
-    }
-    sims[team] = arr;
-  }
-
-  const out = {};
-  for (const p of players) {
-    const teams = (assignments[p] || []).filter(Boolean);
-    const base = teams.reduce((s, t) => s + (banked[t] || 0), 0);
-    const up = teams.reduce((s, t) => s + (upside[t] || 0), 0);
-    const totals = new Array(SIMS);
-    for (let s = 0; s < SIMS; s++) {
-      let sum = base;
-      for (const t of teams) sum += sims[t][s];
-      totals[s] = sum;
-    }
-    totals.sort((a, b) => a - b);
-    out[p] = {
-      banked: base,
-      projected: Math.round(pct(totals, 50)),
-      floor: Math.round(pct(totals, 5)),
-      ceiling: Math.round(pct(totals, 95)) + up,
-    };
-  }
-
-  const leader = players.reduce((best, p) => (out[p].projected > out[best].projected ? p : best), players[0]);
-  const bar = out[leader].projected;
-  for (const p of players) out[p].cooked = p !== leader && out[p].ceiling < bar;
-  return out;
-}
-
 // ── Time-window helpers ─────────────────────────────────────────────────────
-export function todayPoints(player, assignments, fixtures) {
-  const today = new Date().toLocaleDateString('en-CA');
-  const todays = fixtures.filter(
-    (f) => f.status === 'FINISHED' && f.utcDate &&
-      new Date(f.utcDate).toLocaleDateString('en-CA') === today
-  );
-  let sum = 0;
-  for (const team of (assignments[player] || []).filter(Boolean)) sum += teamPoints(team, todays).total;
-  return sum;
-}
-
 export function pointsBetween(player, assignments, fixtures, from, to) {
   const inWindow = fixtures.filter((f) => {
     if (f.status !== 'FINISHED' || !f.utcDate) return false;
@@ -441,62 +289,6 @@ export function monthlyRace(assignments, fixtures) {
     const top = rows[0]?.pts || 0;
     return { y, m, label, rows, over, winners: top > 0 ? rows.filter((r) => r.pts === top).map((r) => r.name) : [] };
   });
-}
-
-export function feedEvents(assignments, fixtures, limit = 20) {
-  const owner = (team) => {
-    for (const [name, teams] of Object.entries(assignments)) if ((teams || []).includes(team)) return name;
-    return null;
-  };
-  const events = [];
-  for (const f of fixtures) {
-    if (f.status !== 'FINISHED') continue;
-    for (const side of ['home', 'away']) {
-      const team = side === 'home' ? f.homeTeam.name : f.awayTeam.name;
-      const who = owner(team);
-      if (!who) continue;
-      const val = valueForFixture(f, team);
-      const won = (f.score.winner === 'HOME_TEAM' && side === 'home') || (f.score.winner === 'AWAY_TEAM' && side === 'away');
-      const drew = f.score.winner === 'DRAW';
-      events.push({
-        fixture: f, team, owner: who,
-        pts: won ? val.win : drew ? val.draw : 0,
-        result: won ? 'W' : drew ? 'D' : 'L',
-        ts: f.utcDate,
-      });
-    }
-  }
-  return events.sort((a, b) => (b.ts || '').localeCompare(a.ts || '')).slice(0, limit);
-}
-
-// ── My Weekend ──────────────────────────────────────────────────────────────
-export function myWeekend(player, assignments, fixtures) {
-  const teams = (assignments[player] || []).filter(Boolean);
-  if (!teams.length) return { window: null, matches: [] };
-  const mine = fixtures.filter(
-    (f) => teams.includes(f.homeTeam.name) || teams.includes(f.awayTeam.name)
-  );
-  const now = Date.now();
-  const upcoming = mine
-    .filter((f) => f.utcDate && (f.status !== 'FINISHED' || new Date(f.utcDate).getTime() > now - 48 * 3600 * 1000))
-    .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''));
-  const anchor = upcoming[0] || mine[mine.length - 1];
-  if (!anchor || !anchor.utcDate) return { window: null, matches: [] };
-
-  const a = new Date(anchor.utcDate);
-  const start = new Date(a); start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - ((a.getDay() + 2) % 7));
-  const end = new Date(start); end.setDate(end.getDate() + 4);
-
-  const matches = mine
-    .filter((f) => {
-      if (!f.utcDate) return false;
-      const t = new Date(f.utcDate);
-      return t >= start && t < end;
-    })
-    .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''));
-
-  return { window: { start, end }, matches };
 }
 
 // ── Next 5 / recent form, priced ─────────────────────────────────────────────
@@ -535,12 +327,4 @@ export function recentResults(team, fixtures, n = 6) {
       pts: result === 'W' ? val.win : result === 'D' ? val.draw : 0,
     };
   });
-}
-
-// Payout bands, for colouring the ticker
-export function priceBand(win) {
-  if (win >= 10) return 4;
-  if (win >= 7) return 3;
-  if (win >= 5) return 2;
-  return 1;
 }

@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
-import { buildLadder, formForTeam, feedEvents } from '../utils/scoring.js';
+import { buildLadder } from '../utils/scoring.js';
 import { getProjection } from '../utils/projection.js';
-import { MEDALS, SCORING, ENTRY_FEE, PAYOUTS, getTeam } from '../data/england2027.js';
-import { matchValue, priceRangeFor, SEASON_ROUNDS } from '../utils/odds.js';
+import { MEDALS, ENTRY_FEE, getTeam } from '../data/england2027.js';
+import { valueForFixture } from '../utils/odds.js';
 import { clubLabel } from '../utils/teamMatch.js';
 import { RowStripes } from './Stripe.jsx';
 import { tableLine, lastPlaceJibe } from '../utils/editorial.js';
 import UpNext from './UpNext.jsx';
+import { ordinal } from '../utils/format.js';
 
 // Chances of the three things that pay, straight off the simulation. Shown as
 // bars because the exact percentage matters far less than who is in the hunt.
@@ -32,17 +33,10 @@ function Forecast({ o, n }) {
       {/* First, second and last are not an arbitrary three — they are the
           only places that pay, so this is really "am I in the money". */}
       <div className="forecast-note">
-        The three places that pay. Typical finish {ordinalOf(o.medianRank)} of {n},
-        over 800 simulated seasons.
+        The three places that pay. Typical finish {ordinal(o.medianRank)} of {n}.
       </div>
     </div>
   );
-}
-
-function ordinalOf(x) {
-  if (x == null) return '—';
-  const s = ['th', 'st', 'nd', 'rd'], v = x % 100;
-  return x + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
 // The leader's recent form, taken across all their clubs, newest first
@@ -76,8 +70,8 @@ function ledgerFor(row, fixtures) {
       const my = isHome ? f.score.home : f.score.away;
       const their = isHome ? f.score.away : f.score.home;
       if (my == null || their == null) continue;
-      const val = matchValue(b.team, isHome ? f.awayTeam.name : f.homeTeam.name, isHome,
-        f.utcDate && Date.parse(f.utcDate) >= Date.parse('2027-01-01T00:00:00Z') ? 'mid' : 'pre');
+      // the same price the ladder used, January re-pricing and all
+      const val = valueForFixture(f, b.team);
       const pts = my > their ? val.win : my === their ? val.draw : 0;
       events.push({
         ts: f.utcDate || '',
@@ -88,7 +82,7 @@ function ledgerFor(row, fixtures) {
     }
     // banked extras
     if (b.oa?.pts > 0) {
-      events.push({ ts: 'zzz', label: `${info?.short || clubLabel(b.team)} ${ordinalOf(b.oa.pos)}, tipped ${ordinalOf(b.oa.tipped)}`, pts: b.oa.pts });
+      events.push({ ts: 'zzz', label: `${info?.short || clubLabel(b.team)} ${ordinal(b.oa.pos)}, tipped ${ordinal(b.oa.tipped)}`, pts: b.oa.pts });
     }
     for (const m of b.medals) {
       events.push({ ts: 'zzz', label: `${info?.short || clubLabel(b.team)} — ${MEDALS[m].label}`, pts: MEDALS[m].pts });
@@ -113,6 +107,7 @@ export default function Leaderboard({
     [assignments, fixtures, manualMedals, bonusPoints]
   );
   const [open, setOpen] = useState(null);
+  const [full, setFull] = useState(false);
 
   const anyResults = fixtures.some((f) => f.status === 'FINISHED');
   const pot = ladder.length * ENTRY_FEE;
@@ -154,16 +149,26 @@ export default function Leaderboard({
           return (
             <div
               key={row.name}
-              className={`lb-row ${isLeader ? 'leader' : ''} ${isLast ? 'last' : ''}`}
-              onClick={() => setOpen(isOpen ? null : row.name)}
+              className={`lb-row ${isLeader ? 'leader' : ''} ${isLast ? 'last' : ''} ${whoAmI === row.name ? 'me' : ''}`}
+              onClick={() => { setOpen(isOpen ? null : row.name); setFull(false); }}
             >
               <RowStripes teams={row.teams} />
               <div className="lb-main">
                 <div className="lb-rank">{i + 1}</div>
                 <div className="lb-info">
-                  <div className="lb-name">{row.name}{whoAmI === row.name ? ' ·' : ''}</div>
+                  <div className="lb-name">{row.name}</div>
                   <div className="lb-clubs">
-                    {row.teams.map((t) => clubLabel(t)).join(' · ')}
+                    {row.teams.map((t, j) => (
+                      <span key={t}>
+                        {j > 0 && ' · '}
+                        <button
+                          className="team-btn lb-club"
+                          onClick={(e) => { e.stopPropagation(); onSelectTeam?.(t); }}
+                        >
+                          {clubLabel(t)}
+                        </button>
+                      </span>
+                    ))}
                   </div>
                   {isLeader && form.length > 0 && (
                     <div className="form-squares">
@@ -211,14 +216,16 @@ export default function Leaderboard({
                     }
                     return (
                       <>
-                        {events.slice(0, 12).map((e, j) => (
+                        {(full ? events : events.slice(0, 12)).map((e, j) => (
                           <div key={j} className={`ledger-row ${e.pts === 0 ? 'zero' : ''}`}>
                             <span>{e.label}</span>
                             <b>{e.pts > 0 ? `+${e.pts}` : e.pts}</b>
                           </div>
                         ))}
-                        {events.length > 12 && (
-                          <div className="ledger-more">{events.length - 12} more</div>
+                        {events.length > 12 && !full && (
+                          <button className="ledger-more ledger-more-btn" onClick={() => setFull(true)}>
+                            Show {events.length - 12} more
+                          </button>
                         )}
                         {o.projected != null && (
                           <div className="ledger-more">
@@ -235,94 +242,7 @@ export default function Leaderboard({
         })}
       </div>
 
-      <ScoringPanel />
-
       <div className="tap-hint">Tap a row for the ledger</div>
-    </div>
-  );
-}
-
-// Reads live from the scoring config — never hard-coded, so it always matches
-// whatever the engine is actually doing.
-function ScoringPanel() {
-  const arsenal = priceRangeFor('Arsenal FC');
-  const hull = priceRangeFor('Hull City AFC');
-  const lo = Math.min(arsenal?.lo ?? 3, hull?.lo ?? 3);
-  const hi = Math.max(arsenal?.hi ?? 15, hull?.hi ?? 15);
-
-  return (
-    <div className="scoring">
-      <div className="scoring-head">How points are earned</div>
-      <div className="scoring-row">
-        <span>Your club wins</span>
-        <b>{lo}–{hi}</b>
-      </div>
-      <div className="scoring-row">
-        <span>Draw</span>
-        <b>{SCORING.DRAW}</b>
-      </div>
-      <div className="scoring-row">
-        <span>Each place finished above its tip</span>
-        <b>{SCORING.OVERACHIEVE}</b>
-      </div>
-      <div className="scoring-row">
-        <span>{MEDALS.VC.label}</span>
-        <b>{MEDALS.VC.pts}</b>
-      </div>
-      <div className="scoring-row">
-        <span>{MEDALS.PROMOTION.label}</span>
-        <b>{MEDALS.PROMOTION.pts}</b>
-      </div>
-      <div className="scoring-why">
-        <p className="scoring-lead">
-          <b>The harder the win, the more it pays.</b> Every club has a chance of winning
-          each match, and that chance sets the price: if they were always going to win it
-          is worth very little, and if nobody gave them a hope it is worth a lot. Most wins
-          land somewhere between {lo} and {hi} points. A draw is always {SCORING.DRAW},
-          whoever you played.
-        </p>
-
-        <div className="scoring-block">
-          <h4>Where the chances come from</h4>
-          <p>
-            The bookies' pre-season order, plus a bit extra for playing at home. That is all
-            it is. The price is printed on every fixture before kick-off, so you always know
-            what a game is worth before it is played.
-          </p>
-        </div>
-
-        <div className="scoring-block">
-          <h4>Prices change once, in January</h4>
-          <p>
-            At New Year the prices are worked out again, this time from where clubs have
-            actually ended up rather than where they were tipped. A club that has been far
-            better or worse than expected gets priced honestly for the second half. Every
-            match keeps whatever price it had on the day it kicked off, so nothing you have
-            already banked can be re-scored afterwards.
-          </p>
-        </div>
-
-        <div className="scoring-block">
-          <h4>Championship wins pay a little less</h4>
-          <p>
-            The Championship plays {SEASON_ROUNDS[2]} games to the Premier League's{' '}
-            {SEASON_ROUNDS[1]}. Left alone, a Championship club would earn about a fifth more
-            over a season purely for playing more often. Their prices come down by roughly
-            the same amount to cancel that out, so a full season is worth the same either
-            way and nobody is better off for the mix they were dealt.
-          </p>
-        </div>
-
-        <div className="scoring-block">
-          <h4>Beating your tip never resets</h4>
-          <p>
-            The {SCORING.OVERACHIEVE} points a place is always measured against where the
-            bookies put your club before a ball was kicked, even after the January
-            re-pricing. If it reset halfway, beating your prediction would stop meaning
-            anything.
-          </p>
-        </div>
-      </div>
     </div>
   );
 }

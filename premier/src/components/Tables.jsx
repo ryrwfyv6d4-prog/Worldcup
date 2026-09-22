@@ -3,13 +3,7 @@ import { leagueTable, formForTeam, TABLE_MODES } from '../utils/scoring.js';
 import { getProjection, projectedTable } from '../utils/projection.js';
 import { getTeam, MEDALS, SCORING } from '../data/england2027.js';
 import Crest from './Crest.jsx';
-
-function ownerOf(team, assignments) {
-  for (const [name, teams] of Object.entries(assignments)) {
-    if ((teams || []).includes(team)) return name;
-  }
-  return null;
-}
+import { ownerOf } from '../utils/format.js';
 
 // Zone per 1-indexed position
 function zoneFor(div, pos) {
@@ -45,10 +39,6 @@ export default function Tables({ fixtures, assignments, manualMedals, bonusPoint
 
   return (
     <div className="page">
-      <div className="page-header">
-        <h2>The Map Room</h2>
-      </div>
-
       <div className="seg-row">
         <button className={`seg ${div === 1 ? 'on' : ''}`} onClick={() => setDiv(1)}>Premier League</button>
         <button className={`seg ${div === 2 ? 'on' : ''}`} onClick={() => setDiv(2)}>Championship</button>
@@ -98,7 +88,7 @@ export default function Tables({ fixtures, assignments, manualMedals, bonusPoint
             <>
               <span className="zl up">Top 2 — promoted (+{MEDALS.PROMOTION.pts})</span>
               <span className="zl play">3–6 — play-offs</span>
-              <span className="zl drop">Bottom 3 — demoted</span>
+              <span className="zl drop">Bottom 3 — relegated</span>
             </>
           )}
         </div>
@@ -123,10 +113,14 @@ export default function Tables({ fixtures, assignments, manualMedals, bonusPoint
                   && info.rank > realPos(r.team)
                   ? info.rank - realPos(r.team) : 0;
                 return (
-                  <tr key={r.team} className={started && effectiveMode === 'all' ? zoneFor(div, pos) : ''}>
+                  <tr
+                    key={r.team}
+                    className={`tap-row ${started && effectiveMode === 'all' ? zoneFor(div, pos) : ''}`}
+                    onClick={() => onSelectTeam && onSelectTeam(r.team)}
+                  >
                     <td>{pos}</td>
                     <td className="tl team-cell">
-                      <button className="team-btn tbl-team" onClick={() => onSelectTeam && onSelectTeam(r.team)}>
+                      <button className="team-btn tbl-team">
                         <Crest team={r.team} size={18} />
                         {info ? info.short : r.team}
                       </button>
@@ -140,9 +134,11 @@ export default function Tables({ fixtures, assignments, manualMedals, bonusPoint
                       {gained > 0 ? `+${gained}` : (info ? info.rank : '—')}
                     </td>
                     <td className="tl form-cell">
-                      {form.length
-                        ? form.slice(0, 5).reverse().map((x, j) => <span key={j} className={`pip pip-${x.toLowerCase()}`}>{x}</span>)
-                        : <span className="pip-none">—</span>}
+                      {form.length ? (
+                        <span className="pips">
+                          {form.slice(0, 5).reverse().map((x, j) => <span key={j} className={`pip pip-${x.toLowerCase()}`}>{x}</span>)}
+                        </span>
+                      ) : <span className="pip-none">—</span>}
                     </td>
                   </tr>
                 );
@@ -159,7 +155,7 @@ export default function Tables({ fixtures, assignments, manualMedals, bonusPoint
 
 // ── Where it finishes ───────────────────────────────────────────────────────
 // A different question from the live table, so a different set of columns: the
-// median finish across 800 simulated seasons, the range it lands in most of the
+// median finish across the simulated seasons, the range it lands in most of the
 // time, and the chances that actually matter to the sweep.
 function ProjectedTable({ div, projection, started, onSelectTeam }) {
   if (!projection) return null;

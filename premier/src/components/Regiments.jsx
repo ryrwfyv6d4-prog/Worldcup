@@ -2,13 +2,7 @@ import { useState } from 'react';
 import { TEAMS, POT_LABELS } from '../data/england2027.js';
 import { priceRangeFor } from '../utils/odds.js';
 import Crest from './Crest.jsx';
-
-function ownerOf(team, assignments) {
-  for (const [name, teams] of Object.entries(assignments)) {
-    if ((teams || []).includes(team)) return name;
-  }
-  return null;
-}
+import { ownerOf } from '../utils/format.js';
 
 export default function Regiments({ assignments, onSelectTeam }) {
   const [filter, setFilter] = useState('ALL');
@@ -39,7 +33,7 @@ export default function Regiments({ assignments, onSelectTeam }) {
         onChange={(e) => setQ(e.target.value)}
         placeholder="Search club, codename or history…"
       />
-      {needle && <p className="muted small">{shown.length} of {TEAMS.length} regiments</p>}
+      {needle && <p className="muted small">{shown.length} of {TEAMS.length} clubs</p>}
 
       {shown.map((t) => {
         const owner = ownerOf(t.name, assignments);

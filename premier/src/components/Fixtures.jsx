@@ -7,6 +7,7 @@ import Stripe from './Stripe.jsx';
 import Tier from './Tier.jsx';
 import { fixturesLine } from '../utils/editorial.js';
 import { useHighlight } from '../hooks/useHighlight.js';
+import { ownerOf } from '../utils/format.js';
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -14,13 +15,6 @@ const FILTERS = [
   { key: 'ch', label: 'Championship' },
   { key: 'mine', label: 'Mine' },
 ];
-
-function ownerOf(team, assignments) {
-  for (const [name, teams] of Object.entries(assignments)) {
-    if ((teams || []).includes(team)) return name;
-  }
-  return null;
-}
 
 // Group by the day it is HERE, not the day it is in London. Slicing the ISO
 // string keys off the UTC date while the heading below prints the local one,
@@ -45,54 +39,75 @@ const fmtTime = (f) => {
   return new Date(f.utcDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 };
 
+// Pages are weeks, Tuesday to Monday in England, so a midweek round and the
+// weekend after it sit together and a Monday-night game isn't split off from
+// its weekend. The two divisions' matchweek numbers drift apart within a
+// month (the Championship plays more midweeks), so paging by "matchweek 6"
+// used to show a Premier League weekend next to a Championship round from a
+// different week.
+const WEEK = 7 * 864e5;
+const TUESDAY_EPOCH = Date.UTC(1970, 0, 6); // a Tuesday
+const weekOf = (iso) => (iso ? Math.floor((Date.parse(iso) - TUESDAY_EPOCH) / WEEK) : null);
+// "10–13 Oct", or "29 Sep – 2 Oct" across a month end, in local dates
+function spanLabel(fromIso, toIso) {
+  const a = new Date(fromIso), b = new Date(toIso);
+  const mon = (d) => d.toLocaleDateString('en-GB', { month: 'short' });
+  if (a.toDateString() === b.toDateString()) return `${a.getDate()} ${mon(a)}`;
+  if (a.getMonth() === b.getMonth()) return `${a.getDate()}–${b.getDate()} ${mon(b)}`;
+  return `${a.getDate()} ${mon(a)} – ${b.getDate()} ${mon(b)}`;
+}
+
 export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI }) {
   const [filter, setFilter] = useState('all');
-  const [md, setMd] = useState(null);
+  const [wk, setWk] = useState(null);
   const myTeams = (assignments[whoAmI] || []).filter(Boolean);
 
-  // Which division the matchweek pager walks. null means both: "All" used to
-  // resolve to 1, so the default tab quietly showed the Premier League only and
-  // the matchweek haul under it left out every Championship point.
   const div = filter === 'ch' ? 2 : filter === 'pl' ? 1 : null;
+  const inScope = useMemo(
+    () => fixtures.filter((f) => f.utcDate && (div == null || f.division === div)),
+    [fixtures, div]
+  );
 
-  const matchdays = useMemo(() => {
-    const inScope = div == null ? fixtures : fixtures.filter((f) => f.division === div);
-    return [...new Set(inScope.map((f) => f.matchday))].sort((a, b) => a - b);
-  }, [fixtures, div]);
+  const weeks = useMemo(
+    () => [...new Set(inScope.map((f) => weekOf(f.utcDate)))].sort((a, b) => a - b),
+    [inScope]
+  );
 
-  const nowMd = useMemo(() => {
+  // The week with the next game still to come (or one just finished)
+  const nowWk = useMemo(() => {
     const now = Date.now();
-    const up = fixtures
-      .filter((f) => (div == null || f.division === div)
-        && f.utcDate && Date.parse(f.utcDate) > now - 36 * 3600 * 1000)
-      .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''));
-    return up.length ? up[0].matchday : (matchdays[0] || 1);
-  }, [fixtures, div, matchdays]);
+    const up = inScope
+      .filter((f) => Date.parse(f.utcDate) > now - 36 * 3600 * 1000)
+      .sort((a, b) => a.utcDate.localeCompare(b.utcDate));
+    return up.length ? weekOf(up[0].utcDate) : weeks[weeks.length - 1];
+  }, [inScope, weeks]);
 
-  const shownMd = md ?? nowMd;
-  const maxMd = matchdays[matchdays.length - 1] || 1;
+  const shownWk = wk ?? nowWk;
+  const idx = weeks.indexOf(shownWk);
 
   const shown = useMemo(() => {
-    let list = fixtures.filter((f) => f.matchday === shownMd);
-    if (filter === 'pl') list = list.filter((f) => f.division === 1);
-    else if (filter === 'ch') list = list.filter((f) => f.division === 2);
-    else if (filter === 'mine') {
-      list = fixtures.filter(
-        (f) => myTeams.includes(f.homeTeam.name) || myTeams.includes(f.awayTeam.name)
-      );
+    if (filter === 'mine') {
       // Sort first, then trim. The feed arrives as all of division one followed
       // by all of division two, so slicing first filled the whole list with
       // Premier League games and a Championship club never appeared here.
       const now = Date.now();
-      list = list
+      return fixtures
+        .filter((f) => myTeams.includes(f.homeTeam.name) || myTeams.includes(f.awayTeam.name))
         .filter((f) => f.utcDate && Date.parse(f.utcDate) > now - 7 * 864e5)
         .sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''))
         .slice(0, 20);
-    } else if (div != null) {
-      list = list.filter((f) => f.division === div);
     }
-    return list.sort((a, b) => (a.utcDate || '').localeCompare(b.utcDate || ''));
-  }, [fixtures, shownMd, filter, div, myTeams]);
+    return inScope
+      .filter((f) => weekOf(f.utcDate) === shownWk)
+      .sort((a, b) => a.utcDate.localeCompare(b.utcDate));
+  }, [fixtures, inScope, shownWk, filter, myTeams]);
+
+  const weekLabel = shown.length
+    ? spanLabel(shown[0].utcDate, shown[shown.length - 1].utcDate)
+    : 'No games';
+  // Under a single division the round number still means something
+  const mds = [...new Set(shown.map((f) => f.matchday))];
+  const mdNote = div != null && mds.length === 1 ? `Matchweek ${mds[0]}` : null;
 
   const byDay = useMemo(() => {
     const groups = [];
@@ -126,7 +141,7 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
           <button
             key={f.key}
             className={`seg ${filter === f.key ? 'on' : ''}`}
-            onClick={() => { setFilter(f.key); setMd(null); }}
+            onClick={() => { setFilter(f.key); setWk(null); }}
           >
             {f.label}
           </button>
@@ -135,16 +150,19 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
 
       {filter !== 'mine' && (
         <div className="md-row">
-          <button className="btn" onClick={() => setMd(Math.max(1, shownMd - 1))} disabled={shownMd <= 1}>Prev</button>
-          <span className="md-label">Matchweek {shownMd} <small>of {maxMd}</small></span>
-          <button className="btn" onClick={() => setMd(Math.min(maxMd, shownMd + 1))} disabled={shownMd >= maxMd}>Next</button>
+          <button className="btn" onClick={() => setWk(weeks[idx - 1])} disabled={idx <= 0}>Prev</button>
+          <span className="md-label">
+            {weekLabel}
+            {mdNote && <small> · {mdNote}</small>}
+          </span>
+          <button className="btn" onClick={() => setWk(weeks[idx + 1])} disabled={idx < 0 || idx >= weeks.length - 1}>Next</button>
         </div>
       )}
 
       {haul.length > 0 && (
         <div className="haul">
           <div className="haul-head">
-            Banked {filter === 'mine' ? 'from these games' : `in matchweek ${shownMd}`}
+            Banked {filter === 'mine' ? 'from these games' : 'this week'}
           </div>
           <div className="haul-rows">
             {/* top five keeps the summary from pushing the fixtures off screen */}
@@ -185,7 +203,7 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
       {byDay.length === 0 && (
         <p className="editorial">
           {filter !== 'mine'
-            ? 'No fixtures in this matchweek.'
+            ? 'No games this week.'
             : myTeams.length
               ? 'None of your clubs are out. A rare weekend of watching in peace.'
               : 'You have no clubs yet. Pick a name from the masthead, or run the draw in the Shed.'}

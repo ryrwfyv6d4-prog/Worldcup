@@ -5,71 +5,89 @@ import Honours from './Honours.jsx';
 import Rules from './Rules.jsx';
 import Campaign from './Campaign.jsx';
 
-// Everything that isn't a live screen: the draw, the rules, the monthly prize,
-// the club list, hand-awarded honours, and the council of war.
+// Everything that isn't a live screen: the votes, the rules, the monthly
+// prize, hand-awarded honours, the draw and the club list.
 const VIEWS = [
-  { key: 'rules', label: 'Rules' },
-  { key: 'draw', label: 'Draw' },
-  { key: 'months', label: 'Months' },
-  { key: 'clubs', label: 'Club list' },
-  { key: 'honours', label: 'Honours' },
   { key: 'polls', label: 'Votes' },
+  { key: 'rules', label: 'Rules' },
+  { key: 'months', label: 'Months' },
+  { key: 'honours', label: 'Honours' },
+  { key: 'draw', label: 'Draw' },
+  { key: 'clubs', label: 'Club list' },
 ];
 
-function Polls({ state, update, who }) {
+// A poll this person hasn't voted in yet
+export const unanswered = (polls, who) =>
+  (who ? (polls || []).filter((p) => !(who in (p.votes || {}))) : []);
+
+function Polls({ state, act, who }) {
   const [q, setQ] = useState('');
   const [opts, setOpts] = useState('');
+  const [asking, setAsking] = useState(false);
   const create = () => {
     const question = q.trim();
     const options = opts.split('\n').map((o) => o.trim()).filter(Boolean);
     if (!question || options.length < 2 || !who) return;
-    update((s) => ({ polls: [{ id: Date.now(), person: who, q: question, options, votes: {}, ts: Date.now() }, ...s.polls] }));
-    setQ(''); setOpts('');
+    act({ type: 'poll.add', poll: { id: Date.now(), person: who, q: question, options, votes: {}, ts: Date.now() } });
+    setQ(''); setOpts(''); setAsking(false);
   };
-  const vote = (pollId, idx) => {
+  const vote = (p, idx) => {
     if (!who) return;
-    update((s) => ({
-      polls: s.polls.map((p) => p.id === pollId
-        ? { ...p, votes: { ...p.votes, [who]: p.votes[who] === idx ? undefined : idx } }
-        : p),
-    }));
+    act({ type: 'poll.vote', id: p.id, person: who, option: p.votes?.[who] === idx ? null : idx });
   };
+
+  // Ones you still owe a vote on first, then newest
+  const open = new Set(unanswered(state.polls, who).map((p) => p.id));
+  const polls = [...state.polls].sort((a, b) => (open.has(b.id) - open.has(a.id)) || (b.ts - a.ts));
+
   return (
     <>
-      <div className="card">
-        <h3>Put it to the shed</h3>
-        <input className="poll-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="The question…" disabled={!who} />
-        <textarea className="wall-input" rows="3" value={opts} onChange={(e) => setOpts(e.target.value)}
-          placeholder={'One option per line\nAye\nNay'} disabled={!who} />
-        <button className="btn btn-primary" onClick={create} disabled={!who || !q.trim() || opts.split('\n').filter((o) => o.trim()).length < 2}>Open the vote</button>
-      </div>
-      {state.polls.length === 0 && <p className="muted small">Nothing to vote on.</p>}
-      {state.polls.map((p) => {
-        const counts = p.options.map((_, i) => Object.values(p.votes).filter((v) => v === i).length);
+      {polls.length === 0 && <p className="muted small">Nothing to vote on.</p>}
+      {polls.map((p) => {
+        const votes = p.votes || {};
+        const counts = p.options.map((_, i) => Object.values(votes).filter((v) => v === i).length);
         const total = counts.reduce((a, b) => a + b, 0);
         return (
-          <div className="card" key={p.id}>
+          <div className={`card ${open.has(p.id) ? 'poll-open' : ''}`} key={p.id}>
             <div className="wall-meta"><b>{p.person}</b><span>asks</span></div>
             <h3>{p.q}</h3>
             {p.options.map((o, i) => (
-              <button key={i} className={`poll-opt ${p.votes[who] === i ? 'mine' : ''}`} onClick={() => vote(p.id, i)}>
+              <button key={i} className={`poll-opt ${votes[who] === i ? 'mine' : ''}`} onClick={() => vote(p, i)}>
                 <span className="poll-bar" style={{ width: total ? `${(counts[i] / total) * 100}%` : 0 }} />
                 <span className="poll-label">{o}</span>
                 <span className="poll-count">{counts[i]}</span>
               </button>
             ))}
+            {open.has(p.id) && <p className="muted small">You haven't voted.</p>}
           </div>
         );
       })}
+
+      {!asking && (
+        <button className="btn" onClick={() => setAsking(true)} disabled={!who}>+ Ask the shed</button>
+      )}
+      {asking && (
+        <div className="card">
+          <input className="poll-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="The question…" />
+          <textarea className="wall-input" rows="3" value={opts} onChange={(e) => setOpts(e.target.value)}
+            placeholder={'One option per line\nYes\nNo'} />
+          <div className="btn-row">
+            <button className="btn btn-primary" onClick={create} disabled={!q.trim() || opts.split('\n').filter((o) => o.trim()).length < 2}>Open the vote</button>
+            <button className="btn" onClick={() => setAsking(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
 
 export default function Shed({
-  state, update, synced, whoAmI, onChangeUser, fixtures, lastFetched, refresh, espnState,
+  state, act, synced, unsaved, whoAmI, onChangeUser, fixtures, lastFetched, refresh, espnState,
   onSelectTeam,
 }) {
-  const [view, setView] = useState('rules');
+  const [view, setView] = useState(() => (unanswered(state.polls, whoAmI).length ? 'polls' : 'rules'));
+  const owed = unanswered(state.polls, whoAmI).length;
+  const stamp = lastFetched && new Date(lastFetched).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <div className="page">
@@ -77,51 +95,44 @@ export default function Shed({
         {VIEWS.map((v) => (
           <button key={v.key} className={`seg ${view === v.key ? 'on' : ''}`} onClick={() => setView(v.key)}>
             {v.label}
+            {v.key === 'polls' && owed > 0 && <span className="seg-dot" aria-label={`${owed} to vote on`} />}
           </button>
         ))}
       </div>
-
-      <p className="muted small" style={{ paddingTop: 10 }}>
-        {synced ? 'Shared with the whole shed' : 'This device only'}
-        {lastFetched && ` · updated ${new Date(lastFetched).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`}
-        {' · '}
-        <button className="team-btn" onClick={refresh} style={{ textDecoration: 'underline' }}>refresh</button>
-        {whoAmI && (
-          <>
-            {' · '}
-            <button className="team-btn" onClick={onChangeUser} style={{ textDecoration: 'underline' }}>
-              not {whoAmI}?
-            </button>
-          </>
-        )}
-        <span className="signals">
-          {espnState?.ok === true && `Live scores connected · ${espnState.count} match${espnState.count === 1 ? '' : 'es'} in window`}
-          {espnState?.ok === false && 'Live scores unreachable — results still land from the league feed'}
-          {espnState?.ok == null && 'Live scores: checking…'}
-          {/* A division that failed used to vanish without a word. It now keeps
-              its last scores, and says which one is stale. */}
-          {espnState?.missing?.length > 0 && (
-            <span className="signals-warn"> · no answer from {espnState.missing.join(', ')}</span>
-          )}
-          {espnState?.unmatched?.length > 0 && (
-            <span className="signals-warn"> · unrecognised: {espnState.unmatched.join(', ')}</span>
-          )}
-        </span>
-      </p>
 
       {view === 'rules' && <Rules playerCount={Object.keys(state.assignments).length} />}
       {view === 'draw' && (
         <Draw
           assignments={state.assignments}
-          setAssignments={(a) => update({ assignments: a })}
           drawLocked={state.drawLocked}
-          setDrawLocked={(v) => update({ drawLocked: v })}
+          act={act}
+          who={whoAmI}
         />
       )}
       {view === 'months' && <Campaign assignments={state.assignments} fixtures={fixtures} />}
       {view === 'clubs' && <Regiments assignments={state.assignments} onSelectTeam={onSelectTeam} />}
-      {view === 'honours' && <Honours state={state} update={update} />}
-      {view === 'polls' && <Polls state={state} update={update} who={whoAmI} />}
+      {view === 'honours' && <Honours state={state} act={act} who={whoAmI} />}
+      {view === 'polls' && <Polls state={state} act={act} who={whoAmI} />}
+
+      {/* One quiet line at the foot: who you are, whether it's saved, and
+          whether the scores are live. Only says more when something is wrong. */}
+      <p className="muted small shed-foot">
+        {whoAmI && (
+          <button className="team-btn link" onClick={onChangeUser}>Not {whoAmI}?</button>
+        )}
+        {whoAmI && ' · '}
+        {!synced ? 'This device only' : unsaved ? `${unsaved} change${unsaved === 1 ? '' : 's'} waiting for signal` : 'Saved'}
+        {stamp && ` · scores ${stamp}`}
+        {' · '}
+        <button className="team-btn link" onClick={refresh}>refresh</button>
+        {espnState?.ok === false && <span className="signals-warn"> · live scores unreachable</span>}
+        {espnState?.missing?.length > 0 && (
+          <span className="signals-warn"> · no answer from {espnState.missing.join(', ')}</span>
+        )}
+        {espnState?.unmatched?.length > 0 && (
+          <span className="signals-warn"> · unrecognised: {espnState.unmatched.join(', ')}</span>
+        )}
+      </p>
     </div>
   );
 }

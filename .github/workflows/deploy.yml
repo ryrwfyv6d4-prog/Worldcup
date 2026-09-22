@@ -68,6 +68,7 @@ jobs:
           node scripts/formation.test.mjs
           node scripts/highlight-title.test.mjs
           node scripts/matchdetail.test.mjs
+          node scripts/stateops.test.mjs
 
       - name: Check live-score feed (diagnostic only, never blocks)
         working-directory: premier

@@ -9,7 +9,7 @@ const PINS = ['#8A1A18', '#1B5E8A', '#1B1A16', '#C48A1E'];
 const tiltFor = (id) => TILTS[Math.abs(Number(id) || 0) % TILTS.length];
 const pinFor = (id) => PINS[Math.abs(Number(id) || 0) % PINS.length];
 
-export default function Wall({ state, update, whoAmI, synced }) {
+export default function Wall({ state, act, whoAmI, synced }) {
   const [text, setText] = useState('');
   const [adding, setAdding] = useState(false);
   const [confirm, setConfirm] = useState(null);
@@ -18,15 +18,13 @@ export default function Wall({ state, update, whoAmI, synced }) {
   const post = () => {
     const t = text.trim();
     if (!t || !whoAmI) return;
-    update((s) => ({
-      wallPosts: [{ id: Date.now(), person: whoAmI, text: t, ts: Date.now() }, ...s.wallPosts].slice(0, 200),
-    }));
+    act({ type: 'wall.add', post: { id: Date.now(), person: whoAmI, text: t, ts: Date.now() } });
     setText('');
     setAdding(false);
   };
 
   const remove = (id) => {
-    update((s) => ({ wallPosts: s.wallPosts.filter((x) => x.id !== id) }));
+    act({ type: 'wall.remove', id });
     setConfirm(null);
   };
 
@@ -66,7 +64,7 @@ export default function Wall({ state, update, whoAmI, synced }) {
 
       <div className="wall-grid">
         {posts.map((p) => (
-          <div className="print" key={p.id} style={{ transform: `rotate(${tiltFor(p.id)}deg)` }}>
+          <div className={`print ${p.note ? 'print-note' : ''}`} key={p.id} style={{ transform: `rotate(${tiltFor(p.id)}deg)` }}>
             <span className="print-pin" style={{ background: pinFor(p.id) }} />
             <div className="print-body">
               {whoAmI === p.person && (

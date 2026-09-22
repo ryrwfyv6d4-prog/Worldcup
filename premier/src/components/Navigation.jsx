@@ -7,7 +7,7 @@ const TABS = [
   { id: 'shed', label: 'Shed' },
 ];
 
-export default function Navigation({ tab, setTab }) {
+export default function Navigation({ tab, setTab, dots = {} }) {
   return (
     <nav className="nav">
       {TABS.map((t) => (
@@ -17,6 +17,7 @@ export default function Navigation({ tab, setTab }) {
           onClick={() => setTab(t.id)}
         >
           <span className="nav-lab">{t.label}</span>
+          {dots[t.id] && <span className="nav-dot" aria-label="something waiting" />}
         </button>
       ))}
     </nav>

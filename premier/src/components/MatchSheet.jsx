@@ -19,19 +19,7 @@ import TeamNews, { ProbableXI } from './match/TeamNews.jsx';
 import {
   leagueTable, formForTeam, positionOf, reverseFixture, fixturePoints,
 } from '../utils/scoring.js';
-
-function ownerOf(team, assignments) {
-  for (const [name, teams] of Object.entries(assignments)) {
-    if ((teams || []).includes(team)) return name;
-  }
-  return null;
-}
-
-function ordinal(n) {
-  if (n == null) return '—';
-  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
+import { ownerOf, ordinal } from '../utils/format.js';
 
 const fmtDate = (iso) => (iso
   ? new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long' })

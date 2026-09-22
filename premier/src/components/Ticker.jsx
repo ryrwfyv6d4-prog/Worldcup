@@ -1,13 +1,7 @@
 import { useMemo } from 'react';
 import { getTeam } from '../data/england2027.js';
 import { valueForFixture } from '../utils/odds.js';
-
-// Never "3th": the suffix depends on the number, not on the common case
-function ordinal(n) {
-  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
+import { ordinal, ownerOf } from '../utils/format.js';
 
 // Results strip under the masthead. Score lines in paper, point gains in gold,
 // the odd jibe in grey. The item list is rendered TWICE so the -50% marquee
@@ -23,13 +17,6 @@ function buildItems(fixtures, assignments, ladder) {
     .sort((a, b) => (b.utcDate || '').localeCompare(a.utcDate || ''))
     .slice(0, 8);
 
-  const ownerOf = (team) => {
-    for (const [name, teams] of Object.entries(assignments || {})) {
-      if ((teams || []).includes(team)) return name;
-    }
-    return null;
-  };
-
   const items = [];
   for (const f of recent) {
     const h = getTeam(f.homeTeam.name);
@@ -42,7 +29,7 @@ function buildItems(fixtures, assignments, ladder) {
     });
     // who banked what from this match
     for (const side of [f.homeTeam.name, f.awayTeam.name]) {
-      const who = ownerOf(side);
+      const who = ownerOf(side, assignments);
       if (!who) continue;
       const isHome = f.homeTeam.name === side;
       const won = (f.score.winner === 'HOME_TEAM' && isHome) || (f.score.winner === 'AWAY_TEAM' && !isHome);
@@ -53,37 +40,13 @@ function buildItems(fixtures, assignments, ladder) {
     }
   }
 
-  // a closing jibe about whoever is propping the table up
+  // Only worth a strip when something actually happened. Between matchweeks
+  // it used to loop the standings, which the Table already shows, and took a
+  // line of every screen to do it.
+  if (!items.length) return items;
   if (ladder && ladder.length > 2) {
     const last = ladder[ladder.length - 1];
     items.push({ kind: 'jibe', text: `${last.name} still ${ordinal(ladder.length)}` });
-  }
-
-  // Between matchweeks there is nothing in the last day, and the strip was
-  // left running one jibe on a loop under a heading that says LATEST — which
-  // reads as broken rather than quiet. Say where things actually stand and
-  // what is on next.
-  if (!items.some((i) => i.kind === 'score')) {
-    const quiet = [];
-    if (ladder && ladder.length) {
-      const [top, second] = ladder;
-      quiet.push({ kind: 'score', text: `${top.name} leads on ${top.total}` });
-      if (second) {
-        const gap = top.total - second.total;
-        quiet.push({
-          kind: 'gain',
-          text: gap === 0 ? `${second.name} level` : `${second.name} ${gap} behind`,
-        });
-      }
-    }
-    const next = (fixtures || [])
-      .filter((f) => f.status === 'SCHEDULED' && f.utcDate && Date.parse(f.utcDate) > Date.now())
-      .sort((a, b) => a.utcDate.localeCompare(b.utcDate))[0];
-    if (next) {
-      const h = getTeam(next.homeTeam.name), a = getTeam(next.awayTeam.name);
-      if (h && a) quiet.push({ kind: 'score', text: `Next: ${h.tla} v ${a.tla}` });
-    }
-    return quiet.length ? [...quiet, ...items] : items;
   }
 
   return items;
@@ -98,15 +61,12 @@ export default function Ticker({ fixtures, assignments, ladder }) {
 
   const cls = (k) => (k === 'gain' ? 'ticker-gain' : k === 'jibe' ? 'ticker-jibe' : undefined);
   const anyLive = fixtures.some((f) => f.status === 'IN_PLAY');
-  // A quiet strip is standings and what is on next, so calling it LATEST
-  // promises news it has not got
-  const quiet = !items.some((i) => i.kind === 'score' && / · (FT|LIVE|\d+')$/.test(i.text));
 
   return (
     <div className="ticker">
       <div className="ticker-flag">
         <span className="ticker-dot" />
-        <span>{anyLive ? 'LIVE' : quiet ? 'STANDING' : 'LATEST'}</span>
+        <span>{anyLive ? 'LIVE' : 'LATEST'}</span>
       </div>
       <div className="ticker-track">
         <div className="ticker-run">
