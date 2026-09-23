@@ -19,8 +19,8 @@ export default defineConfig({
         name: "Dan's Shed · Sweep 26/27",
         short_name: "Dan's Shed",
         description: 'Premier League + Championship sweep — conscription, orders, standings',
-        theme_color: '#EFEAE0',
-        background_color: '#EFEAE0',
+        theme_color: '#F3F2EF',
+        background_color: '#F3F2EF',
         display: 'standalone',
         orientation: 'portrait',
         scope: BASE,
@@ -34,9 +34,12 @@ export default defineConfig({
         // A new version takes over at once instead of waiting for every tab
         // to close, which on a phone is never.
         skipWaiting: true,
+        // goal alerts: the push and notification-tap handlers
+        importScripts: ['push-sw.js'],
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        globIgnores: ['push-sw.js'],
         navigateFallback: `${BASE}index.html`,
         // Draw night is its own page. Without this the navigation fallback can
         // hand back the app shell instead, which is not something to discover

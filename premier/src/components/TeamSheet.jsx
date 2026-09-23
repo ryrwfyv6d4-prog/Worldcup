@@ -102,7 +102,7 @@ export default function TeamSheet({ team, fixtures, assignments, manualMedals, b
         </div>
       </div>
 
-      <div className="club-body">
+      <div className="club-body" data-sheet-scroll>
         <div className="stat-strip">
           <div className="stat-cell">
             <div className="stat-val">{sweepTotal}</div>

@@ -120,7 +120,7 @@ export default function MatchSheet({ fixture, fixtures, assignments, onClose, on
         </span>
       </div>
 
-      <div className="mp-scroll">
+      <div className="mp-scroll" data-sheet-scroll>
         {/* ── Scoreline ─────────────────────────────────────────────────── */}
         <div className="mp-head">
           {sides.map((s, i) => (
@@ -509,6 +509,13 @@ function Lineups({ detail, state, sides, played }) {
 
 // Line-ups and stats only exist once a match is close to kicking off
 function Empty({ state, played, what }) {
+  if (state === 'loading') {
+    return (
+      <div className="mp-pane" aria-label="Loading">
+        {[92, 70, 84, 60, 78].map((w, i) => <div className="skel skel-line" key={i} style={{ width: `${w}%` }} />)}
+      </div>
+    );
+  }
   const msg = state === 'loading' ? 'Loading…'
     : played ? `${what} were not published for this match.`
     : `${what} land about an hour before kick-off.`;

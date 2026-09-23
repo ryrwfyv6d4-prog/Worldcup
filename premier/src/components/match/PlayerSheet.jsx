@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import Sheet from '../Sheet.jsx';
 
 // Ratings coloured the way every match centre does it, so a glance at the
 // pitch says who had a game.
@@ -13,12 +13,6 @@ export function ratingClass(r) {
 
 // One player's match, from a tap on the pitch or the bench.
 export default function PlayerSheet({ player, club, stats, onClose }) {
-  useEffect(() => {
-    const esc = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', esc);
-    return () => window.removeEventListener('keydown', esc);
-  }, [onClose]);
-
   const rating = player.rating ?? stats?.rating;
   const facts = [
     stats?.minutes != null && `${stats.minutes}'`,
@@ -32,30 +26,24 @@ export default function PlayerSheet({ player, club, stats, onClose }) {
   ].filter(Boolean);
 
   return (
-    <div className="whoami-overlay" onClick={onClose}>
-      <div className="whoami-modal ps" onClick={(e) => e.stopPropagation()}>
-        <div className="ps-top">
-          <div>
-            <div className="ps-club">{club}{player.shirt != null ? ` · ${player.shirt}` : ''}</div>
-            <div className="whoami-title">{player.full || player.name}</div>
-          </div>
-          {rating != null && <b className={`lp-rating big ${ratingClass(rating)}`}>{rating.toFixed(1)}</b>}
+    <Sheet onClose={onClose} className="ps">
+      <div className="ps-top">
+        <div>
+          <div className="ps-club">{club}{player.shirt != null ? ` · #${player.shirt}` : ''}</div>
+          <div className="sheet-title big">{player.full || player.name}</div>
+          {facts.length > 0 && <div className="ps-facts">{facts.join(' · ')}</div>}
         </div>
-        {facts.length > 0 && <div className="ps-facts">{facts.join(' · ')}</div>}
-
-        <div className="ps-body">
-          {!stats?.groups?.length && <p className="muted small">No numbers for this player yet.</p>}
-          {(stats?.groups || []).map((g) => (
-            <div className="ps-group" key={g.title}>
-              <div className="ps-group-head">{g.title}</div>
-              {g.rows.map(([label, value]) => (
-                <div className="ps-row" key={label}><span>{label}</span><b>{value}</b></div>
-              ))}
-            </div>
+        {rating != null && <b className={`lp-rating big ${ratingClass(rating)}`}>{rating.toFixed(1)}</b>}
+      </div>
+      {!stats?.groups?.length && <p className="muted small">No numbers for this player yet.</p>}
+      {(stats?.groups || []).map((g) => (
+        <div className="ps-group" key={g.title}>
+          <div className="ps-group-head">{g.title}</div>
+          {g.rows.map(([label, value]) => (
+            <div className="ps-row" key={label}><span>{label}</span><b>{value}</b></div>
           ))}
         </div>
-        <button className="whoami-skip" onClick={onClose}>Close</button>
-      </div>
-    </div>
+      ))}
+    </Sheet>
   );
 }

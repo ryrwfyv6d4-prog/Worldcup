@@ -19,7 +19,7 @@ export default function Rules({ playerCount }) {
           <li>${ENTRY_FEE} a head. {count} players means <b>${pot}</b> in the tin.</li>
           <li>Every player gets <b>{plan.perPlayer} club{plan.perPlayer === 1 ? '' : 's'}</b> — one from each tier — across the Premier League and the Championship, {SEASON}.</li>
           <li>The draw is blind and final. No appeals. A trade only counts if the
-            shed agrees it and someone records it in Shed → Draw → Swap two clubs.</li>
+            shed agrees it and someone records it under More → Draw → Swap two clubs.</li>
           <li>No pay, no payout. Same rule as always.</li>
         </ul>
       </div>
@@ -112,7 +112,7 @@ export default function Rules({ playerCount }) {
         ))}
         <p className="muted small" style={{ marginTop: 8, marginBottom: 0 }}>
           League honours land automatically on the final day. The play-off final and the
-          cups aren't in the data feed, so someone ticks those in Shed → Honours.
+          cups aren't in the data feed, so someone ticks those under More → Honours.
         </p>
       </div>
 

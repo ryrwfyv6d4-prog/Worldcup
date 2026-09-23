@@ -206,7 +206,7 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
             ? 'No games this week.'
             : myTeams.length
               ? 'None of your clubs are out. A rare weekend of watching in peace.'
-              : 'You have no clubs yet. Pick a name from the masthead, or run the draw in the Shed.'}
+              : 'You have no clubs yet. Tap the name button at the top, or run the draw under More.'}
         </p>
       )}
 

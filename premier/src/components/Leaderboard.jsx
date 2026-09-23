@@ -7,6 +7,9 @@ import { clubLabel } from '../utils/teamMatch.js';
 import { RowStripes } from './Stripe.jsx';
 import { tableLine, lastPlaceJibe } from '../utils/editorial.js';
 import UpNext from './UpNext.jsx';
+import YouCard, { Move } from './YouCard.jsx';
+import { roundMovement } from '../utils/movement.js';
+import { useCountUp } from '../hooks/useCountUp.js';
 import { ordinal } from '../utils/format.js';
 
 // Chances of the three things that pay, straight off the simulation. Shown as
@@ -95,8 +98,13 @@ function ledgerFor(row, fixtures) {
   return events.sort((a, b) => b.ts.localeCompare(a.ts));
 }
 
+function Pts({ value }) {
+  return <>{useCountUp(value)}</>;
+}
+
 export default function Leaderboard({
   assignments, fixtures, manualMedals, bonusPoints, whoAmI, onSelectTeam, onOpenMatch,
+  onOpenSquad, onPickName, onShowRules,
 }) {
   const ladder = useMemo(
     () => buildLadder(assignments, fixtures, manualMedals, bonusPoints),
@@ -105,6 +113,10 @@ export default function Leaderboard({
   const outlook = useMemo(
     () => getProjection(assignments, fixtures, manualMedals, bonusPoints).players,
     [assignments, fixtures, manualMedals, bonusPoints]
+  );
+  const move = useMemo(
+    () => roundMovement(assignments, fixtures, manualMedals, bonusPoints, ladder).byName,
+    [assignments, fixtures, manualMedals, bonusPoints, ladder]
   );
   const [open, setOpen] = useState(null);
   const [full, setFull] = useState(false);
@@ -115,9 +127,8 @@ export default function Leaderboard({
   if (!ladder.length) {
     return (
       <div className="page">
-        <div className="page-header"><h2>The Table</h2></div>
         <p className="editorial">{tableLine(ladder, anyResults)}</p>
-        <div className="empty-state"><p>Run the draw in the Shed to get started.</p></div>
+        <div className="empty-state"><p>Run the draw under More (the ⋯ button) to get started.</p></div>
       </div>
     );
   }
@@ -126,10 +137,13 @@ export default function Leaderboard({
 
   return (
     <div className="page">
-      <div className="page-header">
-        <h2>The Table</h2>
-        <span className="subtitle">{ladder.length} in · ${pot} pot</span>
-      </div>
+      <YouCard
+        ladder={ladder}
+        move={move}
+        whoAmI={whoAmI}
+        onOpenSquad={onOpenSquad}
+        onPickName={onPickName}
+      />
 
       <UpNext
         fixtures={fixtures}
@@ -137,6 +151,11 @@ export default function Leaderboard({
         whoAmI={whoAmI}
         onOpenMatch={onOpenMatch}
       />
+
+      <div className="list-head">
+        <span>Standings <small>{ladder.length} in · ${pot} pot</small></span>
+        <button className="link-btn" onClick={onShowRules}>How points work</button>
+      </div>
 
       <div className="leaderboard">
         {ladder.map((row, i) => {
@@ -154,7 +173,10 @@ export default function Leaderboard({
             >
               <RowStripes teams={row.teams} />
               <div className="lb-main">
-                <div className="lb-rank">{i + 1}</div>
+                <div className="lb-rank">
+                  {i + 1}
+                  {anyResults && <Move up={move[row.name]?.up} />}
+                </div>
                 <div className="lb-info">
                   <div className="lb-name">{row.name}</div>
                   <div className="lb-clubs">
@@ -182,7 +204,7 @@ export default function Leaderboard({
                   )}
                 </div>
                 <div className="lb-right">
-                  <div className="lb-pts">{row.total}</div>
+                  <div className="lb-pts"><Pts value={row.total} /></div>
                   {/* "−5" read as a negative score. Say what it is. */}
                   <div className="lb-ptslabel">
                     {isLeader ? 'points' : `${gap} behind`}
@@ -242,7 +264,6 @@ export default function Leaderboard({
         })}
       </div>
 
-      <div className="tap-hint">Tap a row for the ledger</div>
     </div>
   );
 }

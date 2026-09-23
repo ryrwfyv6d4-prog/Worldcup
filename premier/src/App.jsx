@@ -7,8 +7,12 @@ import Ticker from './components/Ticker.jsx';
 import Leaderboard from './components/Leaderboard.jsx';
 import Fixtures from './components/Fixtures.jsx';
 import Tables from './components/Tables.jsx';
-import Wall from './components/Wall.jsx';
-import Shed, { unanswered } from './components/Shed.jsx';
+import Banter from './components/Banter.jsx';
+import Shed from './components/Shed.jsx';
+import { unanswered } from './components/Polls.jsx';
+import Sheet from './components/Sheet.jsx';
+import Rules from './components/Rules.jsx';
+import { usePullToRefresh } from './hooks/usePullToRefresh.js';
 import TeamSheet from './components/TeamSheet.jsx';
 import MatchSheet from './components/MatchSheet.jsx';
 import MySquad from './components/MySquad.jsx';
@@ -17,41 +21,40 @@ import { useDismissable } from './hooks/useDismissable.js';
 function WhoAmIModal({ participants, onPick, onSkip }) {
   const hasRoster = participants.length > 0;
   return (
-    <div className="whoami-overlay">
-      <div className="whoami-modal">
-        <div className="whoami-title">Who are you?</div>
-        <div className="whoami-sub">
-          {hasRoster
-            ? 'Your row gets marked and your posts get signed.'
-            : 'Nobody drawn yet. Run the draw in the Shed, then come back.'}
+    <Sheet onClose={onSkip} title="Who are you?">
+      <p className="muted">
+        {hasRoster
+          ? 'Your row gets marked and your posts get signed.'
+          : 'Nobody drawn yet. Run the draw under More, then come back.'}
+      </p>
+      {hasRoster && (
+        <div className="who-grid">
+          {participants.map((p) => (
+            <button key={p} className="who-btn" onClick={() => onPick(p)}>{p}</button>
+          ))}
         </div>
-        {hasRoster && (
-          <div className="whoami-list">
-            {participants.map((p) => (
-              <button key={p} className="whoami-btn" onClick={() => onPick(p)}>{p}</button>
-            ))}
-          </div>
-        )}
-        <button className="whoami-skip" onClick={onSkip}>
-          {hasRoster ? 'Just watching' : 'Close'}
-        </button>
-      </div>
-    </div>
+      )}
+      <button className="link-btn center-btn" onClick={onSkip}>
+        {hasRoster ? 'Just watching' : 'Close'}
+      </button>
+    </Sheet>
   );
 }
 
-// Masthead wordmark per screen
-const MASTHEAD = {
+// Page titles
+const TITLES = {
   table: "Dan's Shed",
-  fixtures: 'Fixtures',
+  fixtures: 'Matches',
   clubs: 'Clubs',
-  wall: 'The Wall',
-  shed: 'The Shed',
+  banter: 'Banter',
+  more: 'More',
 };
+
+const initials = (name) => (name || '').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
 export default function App() {
   const [tab, setTab] = useState('table');
-  const { state, act, synced, unsaved } = useSharedState();
+  const { state, act, synced, unsaved, reload } = useSharedState();
   const { fixtures, loading, error, refresh, lastFetched, espnState } = useEnglandFixtures();
   const { assignments, manualMedals, bonusPoints } = state;
   const participants = Object.keys(assignments);
@@ -66,6 +69,7 @@ export default function App() {
   });
   const [showWho, setShowWho] = useState(false);
   const [showSquad, setShowSquad] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const promptedRef = useRef(false);
 
   useEffect(() => {
@@ -90,33 +94,46 @@ export default function App() {
   const closeTopRef = useRef(() => {});
   closeTopRef.current = () => {
     if (showWho) setShowWho(false);
+    else if (showRules) setShowRules(false);
     else if (showSquad) setShowSquad(false);
     else if (teamSheet) setTeamSheet(null);
     else if (matchSheet) setMatchSheet(null);
   };
   const closeTop = useCallback(() => closeTopRef.current(), []);
-  useDismissable(Boolean(showWho || showSquad || teamSheet || matchSheet), closeTop);
+  useDismissable(Boolean(showWho || showRules || showSquad || teamSheet || matchSheet), closeTop);
 
-  const word = MASTHEAD[tab] || MASTHEAD.table;
+  const onRefresh = useCallback(() => Promise.all([refresh(), reload()]), [refresh, reload]);
+  const { pull, busy } = usePullToRefresh(mainRef, onRefresh);
+  const openMe = () => (whoAmI && assignments[whoAmI] ? setShowSquad(true) : setShowWho(true));
+
+  const title = TITLES[tab] || TITLES.table;
   const owed = unanswered(state.polls, whoAmI).length;
 
   return (
     <div className="app">
-      <header className="masthead">
-        <div className="masthead-top">
-          <div className="masthead-word">{word}</div>
-          <button
-            className="masthead-issue"
-            onClick={() => (whoAmI && assignments[whoAmI] ? setShowSquad(true) : setShowWho(true))}
-          >
-            {whoAmI || 'Who are you?'}
-          </button>
-        </div>
+      <header className="topbar">
+        <h1 className="topbar-title">{title}</h1>
+        <button className="me-btn" onClick={openMe} aria-label={whoAmI ? `${whoAmI}: your squad` : 'Pick your name'}>
+          <span className="me-av">{whoAmI ? initials(whoAmI) : '?'}</span>
+          <span className="me-name">{whoAmI || 'Who are you?'}</span>
+        </button>
+        <button
+          className={`icon-btn ${tab === 'more' ? 'on' : ''}`}
+          onClick={() => setTab(tab === 'more' ? 'table' : 'more')}
+          aria-label="More"
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+            <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
+          </svg>
+        </button>
       </header>
 
-      <Ticker fixtures={fixtures} assignments={assignments} ladder={ladder} />
+      <Ticker fixtures={fixtures} assignments={assignments} whoAmI={whoAmI} onOpenMatch={setMatchSheet} />
 
       <main className="main" ref={mainRef}>
+        <div className={`ptr ${busy ? 'busy' : ''}`} style={{ height: busy ? 44 : pull * 44, opacity: busy ? 1 : Math.min(pull, 1) }}>
+          <span className="ptr-spin" style={{ transform: `rotate(${pull * 300}deg)` }} />
+        </div>
         {error && (
           <div className="error-bar">
             <span>{error}</span>
@@ -124,7 +141,10 @@ export default function App() {
           </div>
         )}
         {loading && fixtures.length === 0 && (
-          <div className="empty-state"><p>Fetching the fixtures…</p></div>
+          <div className="page" aria-label="Loading">
+            <div className="skel skel-card" />
+            {[0, 1, 2, 3, 4, 5].map((k) => <div className="skel skel-row" key={k} />)}
+          </div>
         )}
 
         {tab === 'table' && (
@@ -136,6 +156,9 @@ export default function App() {
             whoAmI={whoAmI}
             onSelectTeam={setTeamSheet}
             onOpenMatch={setMatchSheet}
+            onOpenSquad={openMe}
+            onPickName={() => setShowWho(true)}
+            onShowRules={() => setShowRules(true)}
           />
         )}
         {tab === 'fixtures' && (
@@ -155,10 +178,10 @@ export default function App() {
             onSelectTeam={setTeamSheet}
           />
         )}
-        {tab === 'wall' && (
-          <Wall state={state} act={act} whoAmI={whoAmI} synced={synced} />
+        {tab === 'banter' && (
+          <Banter state={state} act={act} whoAmI={whoAmI} />
         )}
-        {tab === 'shed' && (
+        {tab === 'more' && (
           <Shed
             state={state}
             act={act}
@@ -178,6 +201,14 @@ export default function App() {
       {showWho && (
         <WhoAmIModal participants={participants} onPick={pickWho} onSkip={skipWho} />
       )}
+
+      {showRules && (
+        <Sheet title="How points work" onClose={() => setShowRules(false)}>
+          <Rules playerCount={participants.length} />
+        </Sheet>
+      )}
+
+      {(matchSheet || teamSheet) && <div className="sheet-dim" onClick={closeTop} />}
 
       {showSquad && (
         <MySquad
@@ -218,7 +249,7 @@ export default function App() {
         />
       )}
 
-      <Navigation tab={tab} setTab={setTab} dots={{ shed: owed > 0 }} />
+      <Navigation tab={tab} setTab={setTab} dots={{ banter: owed > 0 }} />
     </div>
   );
 }

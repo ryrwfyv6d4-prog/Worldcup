@@ -308,7 +308,6 @@ body {
 .ledger-more-btn { display: block; background: none; border: 0; cursor: pointer; color: var(--spot); padding: 8px 0 2px; }
 
 .scoring { border: 1.5px solid var(--ink); padding: 14px 16px; margin-top: 22px; }
-/* The longer explanation under the table: a lead line, then one block per
 
 /* ── Screen 2 · Fixtures ──────────────────────────────────────────────────── */
 .day-head { display: flex; align-items: baseline; gap: 10px; padding: 18px 0 8px; }

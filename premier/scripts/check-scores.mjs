@@ -196,6 +196,15 @@ for (const s4 of SOURCES) {
 }
 console.log('');
 
+// ── Goal alerts: the worker's public key is what phones subscribe with ────
+try {
+  const k = await (await fetch(`${WORKER}/epl/push/key`, { signal: AbortSignal.timeout(20000) })).json();
+  console.log(k.publicKey && k.publicKey.length > 80 ? '  ✓ goal alerts: worker key ready' : `  ✗ goal alerts: no key (${JSON.stringify(k).slice(0, 80)})`);
+} catch (err) {
+  console.log(`  ✗ goal alerts: key route failed: ${err.message}`);
+}
+console.log('');
+
 console.log('──────────────────────────────────────────');
 if (fmProblems) {
   console.log(`NEEDS ATTENTION — FotMob line-ups/stats missing for ${fmProblems} match(es); the match sheet falls back to ESPN.`);

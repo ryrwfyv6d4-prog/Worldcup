@@ -1,83 +1,39 @@
 import { useMemo } from 'react';
 import { getTeam } from '../data/england2027.js';
-import { valueForFixture } from '../utils/odds.js';
-import { ordinal, ownerOf } from '../utils/format.js';
+import { ownerOf } from '../utils/format.js';
 
-// Results strip under the masthead. Score lines in paper, point gains in gold,
-// the odd jibe in grey. The item list is rendered TWICE so the -50% marquee
-// loops seamlessly.
-function buildItems(fixtures, assignments, ladder) {
-  const since = Date.now() - 24 * 3600 * 1000;
-  const recent = fixtures
-    .filter((f) => {
-      if (!f.utcDate) return false;
-      if (f.status !== 'FINISHED' && f.status !== 'IN_PLAY') return false;
-      return Date.parse(f.utcDate) > since;
-    })
-    .sort((a, b) => (b.utcDate || '').localeCompare(a.utcDate || ''))
-    .slice(0, 8);
+// A strip of match chips under the header: live games while they're on, the
+// last day's results otherwise, nothing between rounds. Swipe along it, tap a
+// chip to open the match. Your own clubs' games come first.
+export default function Ticker({ fixtures, assignments, whoAmI, onOpenMatch }) {
+  const { live, items } = useMemo(() => {
+    const since = Date.now() - 24 * 3600 * 1000;
+    const mine = new Set((assignments?.[whoAmI] || []).filter(Boolean));
+    const isMine = (f) => mine.has(f.homeTeam.name) || mine.has(f.awayTeam.name);
+    const liveNow = fixtures.filter((f) => f.status === 'IN_PLAY');
+    const pool = liveNow.length
+      ? liveNow
+      : fixtures.filter((f) => f.status === 'FINISHED' && f.utcDate && Date.parse(f.utcDate) > since);
+    const sorted = [...pool].sort((a, b) => (isMine(b) - isMine(a)) || (b.utcDate || '').localeCompare(a.utcDate || ''));
+    return { live: liveNow.length > 0, items: sorted.slice(0, 12) };
+  }, [fixtures, assignments, whoAmI]);
 
-  const items = [];
-  for (const f of recent) {
-    const h = getTeam(f.homeTeam.name);
-    const a = getTeam(f.awayTeam.name);
-    if (!h || !a) continue;
-    const when = f.status === 'IN_PLAY' ? (f.liveClock ? `${f.liveClock}'` : 'LIVE') : 'FT';
-    items.push({
-      kind: 'score',
-      text: `${h.tla} ${f.score.home ?? 0}–${f.score.away ?? 0} ${a.tla} · ${when}`,
-    });
-    // who banked what from this match
-    for (const side of [f.homeTeam.name, f.awayTeam.name]) {
-      const who = ownerOf(side, assignments);
-      if (!who) continue;
-      const isHome = f.homeTeam.name === side;
-      const won = (f.score.winner === 'HOME_TEAM' && isHome) || (f.score.winner === 'AWAY_TEAM' && !isHome);
-      const drew = f.score.winner === 'DRAW';
-      if (!won && !drew) continue;
-      const val = valueForFixture(f, side);
-      items.push({ kind: 'gain', text: `${who} +${won ? val.win : val.draw}` });
-    }
-  }
-
-  // Only worth a strip when something actually happened. Between matchweeks
-  // it used to loop the standings, which the Table already shows, and took a
-  // line of every screen to do it.
-  if (!items.length) return items;
-  if (ladder && ladder.length > 2) {
-    const last = ladder[ladder.length - 1];
-    items.push({ kind: 'jibe', text: `${last.name} still ${ordinal(ladder.length)}` });
-  }
-
-  return items;
-}
-
-export default function Ticker({ fixtures, assignments, ladder }) {
-  const items = useMemo(
-    () => buildItems(fixtures, assignments, ladder),
-    [fixtures, assignments, ladder]
-  );
   if (!items.length) return null;
 
-  const cls = (k) => (k === 'gain' ? 'ticker-gain' : k === 'jibe' ? 'ticker-jibe' : undefined);
-  const anyLive = fixtures.some((f) => f.status === 'IN_PLAY');
-
   return (
-    <div className="ticker">
-      <div className="ticker-flag">
-        <span className="ticker-dot" />
-        <span>{anyLive ? 'LIVE' : 'LATEST'}</span>
-      </div>
-      <div className="ticker-track">
-        <div className="ticker-run">
-          {/* rendered twice — one copy = the -50% translate */}
-          {[0, 1].map((copy) =>
-            items.map((it, i) => (
-              <span key={`${copy}-${i}`} className={cls(it.kind)}>{it.text}</span>
-            ))
-          )}
-        </div>
-      </div>
+    <div className={`strip ${live ? 'live' : ''}`} data-noswipe>
+      <span className="strip-flag">{live ? <><i className="live-dot" />Live</> : 'Latest'}</span>
+      {items.map((f) => {
+        const h = getTeam(f.homeTeam.name), a = getTeam(f.awayTeam.name);
+        const owners = [ownerOf(f.homeTeam.name, assignments), ownerOf(f.awayTeam.name, assignments)];
+        const yours = whoAmI && owners.includes(whoAmI);
+        return (
+          <button key={f.id} className={`chip-match ${yours ? 'yours' : ''}`} onClick={() => onOpenMatch(f)}>
+            <span className="cm-min">{f.status === 'IN_PLAY' ? `${f.liveClock || ''}'` : 'FT'}</span>
+            <span className="cm-teams">{h?.tla || h?.short} <b>{f.score.home ?? 0}–{f.score.away ?? 0}</b> {a?.tla || a?.short}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

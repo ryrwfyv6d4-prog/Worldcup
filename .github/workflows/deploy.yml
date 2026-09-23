@@ -70,6 +70,8 @@ jobs:
           node scripts/matchdetail.test.mjs
           node scripts/stateops.test.mjs
           node scripts/fotmob.test.mjs
+          node scripts/webpush.test.mjs
+          node scripts/alerts.test.mjs
 
       - name: Check live-score feed (diagnostic only, never blocks)
         working-directory: premier

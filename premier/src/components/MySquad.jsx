@@ -2,6 +2,8 @@ import { getTeam, MEDALS } from '../data/england2027.js';
 import { nextFixtures } from '../utils/scoring.js';
 import { ordinal } from '../utils/format.js';
 import Crest from './Crest.jsx';
+import Sheet from './Sheet.jsx';
+import GoalAlerts from './GoalAlerts.jsx';
 
 // Tap your own name: where you stand, what each club has banked, and who
 // they play next. Each club opens its page.
@@ -16,10 +18,9 @@ export default function MySquad({ who, ladder, fixtures, onSelectTeam, onChangeU
   const gap = ladder[0].total - row.total;
 
   return (
-    <div className="whoami-overlay" onClick={onClose}>
-      <div className="whoami-modal squad" onClick={(e) => e.stopPropagation()}>
-        <div className="whoami-title">{who}</div>
-        <div className="whoami-sub">
+    <Sheet onClose={onClose} className="squad">
+        <div className="sheet-title big">{who}</div>
+        <div className="squad-sub">
           {ordinal(rank + 1)} of {ladder.length} on {row.total}
           {rank > 0 ? `, ${gap} behind ${ladder[0].name}` : ''}
           {row.bonusTotal ? ` (incl. ${row.bonusTotal} bonus)` : ''}
@@ -45,12 +46,13 @@ export default function MySquad({ who, ladder, fixtures, onSelectTeam, onChangeU
                   )}
                 </span>
                 <span className="squad-pts">{banked}</span>
+                <span className="chev" aria-hidden="true">›</span>
               </button>
             );
           })}
         </div>
-        <button className="whoami-skip" onClick={onChangeUser}>Not {who}?</button>
-      </div>
-    </div>
+        <GoalAlerts who={who} />
+        <button className="link-btn" onClick={onChangeUser}>Not {who}?</button>
+    </Sheet>
   );
 }

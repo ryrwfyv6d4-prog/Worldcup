@@ -144,5 +144,8 @@ export function useSharedState() {
   }, []);
 
   const state = pending.length ? applyOps(server, pending) : server;
-  return { state, act, cloudLoaded, synced: Boolean(WORKER_URL), unsaved: pending.length };
+  return {
+    state, act, cloudLoaded, synced: Boolean(WORKER_URL), unsaved: pending.length,
+    reload: () => flush().then(pull),
+  };
 }

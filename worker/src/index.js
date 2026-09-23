@@ -1,5 +1,6 @@
 import { applyOps, mergeLegacy } from '../../premier/src/utils/stateOps.js';
 import { trimMatchDetails } from '../../premier/src/utils/fotmobMatch.js';
+import { runAlerts, vapidKeys, saveSub, dropSub, sendTo } from './alerts.js';
 
 const FM_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
@@ -437,6 +438,32 @@ export default {
         return store({ ...trimMatchDetails(md), matchId });
       }
 
+      // ── Goal alerts ──────────────────────────────────────────────────────
+      // The phone asks for the server's public key, subscribes with it, and
+      // hands us the subscription. The minute-by-minute cron (scheduled()
+      // below) does the rest.
+      if (request.method === 'GET' && path === '/epl/push/key') {
+        const keys = await vapidKeys(env);
+        return json({ publicKey: keys.publicKey });
+      }
+      if (request.method === 'POST' && path === '/epl/push/subscribe') {
+        const body = await request.json();
+        const rec = await saveSub(env, body);
+        // A welcome note, so you know it worked before the next goal does
+        let test = null;
+        if (body.test) {
+          try {
+            test = await sendTo(env, rec, { title: 'Goal alerts are on', body: rec.scope === 'all' ? "You'll hear about every goal." : "You'll hear when your clubs score or concede.", tag: 'welcome', url: './' });
+          } catch (err) { test = String(err.message || err); }
+        }
+        return json({ ok: true, scope: rec.scope, test });
+      }
+      if (request.method === 'POST' && path === '/epl/push/unsubscribe') {
+        const body = await request.json();
+        if (body?.endpoint) await dropSub(env, body.endpoint);
+        return json({ ok: true });
+      }
+
       // GET /epl/highlight — same idea as /highlight, for the England sweep.
       // Query: ?home=Brentford FC&homeShort=Brentford
       //        &away=Tottenham Hotspur FC&awayShort=Spurs&hs=1&as=2
@@ -619,5 +646,10 @@ export default {
     } catch (e) {
       return json({ error: e.message }, 500);
     }
+  },
+
+  // Once a minute: look at the live scores and send goal alerts
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runAlerts(env).catch(() => {}));
   },
 };

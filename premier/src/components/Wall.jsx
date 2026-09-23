@@ -1,17 +1,25 @@
 import { useState } from 'react';
-import { WALL_LINE } from '../utils/editorial.js';
 
-// Pinned notes on the shed wall. Behaviour is unchanged from the old text wall —
-// this is the programme restyle: paper prints, drawing pins, deterministic tilt.
-const TILTS = [-2.5, -1, 0, 1.2, 2.5];
-const PINS = ['#8A1A18', '#1B5E8A', '#1B1A16', '#C48A1E'];
+// The group chat, newest at the top. A composer that is always there beats a
+// button that opens one. Your own posts sit on the right, like every
+// messaging app; swaps and honours the app posted itself read as notes.
 
-const tiltFor = (id) => TILTS[Math.abs(Number(id) || 0) % TILTS.length];
-const pinFor = (id) => PINS[Math.abs(Number(id) || 0) % PINS.length];
+const initials = (name) => (name || '?').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+// A steady colour per person, so a glance says who's talking
+const HUES = [8, 28, 145, 200, 225, 265, 300, 330, 180, 95, 50];
+const hueFor = (name) => HUES[[...(name || '')].reduce((n, c) => n + c.charCodeAt(0), 0) % HUES.length];
 
-export default function Wall({ state, act, whoAmI, synced }) {
+function when(ts) {
+  const d = new Date(ts);
+  const mins = Math.round((Date.now() - ts) / 60000);
+  if (mins < 1) return 'now';
+  if (mins < 60) return `${mins}m`;
+  if (mins < 24 * 60) return `${Math.round(mins / 60)}h`;
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+export default function Wall({ state, act, whoAmI }) {
   const [text, setText] = useState('');
-  const [adding, setAdding] = useState(false);
   const [confirm, setConfirm] = useState(null);
   const posts = state.wallPosts || [];
 
@@ -20,81 +28,59 @@ export default function Wall({ state, act, whoAmI, synced }) {
     if (!t || !whoAmI) return;
     act({ type: 'wall.add', post: { id: Date.now(), person: whoAmI, text: t, ts: Date.now() } });
     setText('');
-    setAdding(false);
-  };
-
-  const remove = (id) => {
-    act({ type: 'wall.remove', id });
-    setConfirm(null);
   };
 
   return (
-    <div className="page">
-      <div className="wall-note" style={{ padding: '14px 0 0' }}>
-        <span className="wall-foot-eyebrow">
-          {synced ? 'Synced across the shed' : 'Stored on this device'}
-        </span>
-        <button className="btn" onClick={() => setAdding((v) => !v)} disabled={!whoAmI}>
-          {adding ? 'Cancel' : '+ Pin a bit'}
+    <>
+      <div className="composer">
+        <textarea
+          rows="1"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); post(); } }}
+          placeholder={whoAmI ? 'Say something regrettable…' : 'Pick your name first'}
+          disabled={!whoAmI}
+        />
+        <button className="composer-send" onClick={post} disabled={!text.trim() || !whoAmI} aria-label="Post">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M3 20.5 21 12 3 3.5l2.6 7.2L14 12l-8.4 1.3z" /></svg>
         </button>
       </div>
 
-      <p className="editorial">{WALL_LINE}</p>
-
-      {adding && (
-        <div className="card">
-          <textarea
-            className="wall-input"
-            rows="3"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="What happened?"
-          />
-          <button className="btn btn-primary" onClick={post} disabled={!text.trim()}>Pin it</button>
-        </div>
-      )}
-
-      {!whoAmI && (
-        <p className="muted small">Say who you are up top before pinning anything.</p>
-      )}
-
       {posts.length === 0 && (
-        <div className="empty-state"><p>Nothing on the wall yet. Someone say something regrettable.</p></div>
+        <div className="empty-state"><p>Nothing here yet.</p></div>
       )}
 
-      <div className="wall-grid">
-        {posts.map((p) => (
-          <div className={`print ${p.note ? 'print-note' : ''}`} key={p.id} style={{ transform: `rotate(${tiltFor(p.id)}deg)` }}>
-            <span className="print-pin" style={{ background: pinFor(p.id) }} />
-            <div className="print-body">
-              {whoAmI === p.person && (
-                <button
-                  className="print-x"
-                  style={confirm === p.id ? { color: 'var(--spot)', fontWeight: 800 } : undefined}
-                  onClick={() => (confirm === p.id ? remove(p.id) : setConfirm(p.id))}
-                  onBlur={() => setConfirm(null)}
-                >
-                  {confirm === p.id ? 'Sure?' : '✕'}
-                </button>
+      <div className="chat">
+        {posts.map((p) => {
+          const mine = whoAmI && whoAmI === p.person;
+          if (p.note) {
+            return <div className="chat-note" key={p.id}>{p.text} <span>{when(p.ts)}</span></div>;
+          }
+          return (
+            <div className={`chat-row ${mine ? 'mine' : ''}`} key={p.id}>
+              {!mine && (
+                <span className="chat-av" style={{ background: `hsl(${hueFor(p.person)} 55% 45%)` }}>{initials(p.person)}</span>
               )}
-              <p className="print-text">{p.text}</p>
-              <div className="print-meta">
-                <span className="print-by">{p.person}</span>
-                <span className="print-date">
-                  {new Date(p.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                </span>
+              <div className="chat-bubble">
+                {!mine && <div className="chat-by">{p.person}</div>}
+                <div className="chat-text">{p.text}</div>
+                <div className="chat-meta">
+                  {when(p.ts)}
+                  {mine && (
+                    <button
+                      className={`chat-del ${confirm === p.id ? 'sure' : ''}`}
+                      onClick={() => (confirm === p.id ? (act({ type: 'wall.remove', id: p.id }), setConfirm(null)) : setConfirm(p.id))}
+                      onBlur={() => setConfirm(null)}
+                    >
+                      {confirm === p.id ? 'Delete?' : 'Delete'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-
-      {posts.length > 0 && (
-        <div className="wall-foot">
-          <span className="wall-foot-eyebrow">Pinned bits</span>
-          <span className="wall-foot-count">{posts.length} up</span>
-        </div>
-      )}
-    </div>
+    </>
   );
 }

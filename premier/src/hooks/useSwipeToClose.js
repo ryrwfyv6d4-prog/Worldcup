@@ -1,28 +1,36 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
-// Swipe a full-screen sheet away to the right.
+// Drag a sheet away: down, the way every bottom sheet on a phone works, or to
+// the right, which is what people coming from the old full-screen pages try.
 //
-// The app installs as standalone, and iOS gives standalone web apps no
-// edge-swipe back gesture at all. So on anyone's home screen there was simply
-// no flick-to-close: it worked in Safari, where the edge swipe drives browser
-// history, and silently did nothing once installed. This puts the gesture in
-// the app itself, so it behaves the same either way.
+// Standalone web apps on iOS get no edge-swipe back at all, so the gesture
+// lives in the app. The sheet follows the finger rather than snapping at the
+// end, because a gesture you cannot see responding is one people stop
+// trusting.
 //
-// The sheet follows the finger rather than snapping at the end, because a
-// gesture you cannot see responding is one people stop trusting.
+// Downward drags only take over when the content is already scrolled to the
+// top; otherwise the finger is scrolling, not dismissing. The scrolling part
+// of a sheet is marked with data-sheet-scroll.
 export function useSwipeToClose(ref, onClose, enabled = true) {
+  // read through a ref so a parent re-render mid-drag doesn't re-attach the
+  // listeners and drop the gesture
+  const close = useRef(onClose);
+  close.current = onClose;
   useEffect(() => {
     const el = ref && ref.current;
     if (!el || !enabled) return undefined;
 
-    let startX = 0, startY = 0, dx = 0, startedAt = 0;
-    let axis = null;          // null until the drag commits to horizontal or vertical
+    let startX = 0, startY = 0, dx = 0, dy = 0, startedAt = 0;
+    let axis = null;          // null until the drag commits
     let active = false;
+    let atTop = true;
 
-    const paint = (px, animate) => {
-      el.style.transition = animate ? 'transform .2s ease-out' : 'none';
-      el.style.transform = px ? `translateX(${px}px)` : '';
+    const paint = (x, y, animate) => {
+      el.style.transition = animate ? 'transform .22s cubic-bezier(.2,.8,.2,1)' : 'none';
+      el.style.transform = x || y ? `translate(${x}px, ${y}px)` : '';
     };
+
+    const scrollerOf = (t) => (t.closest && t.closest('[data-sheet-scroll]')) || el.querySelector('[data-sheet-scroll]');
 
     const start = (e) => {
       if (e.touches.length !== 1) return;
@@ -30,7 +38,9 @@ export function useSwipeToClose(ref, onClose, enabled = true) {
       if (e.target.closest && e.target.closest('[data-noswipe]')) return;
       const t = e.touches[0];
       startX = t.clientX; startY = t.clientY;
-      dx = 0; axis = null; startedAt = Date.now(); active = true;
+      dx = 0; dy = 0; axis = null; startedAt = Date.now(); active = true;
+      const sc = scrollerOf(e.target);
+      atTop = !sc || sc.scrollTop <= 0;
     };
 
     const move = (e) => {
@@ -38,33 +48,34 @@ export function useSwipeToClose(ref, onClose, enabled = true) {
       const t = e.touches[0];
       const ax = t.clientX - startX;
       const ay = t.clientY - startY;
-
-      // Decide once whether this is a sideways drag or a scroll, and stick to
-      // it — otherwise a slightly wonky scroll starts dragging the sheet
       if (axis === null) {
         if (Math.abs(ax) < 10 && Math.abs(ay) < 10) return;
-        axis = Math.abs(ax) > Math.abs(ay) * 1.3 ? 'x' : 'y';
+        if (Math.abs(ax) > Math.abs(ay) * 1.3) axis = ax > 0 ? 'x' : 'none';
+        else axis = ay > 0 && atTop ? 'y' : 'none';
       }
-      if (axis !== 'x') return;
-
-      dx = Math.max(0, ax);                    // rightward only; this is a back gesture
-      if (dx > 0) { e.preventDefault(); paint(dx, false); }
+      if (axis === 'x') {
+        dx = Math.max(0, ax);
+        if (dx > 0) { e.preventDefault(); paint(dx, 0, false); }
+      } else if (axis === 'y') {
+        dy = Math.max(0, ay);
+        if (dy > 0) { e.preventDefault(); paint(0, dy, false); }
+      }
     };
 
     const end = () => {
       if (!active) return;
       active = false;
-      if (axis !== 'x') return;
-      const w = el.offsetWidth || window.innerWidth;
-      const speed = dx / Math.max(1, Date.now() - startedAt);   // px per ms
-      // Either a long drag or a quick flick counts
-      if (dx > w * 0.3 || (speed > 0.45 && dx > 55)) {
-        paint(w, true);
-        setTimeout(onClose, 170);
+      if (axis !== 'x' && axis !== 'y') return;
+      const dist = axis === 'x' ? dx : dy;
+      const size = axis === 'x' ? (el.offsetWidth || window.innerWidth) : (el.offsetHeight || window.innerHeight);
+      const speed = dist / Math.max(1, Date.now() - startedAt);   // px per ms
+      if (dist > size * 0.28 || (speed > 0.45 && dist > 55)) {
+        paint(axis === 'x' ? size : 0, axis === 'y' ? size : 0, true);
+        setTimeout(() => close.current(), 180);
       } else {
-        paint(0, true);
+        paint(0, 0, true);
       }
-      dx = 0;
+      dx = 0; dy = 0;
     };
 
     el.addEventListener('touchstart', start, { passive: true });
@@ -77,7 +88,7 @@ export function useSwipeToClose(ref, onClose, enabled = true) {
       el.removeEventListener('touchmove', move);
       el.removeEventListener('touchend', end);
       el.removeEventListener('touchcancel', end);
-      paint(0, false);
+      paint(0, 0, false);
     };
-  }, [enabled, onClose, ref]);
+  }, [enabled, ref]);
 }
