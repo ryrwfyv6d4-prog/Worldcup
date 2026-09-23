@@ -1,49 +1,15 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { resolveClub } from '../utils/teamMatch.js';
 import { TEAMS } from '../data/england2027.js';
 import { computeMidseasonRanks, setMidseasonRanks } from '../utils/odds.js';
 import { parseLeagueTxt } from '../utils/leagueFeed.js';
 
-// Base schedule + settled results — openfootball plain-text feeds
-const SOURCES = [
-  { div: 1, url: 'https://raw.githubusercontent.com/openfootball/england/master/2026-27/1-premierleague.txt' },
-  { div: 2, url: 'https://raw.githubusercontent.com/openfootball/england/master/2026-27/2-championship.txt' },
-];
+import {
+  SOURCES, ESPN_LEAGUES, ESPN_BASE, espnMonths, mergeEspn, espnGamesFrom,
+} from '../utils/fixturesCore.js';
 
-// Live/in-play overlay — ESPN public scoreboard, no key needed. Best-effort:
-// if it's down or empty the openfootball base data still stands.
-const ESPN_LEAGUES = [
-  { div: 1, code: 'eng.1' },
-  { div: 2, code: 'eng.2' },
-];
-export const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
-export { ESPN_LEAGUES };
-
-// Which months to ask ESPN for.
-//
-// ESPN stopped accepting date ranges. dates=YYYYMMDD-YYYYMMDD now answers
-//   400 {"code":400,"message":"Failed to get events endpoint."}
-// for every span from three days to a month, on both the site and site.web
-// hosts. It went from 200 to 400 between 2 and 19 September with no change at
-// our end, and it took the live overlay down silently with it: results only
-// appeared once openfootball backfilled, a day or two late.
-//
-// dates=YYYYMM still works and returns more than the range did — a whole month
-// rather than a sliding window.
-//
-// Still reaching back about ten days, because openfootball backfills late and
-// a settled match must not drop out of the app in the gap. Near the start of a
-// month that means asking for the previous one too, hence a set.
-//
-// Exported so scripts/check-scores.mjs runs this exact function rather than a
-// copy of it. A copy would drift, and the copy passing while the app starves
-// is the failure this whole episode was.
-export function espnMonths(now = Date.now()) {
-  return [...new Set([-10, 0, 2].map((offset) => {
-    const d = new Date(now + offset * 864e5);
-    return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-  }))];
-}
+// The feed plumbing lives in utils/fixturesCore.js so the worker (Monday
+// recap) and the CI checks run exactly the same code as the app.
+export { ESPN_BASE, ESPN_LEAGUES, espnMonths, mergeEspn };
 
 // Bumped whenever the parser changes shape. Fixtures are cached ALREADY
 // PARSED, so a parser fix does nothing for anyone still holding a good-looking
@@ -55,49 +21,6 @@ export function espnMonths(now = Date.now()) {
 // fixture data survived a parser fix once already.
 const CACHE_KEY = 'epl_fixtures_cache_v4';
 const CACHE_TTL = 30 * 60 * 1000;
-
-// Merge ESPN live/final data over the base schedule. ESPN only ever upgrades a
-// fixture that isn't already settled; if ESPN is empty, base wins.
-export function mergeEspn(base, espnGames) {
-  if (!espnGames.length) return base;
-  return base.map((f) => {
-    if (f.status === 'FINISHED') return f;
-    const fTime = f.utcDate ? new Date(f.utcDate).getTime() : 0;
-    const g = espnGames.find((g) =>
-      g.div === f.division &&
-      g.home === f.homeTeam.name &&
-      g.away === f.awayTeam.name &&
-      Math.abs(new Date(g.date).getTime() - fTime) < 3 * 24 * 3600 * 1000
-    );
-    if (!g) return f;
-
-    // ESPN knows the confirmed kick-off; the league feed only knows the slot it
-    // was pencilled into, and for a match still to be played that is the number
-    // people are planning their evening around. Taken even for a fixture that
-    // has not started, which is exactly when it matters — the scores below are
-    // still only taken once there are scores to take.
-    const withTime = g.date && g.date !== f.utcDate
-      ? { ...f, utcDate: g.date, timeTBC: false }
-      : f;
-
-    if (g.state === 'pre') return withTime;
-    if (g.homeScore == null || g.awayScore == null) return withTime;
-
-    const finished = g.state === 'post';
-    let winner = null;
-    if (finished) {
-      if (g.homeScore > g.awayScore) winner = 'HOME_TEAM';
-      else if (g.awayScore > g.homeScore) winner = 'AWAY_TEAM';
-      else winner = 'DRAW';
-    }
-    return {
-      ...withTime,
-      status: finished ? 'FINISHED' : 'IN_PLAY',
-      liveClock: !finished ? g.clock : null,
-      score: { home: g.homeScore, away: g.awayScore, winner },
-    };
-  });
-}
 
 // Cached fixtures are only worth keeping if every club in them is still a club
 // we recognise. Bumping the key fixes today's stale data; this makes any future
@@ -175,32 +98,7 @@ export function useEnglandFixtures() {
           const res = await fetch(`${ESPN_BASE}/${lg.code}/scoreboard?dates=${month}`);
           if (!res.ok) continue;
           const json = await res.json();
-          for (const e of json.events || []) {
-            const comp = e.competitions && e.competitions[0];
-            if (!comp) continue;
-            const hc = (comp.competitors || []).find((c) => c.homeAway === 'home');
-            const ac = (comp.competitors || []).find((c) => c.homeAway === 'away');
-            if (!hc || !ac) continue;
-            const rawHome = hc.team && hc.team.displayName;
-            const rawAway = ac.team && ac.team.displayName;
-            const home = resolveClub(rawHome);
-            const away = resolveClub(rawAway);
-            if (!home || !away) {
-              if (!home && rawHome) unmatched.push(rawHome);
-              if (!away && rawAway) unmatched.push(rawAway);
-              continue;
-            }
-            mine.push({
-              div: lg.div,
-              home,
-              away,
-              date: e.date,
-              state: e.status && e.status.type ? e.status.type.state : 'pre', // pre | in | post
-              homeScore: hc.score != null && hc.score !== '' ? Number(hc.score) : null,
-              awayScore: ac.score != null && ac.score !== '' ? Number(ac.score) : null,
-              clock: e.status?.displayClock ? String(e.status.displayClock).replace(/'+$/, '') : null,
-            });
-          }
+          mine.push(...espnGamesFrom(json, lg.div, unmatched));
           games.push(...mine);
           monthsOk += 1;
           break;

@@ -16,6 +16,8 @@ import { getTeam } from '../src/data/england2027.js';
 import { espnMonths, mergeEspn, ESPN_BASE, ESPN_LEAGUES } from '../src/hooks/useEnglandFixtures.js';
 import { leagueTable } from '../src/utils/scoring.js';
 import { loadDetail } from '../src/hooks/useMatchDetail.js';
+import { roundRecap, raceSeries } from '../src/utils/matchday.js';
+import { recapPayload } from '../../worker/src/alerts.js';
 
 const SOURCES = [
   { div: 1, name: 'Premier League', url: 'https://raw.githubusercontent.com/openfootball/england/master/2026-27/1-premierleague.txt' },
@@ -195,6 +197,19 @@ for (const s4 of SOURCES) {
   }
 }
 console.log('');
+
+// ── Matchday: the recap Tuesday's notification would send, off the real
+// feeds and the real draw ──────────────────────────────────────────────────
+try {
+  const st = await (await fetch(`${WORKER}/epl/state`, { signal: AbortSignal.timeout(20000) })).json();
+  const r = roundRecap(st.assignments || {}, merged, st.manualMedals || {}, st.bonusPoints || {});
+  const p = recapPayload(r);
+  const race = raceSeries(st.assignments || {}, merged, st.manualMedals || {}, st.bonusPoints || {});
+  console.log(p ? `  ✓ recap (${r.label}): ${p.title}\n      ${p.body}` : '  · no finished round to recap yet');
+  console.log(`  ✓ season race: ${race.weeks.length} points per player`);
+} catch (err) {
+  console.log(`  ✗ matchday recap failed: ${err.message}`);
+}
 
 // ── Goal alerts: the worker's public key is what phones subscribe with ────
 try {

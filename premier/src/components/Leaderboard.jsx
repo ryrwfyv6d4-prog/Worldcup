@@ -9,6 +9,9 @@ import { tableLine, lastPlaceJibe } from '../utils/editorial.js';
 import UpNext from './UpNext.jsx';
 import YouCard, { Move } from './YouCard.jsx';
 import { roundMovement } from '../utils/movement.js';
+import { liveLadder, asItStands } from '../utils/matchday.js';
+import RaceChart from './RaceChart.jsx';
+import RecapCard from './RecapCard.jsx';
 import { useCountUp } from '../hooks/useCountUp.js';
 import { ordinal } from '../utils/format.js';
 
@@ -79,7 +82,8 @@ function ledgerFor(row, fixtures) {
       events.push({
         ts: f.utcDate || '',
         label: `${info?.short || clubLabel(b.team)} ${my}–${their} `
-             + `${opp?.short || clubLabel(isHome ? f.awayTeam.name : f.homeTeam.name)}`,
+             + `${opp?.short || clubLabel(isHome ? f.awayTeam.name : f.homeTeam.name)}`
+             + (f.provisional ? ' (live)' : ''),
         pts,
       });
     }
@@ -106,17 +110,27 @@ export default function Leaderboard({
   assignments, fixtures, manualMedals, bonusPoints, whoAmI, onSelectTeam, onOpenMatch,
   onOpenSquad, onPickName, onShowRules,
 }) {
-  const ladder = useMemo(
+  const realLadder = useMemo(
     () => buildLadder(assignments, fixtures, manualMedals, bonusPoints),
     [assignments, fixtures, manualMedals, bonusPoints]
   );
+  // While games are on, the table as it stands: every game in play counted at
+  // its current score. Same scoring, just not final yet.
+  const lv = useMemo(
+    () => liveLadder(assignments, fixtures, manualMedals, bonusPoints),
+    [assignments, fixtures, manualMedals, bonusPoints]
+  );
+  const [asStands, setAsStands] = useState(true);
+  const showLive = lv.live && asStands;
+  const ladder = showLive ? lv.ladder : realLadder;
+  const shownFixtures = useMemo(() => (showLive ? asItStands(fixtures) : fixtures), [showLive, fixtures]);
   const outlook = useMemo(
     () => getProjection(assignments, fixtures, manualMedals, bonusPoints).players,
     [assignments, fixtures, manualMedals, bonusPoints]
   );
   const move = useMemo(
-    () => roundMovement(assignments, fixtures, manualMedals, bonusPoints, ladder).byName,
-    [assignments, fixtures, manualMedals, bonusPoints, ladder]
+    () => roundMovement(assignments, fixtures, manualMedals, bonusPoints, realLadder).byName,
+    [assignments, fixtures, manualMedals, bonusPoints, realLadder]
   );
   const [open, setOpen] = useState(null);
   const [full, setFull] = useState(false);
@@ -140,6 +154,7 @@ export default function Leaderboard({
       <YouCard
         ladder={ladder}
         move={move}
+        live={showLive ? lv.delta : null}
         whoAmI={whoAmI}
         onOpenSquad={onOpenSquad}
         onPickName={onPickName}
@@ -152,10 +167,27 @@ export default function Leaderboard({
         onOpenMatch={onOpenMatch}
       />
 
+      <RecapCard
+        assignments={assignments}
+        fixtures={fixtures}
+        manualMedals={manualMedals}
+        bonusPoints={bonusPoints}
+        whoAmI={whoAmI}
+      />
+
       <div className="list-head">
         <span>Standings <small>{ladder.length} in · ${pot} pot</small></span>
         <button className="link-btn" onClick={onShowRules}>How points work</button>
       </div>
+
+      {lv.live && (
+        <div className={`live-bar ${showLive ? 'on' : ''}`}>
+          <span><i className="live-dot" /> {showLive ? 'Live: the table as it stands' : 'Games on: showing before kick-off'}</span>
+          <button className="link-btn" onClick={() => setAsStands(!asStands)}>
+            {showLive ? 'Before kick-off' : 'As it stands'}
+          </button>
+        </div>
+      )}
 
       <div className="leaderboard">
         {ladder.map((row, i) => {
@@ -175,7 +207,9 @@ export default function Leaderboard({
               <div className="lb-main">
                 <div className="lb-rank">
                   {i + 1}
-                  {anyResults && <Move up={move[row.name]?.up} />}
+                  {showLive
+                    ? <Move up={lv.delta[row.name]?.up} />
+                    : anyResults && <Move up={move[row.name]?.up} />}
                 </div>
                 <div className="lb-info">
                   <div className="lb-name">{row.name}</div>
@@ -205,6 +239,9 @@ export default function Leaderboard({
                 </div>
                 <div className="lb-right">
                   <div className="lb-pts"><Pts value={row.total} /></div>
+                  {showLive && lv.delta[row.name]?.pts > 0 && (
+                    <div className="live-gain">+{lv.delta[row.name].pts} live</div>
+                  )}
                   {/* "−5" read as a negative score. Say what it is. */}
                   <div className="lb-ptslabel">
                     {isLeader ? 'points' : `${gap} behind`}
@@ -227,7 +264,7 @@ export default function Leaderboard({
                 <div className="ledger" onClick={(e) => e.stopPropagation()}>
                   {o.projected != null && <Forecast o={o} n={ladder.length} />}
                   {(() => {
-                    const events = ledgerFor(row, fixtures);
+                    const events = ledgerFor(row, shownFixtures);
                     if (!events.length) {
                       return (
                         <div className="ledger-empty">
@@ -264,6 +301,14 @@ export default function Leaderboard({
         })}
       </div>
 
+
+      <RaceChart
+        assignments={assignments}
+        fixtures={fixtures}
+        manualMedals={manualMedals}
+        bonusPoints={bonusPoints}
+        whoAmI={whoAmI}
+      />
     </div>
   );
 }

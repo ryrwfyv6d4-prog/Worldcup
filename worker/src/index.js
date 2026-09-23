@@ -1,6 +1,6 @@
 import { applyOps, mergeLegacy } from '../../premier/src/utils/stateOps.js';
 import { trimMatchDetails } from '../../premier/src/utils/fotmobMatch.js';
-import { runAlerts, vapidKeys, saveSub, dropSub, sendTo } from './alerts.js';
+import { runAlerts, runRecap, vapidKeys, saveSub, dropSub, sendTo } from './alerts.js';
 
 const FM_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
@@ -651,5 +651,6 @@ export default {
   // Once a minute: look at the live scores and send goal alerts
   async scheduled(event, env, ctx) {
     ctx.waitUntil(runAlerts(env).catch(() => {}));
+    ctx.waitUntil(runRecap(env).catch(() => {}));
   },
 };

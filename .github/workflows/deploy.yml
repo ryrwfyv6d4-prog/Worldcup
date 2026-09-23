@@ -72,6 +72,7 @@ jobs:
           node scripts/fotmob.test.mjs
           node scripts/webpush.test.mjs
           node scripts/alerts.test.mjs
+          node scripts/matchday.test.mjs
 
       - name: Check live-score feed (diagnostic only, never blocks)
         working-directory: premier

@@ -542,3 +542,77 @@ input, textarea, select { font-size: 16px !important; } /* stops iOS zooming on 
 .switch:disabled { opacity: .6; }
 .strip.live .cm-min { animation: pulse 1.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .strip.live .cm-min { animation: none; } }
+
+/* ── Matchday ─────────────────────────────────────────────────────────────── */
+:root {
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; }
+}
+
+/* Live table */
+.live-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin: 0 0 8px; padding: 8px 12px; border-radius: 12px;
+  background: var(--surface-2); font: 600 13px var(--font-ui); color: var(--ink-muted);
+}
+.live-bar.on { background: var(--spot-soft); color: var(--spot); }
+.live-bar span { display: inline-flex; align-items: center; gap: 7px; }
+.live-bar .link-btn { padding: 0; font-size: 13px; }
+.live-gain {
+  display: inline-block; margin-top: 4px; padding: 1px 7px; border-radius: 999px;
+  background: rgba(30, 138, 76, .14); color: var(--win); font: 700 11px var(--font-ui);
+  animation: pulse 2s ease-in-out infinite;
+}
+.you-live { display: inline-flex; align-items: center; gap: 7px; }
+.you-card .live-dot { background: #fff; }
+@media (prefers-reduced-motion: reduce) { .live-gain { animation: none; } }
+
+/* Recap */
+.recap { background: var(--paper-card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; margin: 12px 0 0; }
+.recap-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.recap-eyebrow { font: 600 12px var(--font-ui); color: var(--ink-faint); }
+.recap-head { font: 800 19px/1.2 var(--font-ui); letter-spacing: -.01em; margin-top: 2px; }
+.recap-share {
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; cursor: pointer;
+  border: 0; border-radius: 999px; padding: 8px 12px; background: var(--spot); color: #fff;
+  font: 600 13px var(--font-ui);
+}
+.recap-share:disabled { opacity: .6; }
+.recap-lines { list-style: none; margin: 10px 0 0; padding: 0; }
+.recap-lines li { font: 500 14px/1.4 var(--font-ui); color: var(--ink-soft); padding: 5px 0; border-top: 1px solid var(--rule-light); }
+.recap-me { margin-top: 8px; font: 600 14px var(--font-ui); color: var(--ink-muted); }
+.recap-me b { color: var(--ink); }
+
+/* Season race */
+.race { margin-top: 6px; }
+.race-card { background: var(--paper-card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 12px 10px; }
+.race-tip { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; min-height: 40px; font: 600 13px var(--font-ui); color: var(--ink-soft); }
+.race-tip b { width: 100%; font: 700 13px var(--font-ui); color: var(--ink-muted); }
+.race-tip small { color: var(--ink-faint); font-weight: 500; }
+.race-key { display: inline-block; width: 10px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+.race-svg { display: block; width: 100%; height: auto; touch-action: pan-y; margin-top: 4px; }
+.race-grid { stroke: var(--rule-light); stroke-width: 1; }
+.race-axis { font: 500 9px var(--font-ui); fill: var(--ink-faint); }
+.race-line { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.race-line.dim { stroke: var(--ink-faint); stroke-width: 1.2; opacity: .35; }
+.race-cross { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 2 2; }
+.race-dot { stroke: var(--paper-card); stroke-width: 2; }
+.race-label { font: 700 10px var(--font-ui); fill: var(--ink-soft); }
+.race-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.race-chip {
+  display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; cursor: pointer;
+  padding: 6px 11px; background: var(--surface-2); color: var(--ink-soft); font: 600 13px var(--font-ui);
+}
+.race-chip.on { background: var(--ink); color: var(--paper); }
+.race-chip i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--paper); }
+.race-hint { margin: 8px 0 0; }
+.race-table-wrap { overflow-x: auto; }
+.race-table { border-collapse: collapse; font: 500 13px var(--font-ui); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.race-table th { font: 600 11px var(--font-ui); color: var(--ink-faint); padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--rule-light); }
+.race-table th:first-child, .race-table td:first-child { text-align: left; position: sticky; left: 0; background: var(--paper-card); font-weight: 700; }
+.race-table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--rule-light); }
+.race-table tr.me td { color: var(--spot); }

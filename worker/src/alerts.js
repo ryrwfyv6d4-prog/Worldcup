@@ -6,6 +6,8 @@
 import { resolveClub } from '../../premier/src/utils/teamMatch.js';
 import { getTeam } from '../../premier/src/data/england2027.js';
 import { makeVapidKeys, sendPush } from './webpush.js';
+import { loadFixtures } from '../../premier/src/utils/fixturesCore.js';
+import { roundRecap, recapHeadline, recapLines, weekStartOf, lastRoundWeek } from '../../premier/src/utils/matchday.js';
 
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
 const LEAGUES = ['eng.1', 'eng.2'];
@@ -161,4 +163,37 @@ export async function runAlerts(env) {
     }
   }
   return { games: games.length, events: events.length, sent };
+}
+
+// ── The Monday recap ────────────────────────────────────────────────────────
+// Once a round (Tuesday to Monday in England) is over, everyone with alerts
+// on gets one notification: who won the week, who climbed, who's bottom. It
+// goes out on the first cron run of Tuesday UTC, which is after Monday night's
+// games and mid-morning in Melbourne. A flag in R2 makes it once per round.
+export function recapPayload(r) {
+  if (!r) return null;
+  const body = recapLines(r).slice(0, 3).join(' · ');
+  return { title: `Round recap: ${recapHeadline(r)}`, body, tag: `recap-${r.start}`, url: './' };
+}
+
+export async function runRecap(env, now = Date.now()) {
+  if (new Date(now).getUTCDay() !== 2) return { skipped: 'not Tuesday' };
+  const round = weekStartOf(now) - 7 * 864e5;
+  const flag = `epl-push/recap/${round}.done`;
+  if (await env.WALL.get(flag)) return { skipped: 'sent' };
+  await env.WALL.put(flag, String(now));           // claim it first: once, even if the send fails half way
+
+  const stateObj = await env.WALL.get('epl-state.json');
+  const st = stateObj ? JSON.parse(await stateObj.text()) : {};
+  const fixtures = await loadFixtures(fetch);
+  if (lastRoundWeek(fixtures, now) !== round) return { skipped: 'no games last round' };
+  const r = roundRecap(st.assignments || {}, fixtures, st.manualMedals || {}, st.bonusPoints || {}, now, round);
+  const payload = recapPayload(r);
+  if (!payload) return { skipped: 'no recap' };
+  const subs = await loadSubs(env);
+  let sent = 0;
+  for (const sub of subs) {
+    try { if ((await sendTo(env, sub, payload)) < 300) sent += 1; } catch { /* next */ }
+  }
+  return { sent };
 }

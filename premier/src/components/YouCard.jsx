@@ -14,7 +14,7 @@ export function Move({ up }) {
   );
 }
 
-export default function YouCard({ ladder, move, whoAmI, onOpenSquad, onPickName }) {
+export default function YouCard({ ladder, move, live, whoAmI, onOpenSquad, onPickName }) {
   const i = ladder.findIndex((r) => r.name === whoAmI);
   const row = ladder[i];
   const pts = useCountUp(row ? row.total : 0);
@@ -32,6 +32,7 @@ export default function YouCard({ ladder, move, whoAmI, onOpenSquad, onPickName 
   }
 
   const m = move?.[whoAmI] || {};
+  const lv = live?.[whoAmI];
   const ahead = ladder[i - 1];
   const behind = ladder[i + 1];
   const gap = i === 0
@@ -44,7 +45,8 @@ export default function YouCard({ ladder, move, whoAmI, onOpenSquad, onPickName 
       <div className="you-top">
         <div>
           <div className="you-rank">
-            {ordinal(i + 1)} <small>of {ladder.length}</small> {m.up ? <Move up={m.up} /> : null}
+            {ordinal(i + 1)} <small>of {ladder.length}</small>
+            {lv ? (lv.up ? <Move up={lv.up} /> : null) : (m.up ? <Move up={m.up} /> : null)}
           </div>
           <div className="you-gap">{gap}</div>
         </div>
@@ -54,7 +56,9 @@ export default function YouCard({ ladder, move, whoAmI, onOpenSquad, onPickName 
         </div>
       </div>
       <div className="you-foot">
-        <span>{m.gained > 0 ? `+${m.gained} this round` : 'Nothing banked this round'}</span>
+        {live
+          ? <span className="you-live"><i className="live-dot" /> {lv?.pts > 0 ? `+${lv.pts} if it ends now` : 'As it stands'}</span>
+          : <span>{m.gained > 0 ? `+${m.gained} this round` : 'Nothing banked this round'}</span>}
         {best && <span>Top earner: {getTeam(best.team)?.short || best.team}</span>}
         <span className="chev" aria-hidden="true">›</span>
       </div>
