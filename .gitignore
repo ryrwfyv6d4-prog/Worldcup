@@ -7,3 +7,6 @@ dist/
 # Club audio: personal copies only, never published (see public/audio/README.md)
 premier/public/audio/*
 !premier/public/audio/README.md
+
+# Wrangler local cache
+.wrangler/
