@@ -1,4 +1,4 @@
-import { applyOps, mergeLegacy } from '../../premier/src/utils/stateOps.js';
+import { applyOps, mergeLegacy, ADMIN_OPS, ADMIN_FIELDS, EMPTY_STATE } from '../../premier/src/utils/stateOps.js';
 import { trimMatchDetails } from '../../premier/src/utils/fotmobMatch.js';
 import { runAlerts, runRecap, vapidKeys, saveSub, dropSub, sendTo } from './alerts.js';
 
@@ -39,8 +39,18 @@ async function fotmobMatchId(date, home, homeShort, away, awayShort) {
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Pin',
 };
+
+// Admin actions need the PIN in the X-Admin-Pin header. With no ADMIN_PIN
+// secret set, everyone is admin, which is how the app worked before.
+const isAdmin = (request, env) => !env.ADMIN_PIN || request.headers.get('X-Admin-Pin') === env.ADMIN_PIN;
+const pinRequired = () => json({ error: 'admin PIN required' }, 403);
+
+function changesAdminFields(stored, next) {
+  const a = { ...EMPTY_STATE, ...(stored || {}) };
+  return ADMIN_FIELDS.some((k) => JSON.stringify(a[k]) !== JSON.stringify(next[k]));
+}
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -85,6 +95,7 @@ export default {
 
       // PUT /state — save shared draw state
       if (request.method === 'PUT' && path === '/state') {
+        if (!isAdmin(request, env)) return pinRequired();
         const body = await request.json();
         await env.WALL.put('app-state.json', JSON.stringify(body), {
           httpMetadata: { contentType: 'application/json' },
@@ -104,7 +115,14 @@ export default {
       // votes but cannot delete them, and it cannot replace a locked draw.
       if (request.method === 'PUT' && path === '/epl/state') {
         const body = await request.json();
-        const next = await updateEplState(env, (stored) => mergeLegacy(stored, body));
+        const admin = isAdmin(request, env);
+        const next = await updateEplState(env, (stored) => {
+          const merged = mergeLegacy(stored, body);
+          if (!admin && changesAdminFields(stored, merged)) {
+            throw Object.assign(new Error('admin PIN required'), { status: 403 });
+          }
+          return merged;
+        });
         return json({ ok: true, state: next });
       }
 
@@ -114,6 +132,7 @@ export default {
       if (request.method === 'POST' && path === '/epl/ops') {
         const body = await request.json();
         const ops = Array.isArray(body?.ops) ? body.ops.slice(0, 100) : [];
+        if (!isAdmin(request, env) && ops.some((op) => ADMIN_OPS.has(op?.type))) return pinRequired();
         const next = await updateEplState(env, (stored) => applyOps(stored, ops));
         return json({ ok: true, state: next });
       }
@@ -195,6 +214,7 @@ export default {
       // DELETE /photos/:id
       const deleteMatch = path.match(/^\/photos\/(\d+)$/);
       if (request.method === 'DELETE' && deleteMatch) {
+        if (!isAdmin(request, env)) return pinRequired();
         const id = deleteMatch[1];
         await Promise.all([
           env.WALL.delete(`photos/${id}.json`),
@@ -644,7 +664,7 @@ export default {
 
       return json({ error: 'Not found' }, 404);
     } catch (e) {
-      return json({ error: e.message }, 500);
+      return json({ error: e.message }, e.status || 500);
     }
   },
 

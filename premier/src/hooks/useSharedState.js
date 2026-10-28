@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { EMPTY_STATE, applyOp, applyOps } from '../utils/stateOps.js';
+import { EMPTY_STATE, ADMIN_OPS, applyOp, applyOps } from '../utils/stateOps.js';
 
 export { EMPTY_STATE };
 
@@ -15,6 +15,7 @@ export { EMPTY_STATE };
 const WORKER_URL = import.meta.env.VITE_WALL_API_URL || '';
 const LOCAL_KEY = 'epl_shared_state_v1';
 const PENDING_KEY = 'epl_pending_ops_v1';
+const PIN_KEY = 'epl_admin_pin';    // shared with draw-night.html
 const PULL_EVERY = 45000;      // while the app is open and on screen
 const RESUME_GAP = 15000;      // don't refetch on every focus flicker
 
@@ -27,6 +28,10 @@ function readJson(key, fallback) {
 }
 function writeJson(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ }
+}
+function pinHeader() {
+  const pin = readJson(PIN_KEY, '');
+  return pin ? { 'X-Admin-Pin': pin } : {};
 }
 
 // An empty document from the worker (first run, or a wiped bucket) should not
@@ -79,10 +84,20 @@ export function useSharedState() {
     try {
       const r = await fetch(`${WORKER_URL}/epl/ops`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...pinHeader() },
         body: JSON.stringify({ ops: batch }),
       });
       let saved = null;
+      if (r.status === 403) {
+        // An admin action without the right PIN. Ask once; on cancel, drop
+        // the admin actions so the rest of the queue still goes through.
+        const pin = window.prompt('Admin PIN needed for that change');
+        if (pin) writeJson(PIN_KEY, pin);
+        else setPending((q) => q.filter((op) => !ADMIN_OPS.has(op.type)));
+        inFlight.current = false;
+        if (pin) setTimeout(flush, 0);
+        return;
+      }
       if (r.ok) {
         saved = (await r.json()).state;
       } else if (r.status === 404) {

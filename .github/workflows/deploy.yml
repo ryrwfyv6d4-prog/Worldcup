@@ -24,14 +24,23 @@ jobs:
 
       - name: Deploy Cloudflare Worker
         working-directory: worker
-        run: npx wrangler deploy
+        run: npx wrangler@4.154.0 deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        continue-on-error: true
+
+      # Only when the ADMIN_PIN repo secret is set, so a deploy never blanks
+      # a PIN set some other way.
+      - name: Set Worker admin PIN
+        working-directory: worker
+        run: |
+          if [ -n "$ADMIN_PIN" ]; then echo "$ADMIN_PIN" | npx wrangler@4.154.0 secret put ADMIN_PIN; else echo "ADMIN_PIN not set, skipping"; fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ADMIN_PIN: ${{ secrets.ADMIN_PIN }}
 
       - name: Set Worker YouTube API key
         working-directory: worker
-        run: echo "$YOUTUBE_API_KEY" | npx wrangler secret put YOUTUBE_API_KEY
+        run: echo "$YOUTUBE_API_KEY" | npx wrangler@4.154.0 secret put YOUTUBE_API_KEY
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
@@ -39,7 +48,7 @@ jobs:
 
       - name: Set Worker YouTube API key backup
         working-directory: worker
-        run: echo "$YOUTUBE_API_KEY_BACKUP" | npx wrangler secret put YOUTUBE_API_KEY_BACKUP
+        run: echo "$YOUTUBE_API_KEY_BACKUP" | npx wrangler@4.154.0 secret put YOUTUBE_API_KEY_BACKUP
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           YOUTUBE_API_KEY_BACKUP: ${{ secrets.YOUTUBE_API_KEY_BACKUP }}

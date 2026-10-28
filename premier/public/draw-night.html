@@ -1452,11 +1452,24 @@ async function publish() {
     var next = Object.assign({ wallPosts: [], polls: [], manualMedals: {}, bonusPoints: {} }, current, {
       assignments: a, drawLocked: true, bonusPoints: bonus,
     });
+    // The admin PIN, saved by the app as JSON under epl_admin_pin
+    var pin = '';
+    try { pin = JSON.parse(localStorage.getItem('epl_admin_pin') || '""'); } catch (e) {}
+    var headers = { 'Content-Type': 'application/json' };
+    if (pin) headers['X-Admin-Pin'] = pin;
     var put = await fetch(WORKER + '/epl/state', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: headers,
       body: JSON.stringify(next),
     });
+    if (put.status === 403) {
+      pin = window.prompt('Admin PIN needed to publish');
+      if (pin) {
+        try { localStorage.setItem('epl_admin_pin', JSON.stringify(pin)); } catch (e) {}
+        headers['X-Admin-Pin'] = pin;
+        put = await fetch(WORKER + '/epl/state', { method: 'PUT', headers: headers, body: JSON.stringify(next) });
+      }
+    }
     if (!put.ok) throw new Error('worker returned ' + put.status);
     msg.textContent = 'Published and locked. Everyone gets it next time they open the app.';
   } catch (err) {

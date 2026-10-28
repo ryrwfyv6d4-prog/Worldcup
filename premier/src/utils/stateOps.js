@@ -18,6 +18,12 @@ export const EMPTY_STATE = {
   deleted: [],       // ids of removed posts and polls, so a stale copy can't bring them back
 };
 
+// Operations that need the admin PIN once one is set on the worker.
+export const ADMIN_OPS = new Set(['draw.set', 'draw.lock', 'draw.swap', 'medal.set', 'wall.remove', 'poll.remove']);
+
+// The parts of the state only an admin may change through a whole-state PUT.
+export const ADMIN_FIELDS = ['assignments', 'drawLocked', 'bonusPoints', 'manualMedals'];
+
 const WALL_CAP = 200;
 const DELETED_CAP = 1000;
 
