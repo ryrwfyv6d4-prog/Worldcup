@@ -4,7 +4,7 @@ import { getProjection } from '../utils/projection.js';
 import { MEDALS, ENTRY_FEE, getTeam } from '../data/england2027.js';
 import { valueForFixture } from '../utils/odds.js';
 import { clubLabel } from '../utils/teamMatch.js';
-import { RowStripes } from './Stripe.jsx';
+import Crest from './Crest.jsx';
 import { tableLine, lastPlaceJibe } from '../utils/editorial.js';
 import UpNext from './UpNext.jsx';
 import YouCard, { Move } from './YouCard.jsx';
@@ -39,27 +39,10 @@ function Forecast({ o, n }) {
       {/* First, second and last are not an arbitrary three — they are the
           only places that pay, so this is really "am I in the money". */}
       <div className="forecast-note">
-        The three places that pay. Typical finish {ordinal(o.medianRank)} of {n}.
+        Typical finish {ordinal(o.medianRank)} of {n}. On for about {o.projected} points ({o.floor}–{o.ceiling}).
       </div>
     </div>
   );
-}
-
-// The leader's recent form, taken across all their clubs, newest first
-function combinedForm(row, fixtures, n = 5) {
-  const all = [];
-  for (const t of row.teams) {
-    for (const f of fixtures) {
-      if (f.status !== 'FINISHED') continue;
-      if (f.homeTeam.name !== t && f.awayTeam.name !== t) continue;
-      const isHome = f.homeTeam.name === t;
-      const my = isHome ? f.score.home : f.score.away;
-      const their = isHome ? f.score.away : f.score.home;
-      if (my == null || their == null) continue;
-      all.push({ ts: f.utcDate || '', r: my > their ? 'W' : my < their ? 'L' : 'D' });
-    }
-  }
-  return all.sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, n).map((x) => x.r);
 }
 
 // Every scoring event for one player, newest first — feeds the ledger
@@ -189,107 +172,77 @@ export default function Leaderboard({
         </div>
       )}
 
-      <div className="leaderboard">
+      <div className="ladder">
         {ladder.map((row, i) => {
           const isLeader = i === 0;
           const isLast = i === ladder.length - 1 && ladder.length > 1;
           const isOpen = open === row.name;
           const gap = leaderTotal - row.total;
-          const form = isLeader ? combinedForm(row, fixtures) : [];
           const o = outlook[row.name] || {};
+          const mine = whoAmI === row.name;
+          const up = showLive ? lv.delta[row.name]?.up : (anyResults ? move[row.name]?.up : 0);
+          const liveGain = showLive ? lv.delta[row.name]?.pts : 0;
           return (
-            <div
-              key={row.name}
-              className={`lb-row ${isLeader ? 'leader' : ''} ${isLast ? 'last' : ''} ${whoAmI === row.name ? 'me' : ''}`}
-              onClick={() => { setOpen(isOpen ? null : row.name); setFull(false); }}
-            >
-              <RowStripes teams={row.teams} />
-              <div className="lb-main">
-                <div className="lb-rank">
-                  {i + 1}
-                  {showLive
-                    ? <Move up={lv.delta[row.name]?.up} />
-                    : anyResults && <Move up={move[row.name]?.up} />}
-                </div>
-                <div className="lb-info">
-                  <div className="lb-name">{row.name}</div>
-                  <div className="lb-clubs">
-                    {row.teams.map((t, j) => (
-                      <span key={t}>
-                        {j > 0 && ' · '}
-                        <button
-                          className="team-btn lb-club"
-                          onClick={(e) => { e.stopPropagation(); onSelectTeam?.(t); }}
-                        >
-                          {clubLabel(t)}
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  {isLeader && form.length > 0 && (
-                    <div className="form-squares">
-                      {form.map((r, j) => (
-                        <span key={j} className={`fsq fsq-${r.toLowerCase()}`}>{r}</span>
-                      ))}
-                    </div>
-                  )}
-                  {isLast && anyResults && (
-                    <div className="lb-jibe">{lastPlaceJibe(row)}</div>
-                  )}
-                </div>
-                <div className="lb-right">
-                  <div className="lb-pts"><Pts value={row.total} /></div>
-                  {showLive && lv.delta[row.name]?.pts > 0 && (
-                    <div className="live-gain">+{lv.delta[row.name].pts} live</div>
-                  )}
-                  {/* "−5" read as a negative score. Say what it is. */}
-                  <div className="lb-ptslabel">
-                    {isLeader ? 'points' : `${gap} behind`}
-                  </div>
-                  {/* Where this ends up, not the chance of winning. The chance
-                      inverts against the current order — a shorter total with
-                      better clubs is the likelier winner — which is true but
-                      reads as a mistake sitting under the points with nothing
-                      to explain it. A projected total says the same thing and
-                      cannot contradict itself. The full odds are a tap away. */}
-                  {o.projected != null && (
-                    <div className="lb-odds" title="Projected total by the end of the season">
-                      on for {o.projected}
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div key={row.name} className={`lr ${mine ? 'me' : ''} ${isOpen ? 'open' : ''}`}>
+              <button
+                className="lr-main"
+                aria-expanded={isOpen}
+                onClick={() => { setOpen(isOpen ? null : row.name); setFull(false); }}
+              >
+                <span className={`lr-rank ${isLeader ? 'first' : ''}`}>{i + 1}</span>
+                <span className="lr-who">
+                  <span className="lr-name">
+                    {row.name}
+                    {mine && <span className="you-tag">You</span>}
+                    {up ? <Move up={up} /> : null}
+                  </span>
+                  <span className="lr-crests">
+                    {row.teams.map((t) => <Crest key={t} team={t} size={20} />)}
+                  </span>
+                  {isLast && anyResults && <em className="lr-jibe">{lastPlaceJibe(row)}</em>}
+                </span>
+                <span className="lr-score">
+                  <b><Pts value={row.total} /></b>
+                  {liveGain > 0
+                    ? <small className="live-gain">+{liveGain} live</small>
+                    : <small>{isLeader ? 'points' : `${gap} behind`}</small>}
+                </span>
+                <svg className="lr-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              </button>
 
               {isOpen && (
-                <div className="ledger" onClick={(e) => e.stopPropagation()}>
+                <div className="ledger">
+                  <div className="lr-clubgrid">
+                    {row.breakdown.map((b) => (
+                      <button key={b.team} className="lr-clubcard" onClick={() => onSelectTeam?.(b.team)}>
+                        <Crest team={b.team} size={26} />
+                        <span>
+                          <b>{getTeam(b.team)?.short || clubLabel(b.team)}</b>
+                          <small>{b.w}W {b.d}D {b.l}L</small>
+                        </span>
+                        <i>{b.total + b.oa.pts + b.medalPts}</i>
+                      </button>
+                    ))}
+                  </div>
                   {o.projected != null && <Forecast o={o} n={ladder.length} />}
                   {(() => {
                     const events = ledgerFor(row, shownFixtures);
                     if (!events.length) {
-                      return (
-                        <div className="ledger-empty">
-                          Nothing banked yet.{' '}
-                          {o.projected != null && `Projected ${o.projected} by May.`}
-                        </div>
-                      );
+                      return <div className="ledger-empty">Nothing banked yet.</div>;
                     }
                     return (
                       <>
-                        {(full ? events : events.slice(0, 12)).map((e, j) => (
+                        <div className="ledger-head">Points, newest first</div>
+                        {(full ? events : events.slice(0, 8)).map((e, j) => (
                           <div key={j} className={`ledger-row ${e.pts === 0 ? 'zero' : ''}`}>
                             <span>{e.label}</span>
                             <b>{e.pts > 0 ? `+${e.pts}` : e.pts}</b>
                           </div>
                         ))}
-                        {events.length > 12 && !full && (
-                          <button className="ledger-more ledger-more-btn" onClick={() => setFull(true)}>
-                            Show {events.length - 12} more
+                        {events.length > 8 && !full && (
+                          <button className="link-btn" onClick={() => setFull(true)}>
+                            Show {events.length - 8} more
                           </button>
-                        )}
-                        {o.projected != null && (
-                          <div className="ledger-more">
-                            Projected {o.projected} by May ({o.floor}–{o.ceiling})
-                          </div>
                         )}
                       </>
                     );
@@ -300,7 +253,6 @@ export default function Leaderboard({
           );
         })}
       </div>
-
 
       <RaceChart
         assignments={assignments}

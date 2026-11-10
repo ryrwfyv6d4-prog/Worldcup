@@ -1,13 +1,7 @@
 import { useMemo, useState } from 'react';
-import { getTeam } from '../data/england2027.js';
-import { fixturePoints, pointsHaul } from '../utils/scoring.js';
-import { getRivalry } from '../data/rivalries.js';
-import { clubLabel } from '../utils/teamMatch.js';
-import Stripe from './Stripe.jsx';
-import Tier from './Tier.jsx';
+import { pointsHaul } from '../utils/scoring.js';
 import { fixturesLine } from '../utils/editorial.js';
-import { useHighlight } from '../hooks/useHighlight.js';
-import { ownerOf } from '../utils/format.js';
+import FixtureRow from './FixtureRow.jsx';
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -30,15 +24,6 @@ const dayKey = (iso) => {
 const fmtDay = (iso) => (iso
   ? new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long' })
   : 'Date TBC');
-// Shown in the phone's own timezone, so an English evening kick-off reads as
-// the small hours here. A fixture the feed has no time for says so instead of
-// showing the placeholder the parser had to pick to sort it.
-const fmtTime = (f) => {
-  if (!f.utcDate) return '';
-  if (f.timeTBC) return 'TBC';
-  return new Date(f.utcDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-};
-
 // Pages are weeks, Tuesday to Monday in England, so a midweek round and the
 // weekend after it sit together and a Monday-night game isn't split off from
 // its weekend. The two divisions' matchweek numbers drift apart within a
@@ -150,12 +135,16 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
 
       {filter !== 'mine' && (
         <div className="md-row">
-          <button className="btn" onClick={() => setWk(weeks[idx - 1])} disabled={idx <= 0}>Prev</button>
-          <span className="md-label">
+          <button className="pager-btn" onClick={() => setWk(weeks[idx - 1])} disabled={idx <= 0} aria-label="Previous week">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
+          </button>
+          <button className="md-label" onClick={() => setWk(null)} title="Back to this week">
             {weekLabel}
-            {mdNote && <small> · {mdNote}</small>}
-          </span>
-          <button className="btn" onClick={() => setWk(weeks[idx + 1])} disabled={idx < 0 || idx >= weeks.length - 1}>Next</button>
+            <small>{shownWk === nowWk ? 'This week' : mdNote || 'Tap for this week'}</small>
+          </button>
+          <button className="pager-btn" onClick={() => setWk(weeks[idx + 1])} disabled={idx < 0 || idx >= weeks.length - 1} aria-label="Next week">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+          </button>
         </div>
       )}
 
@@ -184,19 +173,19 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
 
       {byDay.map((g) => (
         <div key={g.key}>
-          <div className="day-head">
-            <span className="day-name">{g.label}</span>
-            <span className="day-rule" />
+          <div className="day-head">{g.label}</div>
+          <div className="fx-group">
+            {g.items.map((f) => (
+              <FixtureRow
+                key={f.id}
+                fixture={f}
+                assignments={assignments}
+                whoAmI={whoAmI}
+                showTier={showTier}
+                onOpen={() => onOpenMatch(f)}
+              />
+            ))}
           </div>
-          {g.items.map((f) => (
-            <MatchRow
-              key={f.id}
-              fixture={f}
-              assignments={assignments}
-              showTier={showTier}
-              onOpen={() => onOpenMatch(f)}
-            />
-          ))}
         </div>
       ))}
 
@@ -213,91 +202,6 @@ export default function Fixtures({ fixtures, assignments, onOpenMatch, whoAmI })
       {byDay.length > 0 && (
         <p className="fx-close">{fixturesLine(shown, mineCount, myTeams.length > 0)}</p>
       )}
-    </div>
-  );
-}
-
-// Before kick-off this is the price on offer; after it, what the club actually
-// banked. Same number either way, so a settled row still reads as points.
-function Worth({ fixture, team }) {
-  const fp = fixturePoints(fixture, team);
-  if (!fp) return null;
-  if (!fp.settled) return <span className="fx-worth">+{fp.win}</span>;
-  if (fp.outcome === 'L') return <span className="fx-paid nil">0</span>;
-  return (
-    <span className={`fx-paid ${fp.outcome === 'D' ? 'drew' : ''}`}>
-      +{fp.pts}
-    </span>
-  );
-}
-
-function MatchRow({ fixture: f, assignments, showTier, onOpen }) {
-  const h = getTeam(f.homeTeam.name);
-  const a = getTeam(f.awayTeam.name);
-  const ho = ownerOf(f.homeTeam.name, assignments);
-  const ao = ownerOf(f.awayTeam.name, assignments);
-  const derby = getRivalry(f.homeTeam.name, f.awayTeam.name);
-  const done = f.status === 'FINISHED';
-  const live = f.status === 'IN_PLAY';
-  // Stan carry the Premier League only, so asking about a Championship match
-  // is a request we already know the answer to — and paging back through
-  // settled Championship weeks fired a dozen of them every time.
-  const highlight = useHighlight(
-    f.homeTeam.name, f.awayTeam.name, done && f.division === 1, f.score?.home, f.score?.away
-  );
-
-  // The row is a button, so the highlights link sits beside it rather than
-  // inside it — a link nested in a button is invalid and swallows the tap.
-  return (
-    <div className={`fx-row-wrap ${highlight ? 'has-hl' : ''}`}>
-    <button className="fx-row" onClick={onOpen}>
-      <span className="fx-time">
-        {fmtTime(f)}
-        {showTier && <Tier div={f.division} />}
-      </span>
-      <span className="fx-clubs">
-        <span className="fx-club">
-          <Stripe team={f.homeTeam.name} />
-          <span className={`fx-club-name ${done ? 'dim' : ''}`}>{h?.short || clubLabel(f.homeTeam.name)}</span>
-          {ho && <span className="fx-owner">{ho}</span>}
-          {ho && <Worth fixture={f} team={f.homeTeam.name} />}
-        </span>
-        <span className="fx-club">
-          <Stripe team={f.awayTeam.name} />
-          <span className={`fx-club-name ${done ? 'dim' : ''}`}>{a?.short || clubLabel(f.awayTeam.name)}</span>
-          {ao && <span className="fx-owner">{ao}</span>}
-          {ao && <Worth fixture={f} team={f.awayTeam.name} />}
-        </span>
-      </span>
-      <span className="fx-right">
-        {/* every club is owned with a full shed, so only real derbies earn the tag */}
-        {derby && !done && !live ? (
-          <span className="fx-derby">derby</span>
-        ) : live ? (
-          <>
-            <span className="fx-score">{f.score.home}–{f.score.away}</span>
-            <span className="fx-status live">{f.liveClock ? `${f.liveClock}'` : 'live'}</span>
-          </>
-        ) : done ? (
-          <>
-            <span className="fx-score done">{f.score.home}–{f.score.away}</span>
-            <span className="fx-status">Full time</span>
-          </>
-        ) : null /* kick-off time is already on the left — nothing to add */}
-      </span>
-    </button>
-    {highlight && (
-      <a
-        className="fx-hl"
-        href={highlight}
-        target="_blank"
-        rel="noreferrer"
-        title="Watch the highlights"
-        aria-label={`Highlights: ${h?.short || clubLabel(f.homeTeam.name)} v ${a?.short || clubLabel(f.awayTeam.name)}`}
-      >
-        <span aria-hidden="true">▶</span>
-      </a>
-    )}
     </div>
   );
 }

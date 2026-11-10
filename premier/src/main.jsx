@@ -4,6 +4,7 @@ import { registerSW } from 'virtual:pwa-register';
 import App from './App.jsx';
 import './App.css';
 import './modern.css';
+import './fresh.css';
 
 // Keep the installed app current. A home-screen app on an iPhone is rarely
 // closed, so it almost never navigates, and the browser only looks for a new

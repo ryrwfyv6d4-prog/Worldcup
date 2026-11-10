@@ -1,11 +1,5 @@
 import { useMemo } from 'react';
-import { getTeam } from '../data/england2027.js';
-import { clubLabel } from '../utils/teamMatch.js';
-import { fixturePoints } from '../utils/scoring.js';
-import { getRivalry } from '../data/rivalries.js';
-import Stripe from './Stripe.jsx';
-import Tier from './Tier.jsx';
-import { ownerOf } from '../utils/format.js';
+import FixtureRow from './FixtureRow.jsx';
 
 // What is about to move the table.
 //
@@ -32,13 +26,9 @@ function dayLabel(iso) {
   const days = Math.round((startOfDay(d) - startOfDay(new Date())) / 864e5);
   if (days === 0) return 'Today';
   if (days === 1) return 'Tomorrow';
-  if (days > 1 && days < 7) return d.toLocaleDateString('en-GB', { weekday: 'long' });
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  if (days > 1 && days < 7) return d.toLocaleDateString('en-GB', { weekday: 'short' });
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
-
-const timeLabel = (f) => (f.timeTBC
-  ? 'TBC'
-  : new Date(f.utcDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
 
 export default function UpNext({ fixtures, assignments, whoAmI, onOpenMatch, limit = 3 }) {
   const { rows, mineOnly } = useMemo(() => {
@@ -72,45 +62,17 @@ export default function UpNext({ fixtures, assignments, whoAmI, onOpenMatch, lim
         {mineOnly && <span className="upnext-tag">your clubs</span>}
       </div>
 
-      {rows.map((f) => {
-        const live = f.status === 'IN_PLAY';
-        const derby = getRivalry(f.homeTeam.name, f.awayTeam.name);
-        const sides = [f.homeTeam.name, f.awayTeam.name];
-        return (
-          <button className={`upnext-row ${live ? 'live' : ''}`} key={f.id} onClick={() => onOpenMatch(f)}>
-            <span className="upnext-ko">
-              <b>{live ? 'Live' : dayLabel(f.utcDate)}</b>
-              <span className="upnext-time">{live ? `${f.liveClock || ''}'` : timeLabel(f)}</span>
-              {showTier && <Tier div={f.division} />}
-            </span>
-
-            <span className="upnext-clubs">
-              {sides.map((name) => {
-                const owner = ownerOf(name, assignments);
-                const fp = fixturePoints(f, name);
-                const yours = owner && owner === whoAmI;
-                return (
-                  <span className="upnext-club" key={name}>
-                    <Stripe team={name} />
-                    <span className="upnext-name">{getTeam(name)?.short || clubLabel(name)}</span>
-                    {owner && (
-                      <span className={`upnext-owner ${yours ? 'you' : ''}`}>{owner}</span>
-                    )}
-                    {/* the price on offer, the same number the fixture list quotes */}
-                    {fp && !fp.settled && <span className="upnext-worth">+{fp.win}</span>}
-                  </span>
-                );
-              })}
-            </span>
-
-            <span className="upnext-right">
-              {live
-                ? <span className="upnext-score">{f.score.home}–{f.score.away}</span>
-                : derby && <span className="upnext-derby">derby</span>}
-            </span>
-          </button>
-        );
-      })}
+      {rows.map((f) => (
+        <FixtureRow
+          key={f.id}
+          fixture={f}
+          assignments={assignments}
+          whoAmI={whoAmI}
+          dayLabel={dayLabel(f.utcDate)}
+          showTier={showTier}
+          onOpen={() => onOpenMatch(f)}
+        />
+      ))}
     </div>
   );
 }

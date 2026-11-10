@@ -34,7 +34,7 @@ function Insignia({ info, size }) {
       <text
         x="21.5" y="35" textAnchor="middle"
         fontSize="15" fontWeight="800"
-        fontFamily="'Barlow Condensed', Impact, sans-serif"
+        fontFamily="Inter, system-ui, sans-serif"
         letterSpacing="0.5" fill={ink}
       >
         {info.tla}
